@@ -5,11 +5,25 @@ The module use pysmt to represent formulas and polynomials (may not be the best 
 
 # Dependencies
 - pysmt (https://github.com/pysmt/pysmt)
-- sympy
-
-Optional:
 - z3 solver (https://github.com/Z3Prover/z3)
-Note: install z3 on your system from github and not from pysmt (due to this bug: https://github.com/pysmt/pysmt/issues/603)
+- SymPy
+
+## Install dependencies on ubuntu
+```bash
+$ sudo apt-get install python python-pip
+$ pip install nose
+$ pip install sympy
+$ pip install pysmt
+$ ~/.local/bin/pysmt-install --check
+$ ~/.local/bin/pysmt-install --z3
+```
+**Note:** depending on pip you can get the executable `pysmt-install` in `/user/local/bin`
+
+
+Test if the project work as:
+```bash
+$ ~/.local/bin/nosetests
+```
 
 
 # Modules
