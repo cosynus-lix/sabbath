@@ -12,7 +12,7 @@ The output of the problem are:
   - True iff the function is a barrier certificate
   - a counter-example, if the candidate is not a barrier certificate
   The counter-example is a state of the system where the candidate 
-  is not a barrier certificate
+  is not a barrier certifièacate
 
 Now we check the "basic" barrier certificate.
 Other certiticates can be the exponential barrier certificate or a
@@ -24,6 +24,7 @@ barrier certificate containing more polynomials.
 
 from barrier.system import DynSystem
 from barrier.lie import get_lie
+from barrier.printers import QepcadPrinter
 
 from pysmt.shortcuts import (
     Solver,
@@ -88,5 +89,22 @@ def is_barrier(dyn_sys, init, safe, barrier):
         return False
     else:
         return True
+    
+
+
+def barrier_generator(dyn_sys,init, safe,template):
+    """ Generates a barrier certificate by using qepcad solver
+    and :   1) init -> barrier <= 0
+            2) barrier <= 0 -> safe
+            3) barrier = 0 -> Lie(sys, barrier) < 0
+    template of polynomial form
+    """
+    formula = And(Implies(init, LE(template, 0)), Implies(LE(template,0),safe), 
+                Implies( Equals(template,0), LT(Lie(dyn_sys, template),0)) )
+    
+    print(formula)
+    
+    
+    
 
 

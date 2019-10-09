@@ -23,7 +23,7 @@ from pysmt.shortcuts import (
 
 from barrier.test import TestCase
 from barrier.system import DynSystem
-from barrier.compute import is_barrier
+from barrier.compute import is_barrier, barrier_generator
 from barrier.utils import (
     get_range
 )
@@ -78,3 +78,30 @@ class TestBarrier(TestCase):
         res = is_barrier(sys, init, safe, barrier)
 
         self.assertTrue(res)
+        
+    def test_barrier_generator(self):
+        x1, x2 = [Symbol("x%s" % (i+1), REAL) for i in range(2)]
+
+        sys = DynSystem([x1,x2], [], [],
+                        {
+                            x1 : (-Real(Fraction(333,500)) * x2 * x2 * x2 * x2 * x2 +
+                                  Real(Fraction(439,200)) * x2 * x2 * x2 -
+                                  Real(Fraction(1117,500)) * x2 -
+                                  x1),
+                            x2 : (Real(Fraction(333,500)) * x2 * x2 * x2 * x2 * x2 -
+                                  Real(Fraction(439,200)) * x2 * x2 * x2 +
+                                  Real(Fraction(617,500)) * x2 +
+                                  x1)
+                        },
+                        {})
+
+        init = get_range([x1, x2],
+                         [(Real(Fraction(0,1)),
+                           Real(Fraction(1,2))),
+                          (Real(Fraction(0,1)),
+                           Real(Fraction(1,2)))])
+
+        safe = LE(x1, Real(Fraction(2,1)))
+        template = p0*x1*x1 + p1*x1*x2 + p2
+        barrier_generator(sys,init,safe, template)
+        
