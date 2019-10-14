@@ -1,3 +1,5 @@
+# - *- coding: utf- 8 - *-
+
 """ Functions to check and synthesise barrier certificates.
 
 1. Check of barrier certificate
@@ -24,7 +26,7 @@ barrier certificate containing more polynomials.
 
 from barrier.system import DynSystem
 from barrier.lie import get_lie
-from barrier.printers import QepcadPrinter
+import barrier.printers
 
 from pysmt.shortcuts import (
     Solver,
@@ -102,8 +104,9 @@ def barrier_generator(dyn_sys,init, safe,template):
     formula = And(Implies(init, LE(template, 0)), Implies(LE(template,0),safe), 
                 Implies( Equals(template,0), LT(Lie(dyn_sys, template),0)) )
     
-    print(formula)
-    
+    to_solve = barrier.printers.PysmtToQepcadPrinter(formula)
+
+    return to_solve 
     
     
 

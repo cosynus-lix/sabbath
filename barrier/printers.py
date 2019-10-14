@@ -7,10 +7,9 @@ Printers
 
 from pysmt.printers import SmtPrinter
 
-
 class QepcadPrinter(SmtPrinter):
     
-    def walk_and(self, formula): return self.walk_nary(formula, "/\")
+    def walk_and(self, formula): return self.walk_nary(formula, "/\ ")
     def walk_or(self, formula): return self.walk_nary(formula, "\/")
     def walk_not(self, formula): return self.walk_nary(formula, "~")
     def walk_implies(self, formula): return self.walk_nary(formula, "==>")
@@ -38,8 +37,12 @@ class QepcadPrinter(SmtPrinter):
         self.write("].")
     
     
-def QepcadToPysmtPrinter(formula):
-    
+def PsymtToQepcadPrinter(formula):
+    test = open("FormulasQepcad.txt",'w')
+    QepcadPrinter.printer(formula) 
+    test.close()
+    return test
+
     
         
         
