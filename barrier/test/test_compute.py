@@ -83,32 +83,17 @@ class TestBarrier(TestCase):
         x1, x2 = [Symbol("x%s" % (i+1), REAL) for i in range(2)]
 
         sys = DynSystem([x1,x2], [], [],
-                       
-
-
-
-
                         {
-                            x1 : (-Real(Fraction(333,500)) * x2 * x2 * x2 * x2 * x2 +
-                                  Real(Fraction(439,200)) * x2 * x2 * x2 -
-                                  Real(Fraction(1117,500)) * x2 -
-                                  x1),
-                            x2 : (Real(Fraction(333,500)) * x2 * x2 * x2 * x2 * x2 -
-                                  Real(Fraction(439,200)) * x2 * x2 * x2 +
-                                  Real(Fraction(617,500)) * x2 +
-                                  x1)
+                            x1 : -x1,
+                            x2 : x1 - x2
                         },
                         {})
 
-        init = get_range([x1, x2],
-                         [(Real(Fraction(0,1)),
-                           Real(Fraction(1,2))),
-                          (Real(Fraction(0,1)),
-                           Real(Fraction(1,2)))])
-
-        safe = LE(x1, Real(Fraction(2,1)))
+        init = LT(x1 * x1 + x2 * x2, Real(Fraction(1,4)))
+        safe = GE(Real(Fraction(4,1)), x1 * x1 + x2 * x2)
+        
         p1,p2,p3 = [Symbol("p%s" % (i+1), REAL) for i in range(3)]        
         template = Plus(Times(p1,x1,x1),Times(p2,x1,x2),p3)
         test = barrier_generator(sys,init,safe, template)
-        #self.asserTrue(test)
+        
 

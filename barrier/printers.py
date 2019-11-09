@@ -13,22 +13,24 @@ from pysmt.operators import BOOL_CONNECTIVES
 class QepcadPrinter(SmtPrinter):
     
     def walk_nary(self, formula, operator):
-        assert len(formula.args()) > 0 
-        for i in range(len(formula.args())-1):
-            yield formula.args()[i]
+        assert len(formula.args()) > 0
+        args = formula.args()
+        for s in args[:-1]:
+            yield s
             self.write( " %s " %operator)
-            yield formula.args()[i+1]
-            self.write(" ")
+        yield args[-1]
+        self.write(" ")
 
     
     def walk_bool_connect(self,formula,operator):
         assert len(formula.args()) > 0 
-        for i in range(len(formula.args())-1):
-            self.write("[ ")
-            yield formula.args()[i]
+        args = formula.args()
+        self.write("[ ")
+        for s in args[:-1]:
+            yield s
             self.write(" ]"+" %s [ " %operator)
-            yield formula.args()[i+1]
-            self.write(" ]")
+        yield args[-1]
+        self.write(" ]")
             
         
 
