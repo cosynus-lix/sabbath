@@ -1,0 +1,30 @@
+=======================================================
+                Quantifier Elimination                 
+                          in                           
+            Elementary Algebra and Geometry            
+                          by                           
+      Partial Cylindrical Algebraic Decomposition      
+                                                       
+               Version B 1.69, 16 Mar 2012
+                                                       
+                          by                           
+                       Hoon Hong                       
+                  (hhong@math.ncsu.edu)                
+                                                       
+With contributions by: Christopher W. Brown, George E. 
+Collins, Mark J. Encarnacion, Jeremy R. Johnson        
+Werner Krandick, Richard Liska, Scott McCallum,        
+Nicolas Robidoux, and Stanly Steinberg                 
+=======================================================
+Enter an informal description  between '[' and ']':
+[Case]Enter a variable list:
+(p1,p2,p3,x1,x2)Enter the number of free variables:
+3
+Enter a prenex formula:
+(A x1 ) (A x2 ) [[ [ [ [ true Error RPFACTREAD: Unknown variable.
+(A x1 ) (A x2 ) [[ [ [ [ true 
+Enter a prenex formula:
+fError FREADR: '(' was expected.
+f
+Enter a prenex formula:
+w^C
