@@ -10,6 +10,7 @@ from pysmt.typing import BOOL
 from pysmt.oracles import QuantifierOracle
 from pysmt.operators import BOOL_CONNECTIVES
 
+
 class QepcadPrinter(SmtPrinter):
     
     def walk_nary(self, formula, operator):
@@ -23,8 +24,9 @@ class QepcadPrinter(SmtPrinter):
 
     
     def walk_bool_connect(self,formula,operator):
-        assert len(formula.args()) > 0 
-        args = formula.args()
+        assert len(formula.args()) > 0
+        #ignore True and False constants ==> maybe not best choice
+        args = [i for i in formula.args() if not (i.is_true() or i.is_false())]
         self.write("[")
         for s in args[:-1]:
             yield s
@@ -78,7 +80,7 @@ class QepcadPrinter(SmtPrinter):
         self.write(res)
 
     def walk_bool_constant(self,formula):
-        self.write("")
+        self.write("") 
 
     def walk_forall(self, formula):
         return self._walk_quantifier("A", formula)

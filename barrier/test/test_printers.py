@@ -3,7 +3,7 @@ import unittest
 
 from pysmt.typing import (REAL, INT, BOOL)
 from pysmt.shortcuts import ( Not, Equals, Div,
-        Int, Symbol, Implies, GE, Times, Real, ForAll, Exists, And, Plus, LE )
+        Int, Symbol, Implies, GE, Times, Real, ForAll, Exists, And, Plus, LE, TRUE, FALSE )
 
 from barrier.test import TestCase
 from barrier.printers import ( QepcadPrinter, PysmtToQepcadPrinter)
@@ -114,6 +114,22 @@ class testprint(TestCase):
         formula_2 = GE(x1,Real(5))
         formula_3 = Equals(Plus(x1,x2),Real(14))
         formula = ForAll([x1,x2],And(formula_1,Implies(formula_3,formula_2)))
+        PysmtToQepcadPrinter(formula,"TestingFormulasQepcad.txt")
+        f = open("TestingFormulasQepcad.txt",'r')
+        res = f.readline()
+        expected = "(A x1 ) (A x2 ) [[x2<=3] /\  [[x1+x2=14] ==> [5<=x1]]]."
+        open("TestingFormulasQepcad.txt",'w').close()
+        self.assertEqual(expected,res.strip())
+    
+    def test_printer_10(self):
+        """Test case 10 : testing boolean constant(True,False)
+        """ 
+        x2 = Symbol("x2", REAL)
+        x1 = Symbol("x1",REAL)
+        formula_1 = LE(x2,Real(3))
+        formula_2 = GE(x1,Real(5))
+        formula_3 = Equals(Plus(x1,x2),Real(14))
+        formula = ForAll([x1,x2],And(TRUE(), FALSE(),formula_1,Implies(formula_3,formula_2)))
         PysmtToQepcadPrinter(formula,"TestingFormulasQepcad.txt")
         f = open("TestingFormulasQepcad.txt",'r')
         res = f.readline()

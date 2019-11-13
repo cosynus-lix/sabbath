@@ -38,7 +38,6 @@ from pysmt.shortcuts import (
 from pysmt.logics import QF_NRA
 
 import logging
-from time import sleep
 import os
 
 def is_barrier(dyn_sys, init, safe, barrier):
