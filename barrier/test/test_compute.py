@@ -79,7 +79,7 @@ class TestBarrier(TestCase):
 
         self.assertTrue(res)
         
-    def test_barrier_generator(self):
+    def test_barrier_generator_1(self):
         x1, x2 = [Symbol("x%s" % (i+1), REAL) for i in range(2)]
 
         sys = DynSystem([x1,x2], [], [],
@@ -92,8 +92,37 @@ class TestBarrier(TestCase):
         init = LT(x1 * x1 + x2 * x2, Real(Fraction(1,4)))
         safe = GE(Real(Fraction(4,1)), x1 * x1 + x2 * x2)
         
-        p1,p2,p3 = [Symbol("p%s" % (i+1), REAL) for i in range(3)]        
-        template = Plus(Times(p1,x1,x1),Times(p2,x1,x2),p3)
-        test = barrier_generator(sys,init,safe, template)
-        
+        p1,p2,p3,p4 = [Symbol("p%s" % (i+1), REAL) for i in range(4)]        
+        template = Plus(Times(p1,x1,x1),Times(p2,x1,x2),Times(p3,x2,x2),p4)
+        gen_barrier = barrier_generator(sys,init,safe, template)
+    
 
+    """def test_barrier_generator_2(self):
+       
+        x1, x2 = [Symbol("x%s" % (i+1), REAL) for i in range(2)]
+
+        sys = DynSystem([x1,x2], [], [],
+                        {
+                            x1 : (Plus(Times(-Real(Fraction(333,500)),Pow(x2,5)),
+                                Times(Real(Fraction(439,200)),Pow(x2,3)),
+                                  Times(-Real(Fraction(1117,500)),x2),Times(-1,
+                                  x1))),
+                            x2 : (Plus(Times(Real(Fraction(333,500)),Pow(x2,5)),
+                                  Times(-Real(Fraction(439,200)),Pow(x2,3)),
+                                  Times(Real(Fraction(617,500)),x2),
+                                  x1))
+                        },
+                        {})
+
+        init = get_range([x1, x2],
+                         [(Real(Fraction(0,1)),
+                           Real(Fraction(1,2))),
+                          (Real(Fraction(0,1)),
+                           Real(Fraction(1,2)))])
+
+        safe = LE(x1, Real(Fraction(2,1)))
+
+        p1,p2,p3,p4 = [Symbol("p%s" % (i+1), REAL) for i in range(4)]        
+        template = Plus(Times(p1,x1,x1),Times(p2,x1,x2),Times(p3,x2,x2),p4)
+        gen_barrier = barrier_generator(sys,init,safe, template)
+        """ 

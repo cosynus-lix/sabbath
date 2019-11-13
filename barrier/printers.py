@@ -17,20 +17,20 @@ class QepcadPrinter(SmtPrinter):
         args = formula.args()
         for s in args[:-1]:
             yield s
-            self.write( " %s " %operator)
+            self.write( "%s" %operator)
         yield args[-1]
-        self.write(" ")
+        
 
     
     def walk_bool_connect(self,formula,operator):
         assert len(formula.args()) > 0 
         args = formula.args()
-        self.write("[ ")
+        self.write("[")
         for s in args[:-1]:
             yield s
-            self.write(" ]"+" %s [ " %operator)
+            self.write("]"+" %s [" %operator)
         yield args[-1]
-        self.write(" ]")
+        self.write("]")
             
         
 
@@ -99,18 +99,18 @@ class QepcadPrinter(SmtPrinter):
     def printer(self,formula):
         q = QuantifierOracle()
         if q.is_qf(formula):
-            self.write("[ ")
+            self.write("[")
         self.walk(formula)
         self.write("].")
     
     
-def PysmtToQepcadPrinter(formula):
-    strm = open("FormulasQepcad.txt",'a')
+def PysmtToQepcadPrinter(formula,file_name):
+    """Printer meant to print for a file,file_name, sent to qepcad"""
+    strm = open(file_name,'a')
     res = QepcadPrinter(strm)
     res.printer(formula)
-    strm.write("\nfinish.")
+    strm.write("\nfinish.\n")
     strm.close()
-    return res
 
     
         
