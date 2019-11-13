@@ -76,7 +76,10 @@ class QepcadPrinter(SmtPrinter):
             res =  template % str(n)
 
         self.write(res)
-    
+
+    def walk_bool_constant(self,formula):
+        self.write("")
+
     def walk_forall(self, formula):
         return self._walk_quantifier("A", formula)
 

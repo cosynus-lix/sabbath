@@ -141,7 +141,7 @@ def barrier_generator(dyn_sys,init, safe,template):
     for s in case:
         f.write(s)
     f.close()
-    to_solve = PysmtToQepcadPrinter(formula)
+    to_solve = PysmtToQepcadPrinter(formula,"FormulasQepcad.txt")
 
     #pipe to console cat ... ./qepcad with output stored in "GeneratedBarriers.txt"
     os.system("cat $HOME/barrier/barrier/test/FormulasQepcad.txt | $qe/bin/qepcad +N8000000 > GeneratedBarriers.txt")
