@@ -33,7 +33,7 @@ from pysmt.shortcuts import (
     Solver,
     Implies, And,
     LE, LT, Equals,
-    Real, Int, ForAll
+    Real, Int, ForAll, GT, Not, GE
 )
 from pysmt.logics import QF_NRA
 
@@ -114,7 +114,7 @@ def barrier_generator(dyn_sys,init, safe,template):
     f_cond1 = Implies(init,LE(template,Real(0)))
     
     #2nd condition
-    f_cond2 = Implies(LE(template,Real(0) ),safe)
+    f_cond2 = Implies(LE(template,Real(0)),safe)
     
     #3rd condition
     lie_der = get_lie(template,dyn_sys)
@@ -143,7 +143,7 @@ def barrier_generator(dyn_sys,init, safe,template):
     to_solve = PysmtToQepcadPrinter(formula,"FormulasQepcad.txt")
 
     #pipe to console cat ... ./qepcad with output stored in "GeneratedBarriers.txt"
-    os.system("cat $HOME/barrier/barrier/test/FormulasQepcad.txt | $qe/bin/qepcad +N8000000 > GeneratedBarriers.txt")
+    os.system("cat $HOME/barrier/barrier/test/FormulasQepcad.txt | $qe/bin/qepcadd +N8000000 > GeneratedBarriers.txt")
     
     #if possible return pysmt formula
     

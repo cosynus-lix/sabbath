@@ -17,10 +17,19 @@ class QepcadPrinter(SmtPrinter):
         assert len(formula.args()) > 0
         args = formula.args()
         for s in args[:-1]:
-            yield s
+            if len(s.args())>0:
+                self.write("(")
+                yield s
+                self.write(")")
+            else:
+                yield s
             self.write( "%s" %operator)
-        yield args[-1]
-        
+        if len(args[-1].args())>0:
+            self.write("(")
+            yield args[-1]
+            self.write(")")
+        else:
+            yield args[-1]
 
     
     def walk_bool_connect(self,formula,operator):
