@@ -17,19 +17,9 @@ class QepcadPrinter(SmtPrinter):
         assert len(formula.args()) > 0
         args = formula.args()
         for s in args[:-1]:
-            if len(s.args())>0:
-                self.write("(")
-                yield s
-                self.write(")")
-            else:
-                yield s
+            yield s
             self.write( "%s" %operator)
-        if len(args[-1].args())>0:
-            self.write("(")
-            yield args[-1]
-            self.write(")")
-        else:
-            yield args[-1]
+        yield args[-1]
 
     
     def walk_bool_connect(self,formula,operator):
@@ -52,7 +42,26 @@ class QepcadPrinter(SmtPrinter):
     
     def walk_plus(self, formula): return self.walk_nary(formula, "+")
     def walk_minus(self, formula): return self.walk_nary(formula, "-")
-    def walk_times(self, formula): return self.walk_nary(formula, " ")
+    
+    def walk_times(self, formula): 
+        assert len(formula.args()) > 0
+        args = formula.args()
+        for s in args[:-1]:
+            if len(s.args())>1:
+                self.write("(")
+                yield s
+                self.write(")")
+            else:
+                yield s
+            self.write(" ")
+        if len(args[-1].args())>1:
+            self.write("(")
+            yield args[-1]
+            self.write(")")
+        else:
+            yield args[-1]
+        #return self.walk_nary(formula, " ")
+
     def walk_equals(self, formula): return self.walk_nary(formula, "=")
     def walk_le(self, formula): return self.walk_nary(formula, "<=")
     def walk_lt(self, formula): return self.walk_nary(formula, "<")

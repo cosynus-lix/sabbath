@@ -136,3 +136,17 @@ class testprint(TestCase):
         expected = "(A x1 ) (A x2 ) [[x2<=3] /\  [[x1+x2=14] ==> [5<=x1]]]."
         open("TestingFormulasQepcad.txt",'w').close()
         self.assertEqual(expected,res.strip())
+
+
+    def test_printer_11(self):
+        """Test case 11 : testing x*(x+2*y) 
+        """ 
+        x2 = Symbol("x2", REAL)
+        x1 = Symbol("x1",REAL)
+        formula = (x2+Real(3)*x1)*(Real(3)*x1-Real(5))*x2 
+        PysmtToQepcadPrinter(formula,"TestingFormulasQepcad.txt")
+        f = open("TestingFormulasQepcad.txt",'r')
+        res = f.readline()
+        expected = "[((x2+3 x1) (3 x1-5)) x2]."
+        open("TestingFormulasQepcad.txt",'w').close()
+        self.assertEqual(expected,res.strip())
