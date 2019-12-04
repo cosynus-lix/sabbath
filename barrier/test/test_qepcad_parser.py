@@ -116,6 +116,7 @@ class TestSpecParser(TestCase):
     def _test_parse(self, formula):
         res = qepcad_parser.parse(formula)
         self.assertTrue(res is not None)
+        return res
 
     def _test_parse_error(self, formulas):
         res = qepcad_parser.parse(formulas)
@@ -136,7 +137,11 @@ class TestSpecParser(TestCase):
                         "[x1^2 - x3 <= 22/3]",
                         "[x1^2 - x3 <= 22/3 ==> [[x1 >= 23]]]",
                         "[x1^2 - x3 <= 22/3 <==> [[x1 >= 23]]]",
-                        "[x1^2 - x3 <= 22/[x3/x3]]"
+                        "[x1^2 - x3 <= 22/[x3/x3]]",
+                        "[p - 2 >= 0]",
+                        "p - 2 >= 0",
+                        "p^2 - 8 p + 4 < 0",
+                        "p - 2 >= 0 /\ p^2 - 8 p + 4 < 0"
         ]
 
         for expr in correct_expr:
@@ -149,3 +154,13 @@ class TestSpecParser(TestCase):
 
         for expr in wrong_expr:
             self._test_parse_error(expr)
+
+        # Test some of the operator's precendences
+        check_res = [("p p^2 p < 2", "((p * ((p ^ 2.0) * p)) < 2.0)"),
+                     ("p^2 +2 p < 2", "(((p ^ 2.0) + (2.0 * p)) < 2.0)"),
+                     (" p^2 +2 2 < 2", "(((p ^ 2.0) + (2.0 * 2.0)) < 2.0)")]
+
+        for (a,b) in check_res:
+            res = self._test_parse(a)
+            self.assertTrue(str(res) == b)
+

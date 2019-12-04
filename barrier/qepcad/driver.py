@@ -8,7 +8,7 @@ import re
 from pysmt.shortcuts import TRUE
 
 from barrier.printers import QepcadPrinter
-
+from barrier.qepcad.parser import qepcad_parser
 
 class QepcadDriver():
     """
@@ -121,6 +121,13 @@ finish.
             logger.debug("Qepcad formula: %s" % qepcad_formula)
 
             # 2. Parses the qepcad formula
-            pysmt_formula = TRUE
+            pysmt_formula = qepcad_parser.parse(qepcad_formula)
 
-        return TRUE
+            if (not qepcad_parser.in_error) and (not pysmt_formula is None):
+                return pysmt_formula
+            else:
+                logger.error("Error parsing qepcad formula at '%s' at line %d\n" \
+                             "Qepcad formula: %s\n" % (qepcad_parser.error_value,
+                                                       qepcad_parser.error_line,
+                                                       qepcad_formula))
+                raise Exception("Malformed output from qepcad!")
