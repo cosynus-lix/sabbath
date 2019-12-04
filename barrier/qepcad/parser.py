@@ -212,7 +212,7 @@ def p_error(t):
 
 handlers = []
 
-parser = yacc.yacc(debug=2)
+parser = yacc.yacc(debug=0)
 
 class QepcadParser(object):
     """ Parse a qepcad formula
