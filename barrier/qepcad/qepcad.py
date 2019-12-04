@@ -3,6 +3,9 @@ import subprocess
 import StringIO
 import string
 import logging
+import re
+
+from pysmt.shortcuts import TRUE
 
 from barrier.printers import QepcadPrinter
 
@@ -25,7 +28,15 @@ finish.
     @staticmethod
     def call_qepcad(formula, free_var, not_free):
         """
+        Call qepcad on formula, assuming free_var is a list of free variables in
+        formula and not_free is a list of non free variables in the formula.
+
+        Returns the formula obtained after calling qepcad.
+
+        The environment variable $qe must be set in the system as described in the
+        installation of qepcad.
         """
+
         def variables_qepcad_format(list_var):
             str_var = "("
             for i in range(len(list_var)-1):
@@ -76,6 +87,40 @@ finish.
             logger.debug("Error calling qepcad.\nstderr is:\n %s\n" % (stderr))
             raise Exception("qepcad returned with error code %d" % p.returncode)
 
+
         # Parse the qepcad output
-    
-        print(qepcad_output)
+        pysmt_result = QepcadDriver.parse_qepcad_output(qepcad_output)
+
+        logger.debug("Qepcad computation result: %s" % str(pysmt_result))
+
+        return pysmt_result
+
+    @staticmethod
+    def parse_qepcad_output(qepcad_output):
+        """
+        Parses the whole output generated from qepcad and parses the equivalent
+        quantifier-free formula as a PySMT formula.
+
+        qepcad_output is a string containing the output from qepcad.
+        """
+        logger = logging.getLogger(__name__)
+
+        # 1. Get the returned formula - use re to locate the formula string.
+        pattern = re.compile(r'.+An equivalent quantifier-free formula:(.+)=====================  The End  =====================.+',
+                             re.M|re.DOTALL)
+
+        matched = pattern.match(qepcad_output)
+
+        if (not matched):
+            logger.error("Malformed output from qepcad.\n%s" % qepcad_output)
+            raise Exception("Malformed output from qepcad")
+        else:
+            qepcad_formula = matched.group(1)
+            qepcad_formula = qepcad_formula.strip()
+
+            logger.debug("Qepcad formula: %s" % qepcad_formula)
+
+            # 2. Parses the qepcad formula
+            pysmt_formula = TRUE
+
+        return TRUE
