@@ -40,6 +40,8 @@ precedence = (
     ('left', 'TOK_TIMES', 'TOK_DIV'),
     ('left', 'TOK_POWER'),
 
+    ('left', 'TOK_ID', 'TOK_NUMBER'), # fix isse with precedence and implicit operators
+
     ('left', 'TOK_COMMA'),
     ('left','TOK_true')
 )
@@ -132,7 +134,6 @@ def p_formula_implies_reversed(t):
     ''' formula : formula TOK_IMPLIES_REVERSED formula '''
     t[0] = Implies(t[3], t[1])
 
-
 def p_predicate_eq(t):
     ''' predicate : expr TOK_EQ expr'''
     t[0] = Equals(t[1], t[3])
@@ -182,6 +183,12 @@ def p_expr_minus(t):
 def p_expr_times(t):
     ''' expr : expr TOK_TIMES expr '''
     t[0] = Times(t[1], t[3])
+
+def p_expr_times_implicit(t):
+    ''' expr : expr expr '''
+
+    t[0] = Times(t[1], t[2])
+
 
 def p_expr_div(t):
     ''' expr : expr TOK_DIV expr '''
