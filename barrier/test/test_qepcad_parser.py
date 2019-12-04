@@ -15,8 +15,8 @@ import ply.yacc as yacc
 
 from cStringIO import StringIO
 
-from barrier.qepcad.qepcad_lex import lexer, reset
-from barrier.qepcad.qepcad_parser import qepcad_parser
+from barrier.qepcad.lex import lexer, reset
+from barrier.qepcad.parser import qepcad_parser
 
 
 class TestSpecParser(TestCase):
@@ -113,7 +113,7 @@ class TestSpecParser(TestCase):
                TestSpecParser.new_tok(4,'TOK_RPAREN',1,')')]
         self._test_multiple_token(res, "l,l()"),
 
-    def _test_parse(self, formula, same_out=True):
+    def _test_parse(self, formula):
         res = qepcad_parser.parse(formula)
         self.assertTrue(res is not None)
 
@@ -136,10 +136,11 @@ class TestSpecParser(TestCase):
                         "[x1^2 - x3 <= 22/3]",
                         "[x1^2 - x3 <= 22/3 ==> [[x1 >= 23]]]",
                         "[x1^2 - x3 <= 22/3 <==> [[x1 >= 23]]]",
+                        "[x1^2 - x3 <= 22/[x3/x3]]"
         ]
 
         for expr in correct_expr:
-            self._test_parse(expr, False)
+            self._test_parse(expr)
 
         wrong_expr = ["[x1]",
                       "1 + 3",
