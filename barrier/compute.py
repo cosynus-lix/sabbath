@@ -27,6 +27,7 @@ barrier certificate containing more polynomials.
 from barrier.system import DynSystem
 from barrier.lie import get_lie
 from barrier.printers import PysmtToQepcadPrinter
+from barrier.qepcad.driver import QepcadDriver
 from pysmt.oracles import FreeVarsOracle
 
 from pysmt.shortcuts import (
@@ -130,22 +131,21 @@ def barrier_generator(dyn_sys,init, safe,template):
 
     #ordering the variables for qepcad as (free_var,not_free)
     free_var = template_var.difference(not_free)
-    ordered_var_list = list(free_var) + list(not_free)
-    str_var = variables_qepcad_format(ordered_var_list) 
-    nb_free_var = len(free_var)
+    result = QepcadDriver.call_qepcad(formula, free_var, not_free)
 
-    #Formatting the formula for qepcad
-    case = ["[Case]", "\n"+str_var , "\n" + str(nb_free_var) +"\n"]
-    f = open("FormulasQepcad.txt",'w')
-    for s in case:
-        f.write(s)
-    f.close()
-    to_solve = PysmtToQepcadPrinter(formula,"FormulasQepcad.txt")
+    # Get the value for the unnkonwn variables
+    # Must solve the formula in P-s to find an assignment.
+    # The formula may still be unsatisfiable
+    solver = Solver(logic=QF_NRA, name="z3")
 
-    #pipe to console cat ... ./qepcad with output stored in "GeneratedBarriers.txt"
-    os.system("cat $HOME/barrier/barrier/test/FormulasQepcad.txt | $qe/bin/qepcadd +N8000000 > GeneratedBarriers.txt")
-    
-    #if possible return pysmt formula
-    
-
+    if (solver.is_sat(result)):
+        # There is an assignment to the Ps.
+        # Instantiate the parameter
+        model = solver.get_model()
+        sigma = {v: model[v] for v in free_var}
+        sub_template = template.substitute(sigma).simplify()
+        return sub_template
+    else:
+        # the template is not enough to find a barrier
+        return FALSE()
 
