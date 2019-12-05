@@ -97,6 +97,10 @@ class TestBarrier(TestCase):
         template = Plus(Times(Real(2),x1,x1),Times(Real(2),x1,x2),Times(p,x2,x2),-Real(4))
         gen_barrier = barrier_generator(sys,init,safe, template)
 
+        # The result must be a barrier
+        self.assertTrue(is_barrier(sys, init, safe, gen_barrier))
+
+
     def test_barrier_generator_2(self):
        
         x1, x2 = [Symbol("x%s" % (i+1), REAL) for i in range(2)]
