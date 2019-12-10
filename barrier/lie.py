@@ -24,8 +24,12 @@ from sympy import (
     Add as Add_sympy,
     Pow as Pow_sympy,
     Rational as Rational_sympy,
-    Integer as Integer_sympy
+    Integer as Integer_sympy,
 )
+
+
+from sympy import groebner
+from sympy.polys.polytools import reduced
 
 from barrier.system import DynSystem
 
@@ -42,14 +46,14 @@ def get_lie(expr, dyn_sys):
 
     return lie_der
 
-# def get_lie_rank(self, expr, dyn_sys):
-#     """ Get the rank of expr and the vector field of dyn_sys
-#     """
+def get_lie_rank(self, expr, dyn_sys):
+    """ Get the rank of expr and the vector field of dyn_sys
+    """
 
-#     der = Derivator()
-#     lie_der = der.get_lie_rank(dyn_sys.states(), expr, dyn_sys)
+    der = Derivator()
+    rank = der.get_lie_rank(dyn_sys.states(), expr, dyn_sys.get_odes())
 
-#     return lie_der
+    return rank
 
 
 
@@ -91,17 +95,12 @@ class Derivator(object):
         lie_der = 0
 
         for var in vars_list:
-            lie_var = diff(expr, var) * vector_field[var]
-            lie_der = lie_der + lie_var
+            lie_var = Mul_sympy(diff(expr, var), vector_field[var])
+            lie_der = Add_sympy(lie_der, lie_var)
 
         return lie_der
 
-    def get_lie_der(self, vars_list, expr, vector_field):
-        """
-        Takes as input a set of (pysmt) variables, an (pysmt) expression of a
-        predicate, and dynamical_system.
-        """
-
+    def _get_sympy_problem(self, vars_list, expr, vector_field):
         _vector_field = {}
         _vars_list = []
         for var in vars_list:
@@ -110,44 +109,72 @@ class Derivator(object):
             _vector_field[_var] = self._get_sympy_expr(vector_field[var])
         _expr = self._get_sympy_expr(expr)
 
+        return (_vars_list, _expr, _vector_field)
+
+    def get_lie_der(self, vars_list, expr, vector_field):
+        """
+        Takes as input a set of (pysmt) variables, an (pysmt) expression of a
+        predicate, and dynamical_system.
+        """
+
+        (_vars_list, _expr, _vector_field) = self._get_sympy_problem(vars_list, expr, vector_field)
+
         # Compute the Lie derivative in SymPy
         _lie_der = self._get_lie_der(_vars_list, _expr, _vector_field)
         lie_der = self._get_pysmt_expr(_lie_der)
 
         return lie_der
 
-    # def get_lie_rank(self, expr, dyn_sys):
-    #     """
-    #     Compute the rank of p and f, the vector field from dyn_sys.
+    def get_lie_rank(self, vars_list, expr, vector_field):
+        """
+        Compute the rank of the expression p and the vector field f.
 
-    #     The rank is defined in the paper:
+        The rank is defined in the paper:
 
-    #     Computing Semi-algebraic Invariants for Polynomial Dynamical Systems
-    #     Liu, Zhan, Zhao, EMSOFT11
-
-
-    #     The computation finds the N such that Lp,f^{N+1} is in the ideal <Lp,f^0, Lp,f^1, ..., Lp,f^{N}>
-    #     (where p is the polynomial expression, and Lp,f(i) is the i-th Lie derivative of p wrt f.
-
-    #     Note that such N exists, due to the ascending chain condition of ideals.
-    #     """
-
-    #     def _get_lie_rank(expr, f):
-    #         """
-    #         Implement the algorithm directly in sympy.x
-    #         """
-    #         n = 0
-    #         lie_n = expr
-    #         ideal = GB(expr)
-
-    #         while (lie_n ):
-    #             l
-    #             lie_n = get_lie(lie_n, dyn_sys)
+        Computing Semi-algebraic Invariants for Polynomial Dynamical Systems
+        Liu, Zhan, Zhao, EMSOFT11
 
 
+        The computation finds the N such that Lp,f^{N+1} is in the ideal <Lp,f^0, Lp,f^1, ..., Lp,f^{N}>
+        (where p is the polynomial expression, and Lp,f(i) is the i-th Lie derivative of p wrt f.
 
-    #     rank = _get_lie_rank()
-    #     return rank
+        Note that such N exists, due to the ascending chain condition of ideals.
+        """
+
+        def _get_lie_rank(vars_list, expr, vector_field):
+            """
+            Implement the algorithm directly in sympy.x
+            """
+            n = -1
+            lie_n = expr
+            lies = [expr]
+
+            fix_point = False
+
+            while (not fix_point):
+                n = n + 1
+
+                bases = groebner(lies, vars_list, order='lex')
+
+                lie_n = self._get_lie_der(vars_list, lie_n, vector_field)
+
+                _, f = reduced(lie_n, bases, wrt=vars_list)
+
+                fix_point = True
+                for var in vars_list:
+                    if (f.has(var)):
+                        # Cannot write lie_n with the bases!
+                        fix_point = False
+                        lies.append(lie_n)
+                        break
+
+            return n
+
+        (_vars_list, _expr, _vector_field) = self._get_sympy_problem(vars_list, expr, vector_field)
+
+        rank = _get_lie_rank(_vars_list, _expr, _vector_field)
+
+        return rank
 
 
 class Pysmt2Sympy(DagWalker):

@@ -79,3 +79,14 @@ class TestLie(TestCase):
             self.assertTrue(same)
 
 
+    def test_rank(self):
+        x, y = [Symbol(var, REAL) for var in ["x","y"]]
+
+        vars_list = [x,y]
+        expr = - x * y + y * y
+        vector_field = {x : -Fraction(2,2) * y, y : x * x}
+
+        der = Derivator()
+        rank = der.get_lie_rank(vars_list, expr, vector_field)
+
+        self.assertTrue(rank == 2)
