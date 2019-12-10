@@ -84,7 +84,7 @@ finish.
         logger.debug("Qepcad computation ended with return code %d" % p.returncode)
 
         if p.returncode != 0:
-            logger.debug("Error calling qepcad.\nstderr is:\n %s\n" % (stderr))
+            logger.debug("Error calling qepcad.\nstderr is:\n %s\n" % (err))
             raise Exception("qepcad returned with error code %d" % p.returncode)
 
 
