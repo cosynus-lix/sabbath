@@ -94,6 +94,12 @@ class DynSystem(object):
         else:
             return self._odes[var]
 
+    def get_odes(self):
+        odes = {}
+        for x in self._states:
+            odes[x] = self._odes[x]
+        return odes
+
     # TODO: add logging to the function
     def __check_syntax__(self):
         """ Returns true only if the system is syntactically correct.

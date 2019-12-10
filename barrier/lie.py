@@ -38,42 +38,19 @@ def get_lie(expr, dyn_sys):
     """
 
     der = Derivator()
-    lie_der = der.get_lie_der(dyn_sys.states(), expr, dyn_sys)
+    lie_der = der.get_lie_der(dyn_sys.states(), expr, dyn_sys.get_odes())
 
     return lie_der
 
-
-# def get_lie_rank(expr, dyn_sys):
-#     """
-#     Compute the rank of p and f, the vector field from dyn_sys.
-
-#     The rank is defined in the paper:
-
-#     Computing Semi-algebraic Invariants for Polynomial Dynamical Systems
-#     Liu, Zhan, Zhao, EMSOFT11
-
-
-#     The computation finds the N such that Lp,f^{N+1} is in the ideal <Lp,f^0, Lp,f^1, ..., Lp,f^{N}>
-#     (where p is the polynomial expression, and Lp,f(i) is the i-th Lie derivative of p wrt f.
-
-#     Note that such N exists, due to the ascending chain condition of ideals.
+# def get_lie_rank(self, expr, dyn_sys):
+#     """ Get the rank of expr and the vector field of dyn_sys
 #     """
 
-#     def _get_lie_rank(expr, f):
-#         """
-#         Implement the algorithm directly in sympy.x
-#         """
-#         n = 0
-#         lie_n = expr
-#         ideal = GB(expr)
+#     der = Derivator()
+#     lie_der = der.get_lie_rank(dyn_sys.states(), expr, dyn_sys)
 
-#         while (lie_n ):
-#             l
-#             lie_n = get_lie(lie_n, dyn_sys)
-        
+#     return lie_der
 
-
-#     rank = _get_lie_rank()
 
 
 class Derivator(object):
@@ -119,7 +96,7 @@ class Derivator(object):
 
         return lie_der
 
-    def get_lie_der(self, vars_list, expr, dyn_sys):
+    def get_lie_der(self, vars_list, expr, vector_field):
         """
         Takes as input a set of (pysmt) variables, an (pysmt) expression of a
         predicate, and dynamical_system.
@@ -130,7 +107,7 @@ class Derivator(object):
         for var in vars_list:
             _var = self._get_sympy_expr(var)
             _vars_list.append(_var)
-            _vector_field[_var] = self._get_sympy_expr(dyn_sys.get_ode(var))
+            _vector_field[_var] = self._get_sympy_expr(vector_field[var])
         _expr = self._get_sympy_expr(expr)
 
         # Compute the Lie derivative in SymPy
@@ -138,6 +115,39 @@ class Derivator(object):
         lie_der = self._get_pysmt_expr(_lie_der)
 
         return lie_der
+
+    # def get_lie_rank(self, expr, dyn_sys):
+    #     """
+    #     Compute the rank of p and f, the vector field from dyn_sys.
+
+    #     The rank is defined in the paper:
+
+    #     Computing Semi-algebraic Invariants for Polynomial Dynamical Systems
+    #     Liu, Zhan, Zhao, EMSOFT11
+
+
+    #     The computation finds the N such that Lp,f^{N+1} is in the ideal <Lp,f^0, Lp,f^1, ..., Lp,f^{N}>
+    #     (where p is the polynomial expression, and Lp,f(i) is the i-th Lie derivative of p wrt f.
+
+    #     Note that such N exists, due to the ascending chain condition of ideals.
+    #     """
+
+    #     def _get_lie_rank(expr, f):
+    #         """
+    #         Implement the algorithm directly in sympy.x
+    #         """
+    #         n = 0
+    #         lie_n = expr
+    #         ideal = GB(expr)
+
+    #         while (lie_n ):
+    #             l
+    #             lie_n = get_lie(lie_n, dyn_sys)
+
+
+
+    #     rank = _get_lie_rank()
+    #     return rank
 
 
 class Pysmt2Sympy(DagWalker):
