@@ -36,13 +36,44 @@ def get_lie(expr, dyn_sys):
 
     Returns an expression representing the lie derivative.
     """
-    lie_der = None
+
     der = Derivator()
-    for var in dyn_sys.states():
-        lie_var = der._get_lie_var(expr, dyn_sys, var)
-        lie_der = lie_var if lie_der is None else lie_der + lie_var
+    lie_der = der.get_lie_der(dyn_sys.states(), expr, dyn_sys)
+
     return lie_der
 
+
+# def get_lie_rank(expr, dyn_sys):
+#     """
+#     Compute the rank of p and f, the vector field from dyn_sys.
+
+#     The rank is defined in the paper:
+
+#     Computing Semi-algebraic Invariants for Polynomial Dynamical Systems
+#     Liu, Zhan, Zhao, EMSOFT11
+
+
+#     The computation finds the N such that Lp,f^{N+1} is in the ideal <Lp,f^0, Lp,f^1, ..., Lp,f^{N}>
+#     (where p is the polynomial expression, and Lp,f(i) is the i-th Lie derivative of p wrt f.
+
+#     Note that such N exists, due to the ascending chain condition of ideals.
+#     """
+
+#     def _get_lie_rank(expr, f):
+#         """
+#         Implement the algorithm directly in sympy.x
+#         """
+#         n = 0
+#         lie_n = expr
+#         ideal = GB(expr)
+
+#         while (lie_n ):
+#             l
+#             lie_n = get_lie(lie_n, dyn_sys)
+        
+
+
+#     rank = _get_lie_rank()
 
 
 class Derivator(object):
@@ -75,6 +106,38 @@ class Derivator(object):
         pysmt_lie = self._get_pysmt_expr(sympy_lie)
 
         return pysmt_lie
+
+    def _get_lie_der(self, vars_list, expr, vector_field):
+        """
+        Actual computation of the Lie derivative in SyPy
+        """
+        lie_der = 0
+
+        for var in vars_list:
+            lie_var = diff(expr, var) * vector_field[var]
+            lie_der = lie_der + lie_var
+
+        return lie_der
+
+    def get_lie_der(self, vars_list, expr, dyn_sys):
+        """
+        Takes as input a set of (pysmt) variables, an (pysmt) expression of a
+        predicate, and dynamical_system.
+        """
+
+        _vector_field = {}
+        _vars_list = []
+        for var in vars_list:
+            _var = self._get_sympy_expr(var)
+            _vars_list.append(_var)
+            _vector_field[_var] = self._get_sympy_expr(dyn_sys.get_ode(var))
+        _expr = self._get_sympy_expr(expr)
+
+        # Compute the Lie derivative in SymPy
+        _lie_der = self._get_lie_der(_vars_list, _expr, _vector_field)
+        lie_der = self._get_pysmt_expr(_lie_der)
+
+        return lie_der
 
 
 class Pysmt2Sympy(DagWalker):
