@@ -13,7 +13,7 @@ The input of the problem are:
 The output of the problem are:
   - True iff the function is a barrier certificate
   - a counter-example, if the candidate is not a barrier certificate
-  The counter-example is a state of the system where the candidate 
+  The counter-example is a state of the system where the candidate
   is not a barrier certifièacate
 
 Now we check the "basic" barrier certificate.
@@ -34,7 +34,8 @@ from pysmt.shortcuts import (
     Solver,
     Implies, And,
     LE, LT, Equals,
-    Real, Int, ForAll, GT, Not, GE
+    Real, Int, ForAll, GT, Not,
+    GE, LE
 )
 from pysmt.logics import QF_NRA
 
@@ -92,7 +93,7 @@ def is_barrier(dyn_sys, init, safe, barrier):
         return False
     else:
         return True
-    
+
 
 
 def barrier_generator(dyn_sys,init, safe,template):
@@ -110,22 +111,22 @@ def barrier_generator(dyn_sys,init, safe,template):
         str_var = str_var+str(list_var[-1])+")"
         return str_var
 
-    
+
     # 1st condition on barrier
     f_cond1 = Implies(init,LE(template,Real(0)))
-    
+
     #2nd condition
     f_cond2 = Implies(LE(template,Real(0)),safe)
-    
+
     #3rd condition
     lie_der = get_lie(template,dyn_sys)
     f_cond3 = Implies( Equals(template,Real(0)), LT(lie_der,Real(0)) )
-    
+
     #getting the not-free variables of the formula
     not_free = set(dyn_sys.states())
-    formula = ForAll(not_free,And(f_cond1, f_cond2, f_cond3 )) 
+    formula = ForAll(not_free,And(f_cond1, f_cond2, f_cond3 ))
 
-    #getting all the variables of the formula 
+    #getting all the variables of the formula
     or_var = FreeVarsOracle()
     template_var = or_var.get_free_variables(template)
 

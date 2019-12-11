@@ -55,8 +55,6 @@ def get_lie_rank(self, expr, dyn_sys):
 
     return rank
 
-
-
 class Derivator(object):
     """
     Simple wrapper between pysmt polynomials and sympy expressions.
@@ -133,7 +131,6 @@ class Derivator(object):
 
         Computing Semi-algebraic Invariants for Polynomial Dynamical Systems
         Liu, Zhan, Zhao, EMSOFT11
-
 
         The computation finds the N such that Lp,f^{N+1} is in the ideal <Lp,f^0, Lp,f^1, ..., Lp,f^{N}>
         (where p is the polynomial expression, and Lp,f(i) is the i-th Lie derivative of p wrt f.
