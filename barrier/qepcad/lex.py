@@ -43,8 +43,9 @@ tokens = keywords + (
     'TOK_OR',
     'TOK_NOT',
     'TOK_IMPLIES',
-    'TOK_IMPLIES_REVERSED',
     'TOK_IFF',
+    'TOK_IMPLIES_REVERSED',
+
 
     'TOK_EXIST',
     'TOK_FORALL',
@@ -92,8 +93,8 @@ t_TOK_AND = r"/\\"
 t_TOK_OR = r"\\/"
 t_TOK_NOT = r"\~"
 t_TOK_IMPLIES = r"\=\=\>"
-t_TOK_IMPLIES_REVERSED = r"\<\=\="
 t_TOK_IFF = r"<\=\=>"
+t_TOK_IMPLIES_REVERSED = r"\<\=\="
 t_TOK_EXIST = r"E"
 t_TOK_FORALL = r"A"
 t_TOK_LPAREN = r"\("
