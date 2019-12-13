@@ -434,9 +434,6 @@ class Sympy2Pysmt(object):
             pysmt_args = list(map(lambda x: self.walk(x), sympy_expr.args))
 
             # 2nd argument from pow must be constant
-
-            print(pysmt_args)
-
             assert (pysmt_args[1].is_constant())
 
             return Pow(pysmt_args[0], pysmt_args[1])
