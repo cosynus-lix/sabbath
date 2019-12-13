@@ -53,17 +53,15 @@ class TestLzz(TestCase):
 
 
     def test_dnf(self):
+        def _test_dnf(forig):
+            c = DNFConverter()
+            f1 = c.get_dnf(forig)
+            self.assertTrue(is_valid(Iff(forig, f1)))
+
         x, y = [Symbol(var, REAL) for var in ["x","y"]]
 
         p1 = x + y > 0
         p2 = x > 0
         p3 = y >= 0
 
-        forig = And(Or(p1,p2),
-                    Or(p1,p3),
-                    Or(p2))
-
-        c = DNFConverter()
-        f1 = c.get_dnf(forig)
-
-        self.assertTrue(is_valid(Iff(forig, f1)))
+        _test_dnf(And(Or(p1,p2), Or(p1,p3), Or(p2)))
