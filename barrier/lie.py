@@ -425,15 +425,18 @@ class Sympy2Pysmt(object):
                 raise Exception("Found unkonwn operator in " + str(sympy_expr))
 
         elif (isinstance(sympy_expr, Mul_sympy)):
-            pysmt_args = map(lambda x: self.walk(x), sympy_expr.args)
+            pysmt_args = list(map(lambda x: self.walk(x), sympy_expr.args))
             return Times(pysmt_args)
         elif (isinstance(sympy_expr, Add_sympy)):
-            pysmt_args = map(lambda x: self.walk(x), sympy_expr.args)
+            pysmt_args = list(map(lambda x: self.walk(x), sympy_expr.args))
             return Plus(pysmt_args)
         elif (isinstance(sympy_expr, Pow_sympy)):
-            pysmt_args = map(lambda x: self.walk(x), sympy_expr.args)
+            pysmt_args = list(map(lambda x: self.walk(x), sympy_expr.args))
 
             # 2nd argument from pow must be constant
+
+            print(pysmt_args)
+
             assert (pysmt_args[1].is_constant())
 
             return Pow(pysmt_args[0], pysmt_args[1])

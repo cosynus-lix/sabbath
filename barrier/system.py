@@ -10,6 +10,8 @@ try:
 except ImportError:
     from io import StringIO
 
+from future.utils import iteritems
+
 from functools import reduce
 
 import pysmt
@@ -18,6 +20,7 @@ from pysmt.typing import REAL
 
 from pysmt.shortcuts import *
 from pysmt.shortcuts import *
+
 
 
 class MalformedSystem(Exception):
@@ -33,11 +36,11 @@ class DynSystem(object):
         self._inputs = [i for i in inputs]
         self._disturbances = [d for d in disturbances]
         self._odes = {}
-        for var, ode_expr in odes.iteritems():
+        for var, ode_expr in iteritems(odes):
             self._odes[var] = ode_expr
 
         self._dist_constraints = {}
-        for var, dist_const in dist_constraints.iteritems():
+        for var, dist_const in iteritems(dist_constraints):
             self._dist_constraints[var] = dist_const
 
         if not self.__check_syntax__():
