@@ -5,7 +5,10 @@ We represent an Ordinary Differential Equations with non-linear
 dynamic, transcendental functions, and inputs.
 """
 
-from StringIO import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 from functools import reduce
 
