@@ -20,13 +20,13 @@ from pysmt.shortcuts import (
     Symbol, TRUE, FALSE, get_env,
     Real, Int,
     Not, And, Or, Implies, Iff, Equals,
-    GE
+    GE, GT, LT, LE
 )
 from pysmt.logics import QF_NRA
 
 from barrier.test import TestCase
 from barrier.system import DynSystem
-from barrier.lzz.lzz import is_p_invar
+from barrier.lzz.lzz import is_p_invar, lzz
 
 from barrier.lzz.dnf import DNFConverter
 
@@ -35,6 +35,7 @@ class TestLzz(TestCase):
 
     def test_lzz_pred(self):
         x, y = [Symbol(var, REAL) for var in ["x","y"]]
+        # der(x) = -2y, der(y) = x^2
         dyn_sys = DynSystem([x, y], [], [],
                         {x : -Fraction(2,2) * y, y : x * x},
                         {})
@@ -48,6 +49,23 @@ class TestLzz(TestCase):
 
         solver = Solver(logic=QF_NRA, name="z3")
         is_invar = is_p_invar(solver, p, dyn_sys, init, h)
+
+        self.assertTrue(is_invar)
+
+    def test_lzz(self):
+        x, y = [Symbol(var, REAL) for var in ["x","y"]]
+        # der(x) = -2y, der(y) = x^2
+        dyn_sys = DynSystem([x, y], [], [],
+                        {x : -Fraction(2,2) * y, y : x * x},
+                        {})
+        init = GE(x + y, Real(0))
+
+        # x >= -1 or y > -1/2
+        candidate = Or(GE(x, Real(Fraction(-1,1))),
+                       GT(y, Real(Fraction(-1,2))))
+
+        solver = Solver(logic=QF_NRA, name="z3")
+        is_invar = lzz(solver, candidate, dyn_sys, init, TRUE())
 
         self.assertTrue(is_invar)
 
