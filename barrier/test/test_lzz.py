@@ -138,7 +138,6 @@ class TestLzz(TestCase):
 
         self.assertTrue(is_invar)
 
-
     def test_dnf(self):
         def _test_dnf(forig):
             c = DNFConverter()
