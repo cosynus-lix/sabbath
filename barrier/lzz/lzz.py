@@ -43,12 +43,11 @@ def get_generic_set(poly, dyn_sys, op, sign_mult, rank = None):
     """
     TODO: document, factor the computation of trans_f, \psi+ and \phi+
     """
-
     def get_lie_op_term(lie, op, sign_mult, i):
         if (sign_mult and i % 2 != 0):
             # on odd indexes we switch the sign of lie
             # this is to encode \phi+
-            lie = Minus(lie, Real(0))
+            lie = Minus(Real(0), lie)
         return op(lie, Real(0))
 
     if rank is None:
@@ -75,7 +74,11 @@ def get_generic_set(poly, dyn_sys, op, sign_mult, rank = None):
 
         trans_f_p = Or(trans_f_p, trans_f_p_i)
 
-    return trans_f_p
+    logger = logging.getLogger(__name__)
+    logger.debug("get_generic_set(%s, %s, %s, %d): %s" %
+                 (str(poly), str(op), str(sign_mult), rank, str(trans_f_p.serialize())))
+
+    return trans_f_p.simplify()
 
 def get_trans_f_p(poly, dyn_sys):
     """
@@ -152,11 +155,7 @@ def change_sign(predicate):
                           predicate.args()[0])
     else:
         predicate = Minus(predicate, Real(0))
-    return predicate
-
-def get_inf_lt_pred(dyn_sys, predicate):
-    predicate = change_sign(predicate)
-    return get_generic_set(predicate, dyn_sys, GT, False)
+    return predicate.simplify()
 
 def get_lie_eq_0(dyn_sys, predicate, rank):
     all_eq_0 = TRUE()
@@ -169,14 +168,16 @@ def get_lie_eq_0(dyn_sys, predicate, rank):
             all_eq_0 = And(all_eq_0, Equals(lie_at_i, Real(0)))
     return all_eq_0
 
+def get_inf_lt_pred(dyn_sys, predicate):
+    predicate = change_sign(predicate)
+    return get_generic_set(predicate, dyn_sys, GT, False)
+
 def get_inf_le_pred(dyn_sys, predicate):
     predicate = change_sign(predicate)
-
     rank = get_lie_rank(dyn_sys.states(), predicate, dyn_sys)
     first_disjunct = get_generic_set(predicate, dyn_sys, GT, False, rank)
     all_eq_0 = get_lie_eq_0(dyn_sys, predicate, rank)
     res = Or(first_disjunct, all_eq_0)
-
     return res
 
 def get_ivinf_lt_pred(dyn_sys, predicate):
@@ -184,11 +185,11 @@ def get_ivinf_lt_pred(dyn_sys, predicate):
     return get_generic_set(predicate, dyn_sys, GT, True)
 
 def get_ivinf_le_pred(dyn_sys, predicate):
+    predicate = change_sign(predicate)
     rank = get_lie_rank(dyn_sys.states(), predicate, dyn_sys)
     first_disjunct = get_generic_set(predicate, dyn_sys, GT, True, rank)
     all_eq_0 = get_lie_eq_0(dyn_sys, predicate, rank)
     res = Or(first_disjunct, all_eq_0)
-
     return res
 
 def get_inf_dnf(dyn_sys, formula):

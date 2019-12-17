@@ -26,7 +26,9 @@ from pysmt.logics import QF_NRA
 
 from barrier.test import TestCase
 from barrier.system import DynSystem
-from barrier.lzz.lzz import is_p_invar, lzz
+from barrier.lzz.lzz import (
+    is_p_invar, lzz, get_inf_dnf, get_ivinf_dnf
+)
 
 from barrier.lzz.dnf import DNFConverter
 
@@ -43,6 +45,8 @@ class TestLzz(TestCase):
         init = And(Fraction(-1,1) <= x,
                    x <= Fraction(1,2),
                    Fraction(-1, 2) <= y,
+
+
                    x <= Fraction(-3,5))
         h = GE(-x - y * y, Real(0))
         p = GE(-x * y + y * y, Real(0))
@@ -52,11 +56,62 @@ class TestLzz(TestCase):
 
         self.assertTrue(is_invar)
 
+
+    def _get_sys(self):
+        x, y = [Symbol(var, REAL) for var in ["x","y"]]
+        # der(x) = -2y, der(y) = x^2
+        dyn_sys = DynSystem([x, y], [], [],
+                        {x : -Fraction(2,1) * y, y : x * x},
+                        {})
+
+        return x, y, dyn_sys
+
+
+    def test_inf_pred(self):
+        x,y,dyn_sys = self._get_sys()
+
+        r0 = Real(0)
+        r05 = Fraction(1,2)
+        rm05 = Fraction(-1,2)
+        preds = [x >= -1, y > rm05]
+
+        expected = [Or(Or(x + 1 > r0,
+                          And(Equals(x + 1, r0), -2*y > r0)),
+                        And(Equals(x + 1, r0),
+                            Equals(-2*y, r0))),
+                    Or(y + r05 > r0,
+                       And(Equals(y + r05, r0),
+                           x * x > r0))]
+
+        for pred, res in zip(preds, expected):
+            inf = get_inf_dnf(dyn_sys, pred)
+            self.assertTrue(is_valid(Iff(res, inf)))
+
+    def test_ivinf_pred(self):
+        x,y,dyn_sys = self._get_sys()
+
+        r0 = Real(0)
+        r05 = Fraction(1,2)
+        rm05 = Fraction(-1,2)
+        preds = [x >= -1, y > rm05]
+
+        expected = [Or(Or(x + 1 > r0,
+                          And(Equals(x + 1, r0), 2*y > r0)),
+                        And(Equals(x + 1, r0),
+                            Equals(-2*y, r0))),
+                    Or(y + r05 > r0,
+                       And(Equals(y + r05, r0),
+                           -1 * (x * x) > r0))]
+
+        for pred, res in zip(preds, expected):
+            inf = get_ivinf_dnf(dyn_sys, pred)
+            self.assertTrue(is_valid(Iff(res, inf)))
+
     def test_lzz(self):
         x, y = [Symbol(var, REAL) for var in ["x","y"]]
         # der(x) = -2y, der(y) = x^2
         dyn_sys = DynSystem([x, y], [], [],
-                        {x : -Fraction(2,2) * y, y : x * x},
+                        {x : -Fraction(2,1) * y, y : x * x},
                         {})
         init = GE(x + y, Real(0))
 
