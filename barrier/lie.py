@@ -404,8 +404,6 @@ class Sympy2Pysmt(object):
         self.cache = {}
 
     def walk(self, sympy_expr):
-        print("\nEXRP:%s\n" % str(sympy_expr))
-
         if sympy_expr in self.cache:
             cached = self.cache[sympy_expr]
             return cached
