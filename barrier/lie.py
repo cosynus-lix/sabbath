@@ -4,6 +4,7 @@ Compute the lie derivative of a dynamical system.
 
 from fractions import Fraction
 from functools import reduce
+import logging
 
 from pysmt.shortcuts import (
     Real, Symbol,
@@ -12,7 +13,7 @@ from pysmt.shortcuts import (
 from pysmt.walkers import DagWalker
 from pysmt.typing import REAL
 
-from sympy import diff
+from sympy import diff, sympify
 from sympy import symbols as sympy_symbols
 
 from sympy import (
@@ -26,7 +27,6 @@ from sympy import (
     Rational as Rational_sympy,
     Integer as Integer_sympy,
 )
-
 
 from sympy import groebner
 from sympy.polys.polytools import reduced
@@ -49,9 +49,12 @@ def get_lie(expr, dyn_sys):
 def get_lie_rank(self, expr, dyn_sys):
     """ Get the rank of expr and the vector field of dyn_sys
     """
+    logger = logging.getLogger(__name__)
 
     der = Derivator()
     rank = der.get_lie_rank(dyn_sys.states(), expr, dyn_sys.get_odes())
+
+    logger.debug("get_lie_rank(%s): %d" % (str(expr), rank))
 
     return rank
 
@@ -190,10 +193,10 @@ class Pysmt2Sympy(DagWalker):
         return sympy_symbol
 
     def walk_real_constant(self, formula, args, **kwargs):
-        return formula.constant_value()
+        return sympify(formula.constant_value())
 
     def walk_int_constant(self, formula, args, **kwargs):
-        return formula.constant_value()
+        return sympify(formula.constant_value())
 
     def walk_plus(self, formula, args, **kwargs):
         assert len(args) > 0
@@ -401,6 +404,8 @@ class Sympy2Pysmt(object):
         self.cache = {}
 
     def walk(self, sympy_expr):
+        print("\nEXRP:%s\n" % str(sympy_expr))
+
         if sympy_expr in self.cache:
             cached = self.cache[sympy_expr]
             return cached
@@ -423,7 +428,8 @@ class Sympy2Pysmt(object):
                 return Int(sympy_expr.p)
             else:
                 raise Exception("Found unkonwn operator in " + str(sympy_expr))
-
+        elif (isinstance(sympy_expr, Fraction)):
+            return Real(sympy_expr)
         elif (isinstance(sympy_expr, Mul_sympy)):
             pysmt_args = list(map(lambda x: self.walk(x), sympy_expr.args))
             return Times(pysmt_args)
@@ -437,8 +443,6 @@ class Sympy2Pysmt(object):
             assert (pysmt_args[1].is_constant())
 
             return Pow(pysmt_args[0], pysmt_args[1])
-        elif (isinstance(sympy_expr, Fraction)):
-            return Real(sympy_expr)
         else:
             raise Exception("Found unkonwn operator (%s) in %s" % (type(sympy_expr),
                                                                    str(sympy_expr)))
