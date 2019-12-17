@@ -36,8 +36,6 @@ class BddDNFSimplifier(BddSimplifier):
 
                 abs_res = FALSE()
                 for cube in repycudd.ForeachCubeIterator(m, bdd_formula):
-                    print(repycudd.cube_tuple_to_str(cube))
-
                     bdd_cube = TRUE()
 
                     i = -1
