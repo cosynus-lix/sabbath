@@ -28,7 +28,8 @@ class MalformedSystem(Exception):
 
 class DynSystem(object):
 
-    def __init__(self, states, inputs, disturbances, odes, dist_constraints):
+    def __init__(self, states, inputs, disturbances, odes,
+                 dist_constraints, check_malformed = True):
         # The dynamical system should not change after initialization.
         # So, no side effect on it.
 
@@ -43,7 +44,7 @@ class DynSystem(object):
         for var, dist_const in iteritems(dist_constraints):
             self._dist_constraints[var] = dist_const
 
-        if not self.__check_syntax__():
+        if (check_malformed and not self.__check_syntax__()):
             raise MalformedSystem
 
     def __repr__(self):

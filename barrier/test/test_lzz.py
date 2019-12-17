@@ -124,6 +124,20 @@ class TestLzz(TestCase):
 
         self.assertTrue(is_invar)
 
+    def test_lzz_2(self):
+        s, v, a, vseg = [Symbol(var, REAL) for var in ["s", "v", "a", "v_seg"]]
+        # der(s) = v, der(v) = a
+        dyn_sys = DynSystem([s, v], [], [], {s : v, v : a}, {}, False)
+
+        init = v < vseg
+        inv = v < vseg
+        candidate = inv
+
+        solver = Solver(logic=QF_NRA, name="z3")
+        is_invar = lzz(solver, candidate, dyn_sys, init, TRUE())
+
+        self.assertTrue(is_invar)
+
 
     def test_dnf(self):
         def _test_dnf(forig):
