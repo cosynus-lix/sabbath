@@ -62,20 +62,41 @@ class TestLie(TestCase):
     def test_lie(self):
         x1, x2, x3 = [Symbol("x%s" % (i+1), REAL) for i in range(3)]
 
-        sys = DynSystem([x1, x2], [], [],
-                        {
+        sys1 = DynSystem([x1, x2], [], [],
+                         {
                             x1 :  -x2,
                             x2 : x1
-                        },
-                        {})
+                         },
+                         {})
+
+        sys2 = DynSystem([x1, x2], [], [],
+                         {
+                            x1 :  -Fraction(2,1) * x2,
+                            x2 : x1
+                         },
+                         {})
 
         # TODO: add more test cases
-        exprs = [(x1 + 3 * x2, (- (x2)) + 3 * x1)]
+        exprs = [
+            (sys1, x1 + 3 * x2, (- (x2)) + 3 * x1),
+            (sys2, x1 + 1, Real(Fraction(-2,1)) * x2)
+        ]
 
-        for (expr, expected_lie) in exprs:
+        for (sys, expr, expected_lie) in exprs:
             lie = get_lie(expr, sys)
             eq = Equals(lie, expected_lie)
             same = is_valid(eq)
             self.assertTrue(same)
 
 
+    def test_rank(self):
+        x, y = [Symbol(var, REAL) for var in ["x","y"]]
+
+        vars_list = [x,y]
+        expr = - x * y + y * y
+        vector_field = {x : -Fraction(2,2) * y, y : x * x}
+
+        der = Derivator()
+        rank = der.get_lie_rank(vars_list, expr, vector_field)
+
+        self.assertTrue(rank == 2)

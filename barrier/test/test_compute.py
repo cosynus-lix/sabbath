@@ -101,6 +101,7 @@ class TestBarrier(TestCase):
         self.assertTrue(is_barrier(sys, init, safe, gen_barrier))
 
 
+    @unittest.skip("reason for skipping")
     def test_barrier_generator_2(self):
        
         x1, x2 = [Symbol("x%s" % (i+1), REAL) for i in range(2)]

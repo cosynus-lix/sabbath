@@ -5,7 +5,12 @@ We represent an Ordinary Differential Equations with non-linear
 dynamic, transcendental functions, and inputs.
 """
 
-from StringIO import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
+from future.utils import iteritems
 
 from functools import reduce
 
@@ -17,12 +22,14 @@ from pysmt.shortcuts import *
 from pysmt.shortcuts import *
 
 
+
 class MalformedSystem(Exception):
     pass
 
 class DynSystem(object):
 
-    def __init__(self, states, inputs, disturbances, odes, dist_constraints):
+    def __init__(self, states, inputs, disturbances, odes,
+                 dist_constraints, check_malformed = True):
         # The dynamical system should not change after initialization.
         # So, no side effect on it.
 
@@ -30,14 +37,14 @@ class DynSystem(object):
         self._inputs = [i for i in inputs]
         self._disturbances = [d for d in disturbances]
         self._odes = {}
-        for var, ode_expr in odes.iteritems():
+        for var, ode_expr in iteritems(odes):
             self._odes[var] = ode_expr
 
         self._dist_constraints = {}
-        for var, dist_const in dist_constraints.iteritems():
+        for var, dist_const in iteritems(dist_constraints):
             self._dist_constraints[var] = dist_const
 
-        if not self.__check_syntax__():
+        if (check_malformed and not self.__check_syntax__()):
             raise MalformedSystem
 
     def __repr__(self):
@@ -93,6 +100,12 @@ class DynSystem(object):
             raise Exeption("Not a state var!")
         else:
             return self._odes[var]
+
+    def get_odes(self):
+        odes = {}
+        for x in self._states:
+            odes[x] = self._odes[x]
+        return odes
 
     # TODO: add logging to the function
     def __check_syntax__(self):

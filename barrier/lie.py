@@ -4,6 +4,7 @@ Compute the lie derivative of a dynamical system.
 
 from fractions import Fraction
 from functools import reduce
+import logging
 
 from pysmt.shortcuts import (
     Real, Symbol,
@@ -12,7 +13,7 @@ from pysmt.shortcuts import (
 from pysmt.walkers import DagWalker
 from pysmt.typing import REAL
 
-from sympy import diff
+from sympy import diff, sympify
 from sympy import symbols as sympy_symbols
 
 from sympy import (
@@ -24,8 +25,11 @@ from sympy import (
     Add as Add_sympy,
     Pow as Pow_sympy,
     Rational as Rational_sympy,
-    Integer as Integer_sympy
+    Integer as Integer_sympy,
 )
+
+from sympy import groebner
+from sympy.polys.polytools import reduced
 
 from barrier.system import DynSystem
 
@@ -36,14 +40,23 @@ def get_lie(expr, dyn_sys):
 
     Returns an expression representing the lie derivative.
     """
-    lie_der = None
+
     der = Derivator()
-    for var in dyn_sys.states():
-        lie_var = der._get_lie_var(expr, dyn_sys, var)
-        lie_der = lie_var if lie_der is None else lie_der + lie_var
+    lie_der = der.get_lie_der(dyn_sys.states(), expr, dyn_sys.get_odes())
+
     return lie_der
 
+def get_lie_rank(self, expr, dyn_sys):
+    """ Get the rank of expr and the vector field of dyn_sys
+    """
+    logger = logging.getLogger(__name__)
 
+    der = Derivator()
+    rank = der.get_lie_rank(dyn_sys.states(), expr, dyn_sys.get_odes())
+
+    logger.debug("get_lie_rank(%s): %d" % (str(expr), rank))
+
+    return rank
 
 class Derivator(object):
     """
@@ -76,6 +89,93 @@ class Derivator(object):
 
         return pysmt_lie
 
+    def _get_lie_der(self, vars_list, expr, vector_field):
+        """
+        Actual computation of the Lie derivative in SyPy
+        """
+        lie_der = 0
+
+        for var in vars_list:
+            lie_var = Mul_sympy(diff(expr, var), vector_field[var])
+            lie_der = Add_sympy(lie_der, lie_var)
+
+        return lie_der
+
+    def _get_sympy_problem(self, vars_list, expr, vector_field):
+        _vector_field = {}
+        _vars_list = []
+        for var in vars_list:
+            _var = self._get_sympy_expr(var)
+            _vars_list.append(_var)
+            _vector_field[_var] = self._get_sympy_expr(vector_field[var])
+        _expr = self._get_sympy_expr(expr)
+
+        return (_vars_list, _expr, _vector_field)
+
+    def get_lie_der(self, vars_list, expr, vector_field):
+        """
+        Takes as input a set of (pysmt) variables, an (pysmt) expression of a
+        predicate, and dynamical_system.
+        """
+
+        (_vars_list, _expr, _vector_field) = self._get_sympy_problem(vars_list, expr, vector_field)
+
+        # Compute the Lie derivative in SymPy
+        _lie_der = self._get_lie_der(_vars_list, _expr, _vector_field)
+        lie_der = self._get_pysmt_expr(_lie_der)
+
+        return lie_der
+
+    def get_lie_rank(self, vars_list, expr, vector_field):
+        """
+        Compute the rank of the expression p and the vector field f.
+
+        The rank is defined in the paper:
+
+        Computing Semi-algebraic Invariants for Polynomial Dynamical Systems
+        Liu, Zhan, Zhao, EMSOFT11
+
+        The computation finds the N such that Lp,f^{N+1} is in the ideal <Lp,f^0, Lp,f^1, ..., Lp,f^{N}>
+        (where p is the polynomial expression, and Lp,f(i) is the i-th Lie derivative of p wrt f.
+
+        Note that such N exists, due to the ascending chain condition of ideals.
+        """
+
+        def _get_lie_rank(vars_list, expr, vector_field):
+            """
+            Implement the algorithm directly in sympy.x
+            """
+            n = -1
+            lie_n = expr
+            lies = [expr]
+
+            fix_point = False
+
+            while (not fix_point):
+                n = n + 1
+
+                bases = groebner(lies, vars_list, order='lex')
+
+                lie_n = self._get_lie_der(vars_list, lie_n, vector_field)
+
+                _, f = reduced(lie_n, bases, wrt=vars_list)
+
+                fix_point = True
+                for var in vars_list:
+                    if (f.has(var)):
+                        # Cannot write lie_n with the bases!
+                        fix_point = False
+                        lies.append(lie_n)
+                        break
+
+            return n
+
+        (_vars_list, _expr, _vector_field) = self._get_sympy_problem(vars_list, expr, vector_field)
+
+        rank = _get_lie_rank(_vars_list, _expr, _vector_field)
+
+        return rank
+
 
 class Pysmt2Sympy(DagWalker):
     def __init__(self, env=None, invalidate_memoization=None):
@@ -93,10 +193,10 @@ class Pysmt2Sympy(DagWalker):
         return sympy_symbol
 
     def walk_real_constant(self, formula, args, **kwargs):
-        return formula.constant_value()
+        return sympify(formula.constant_value())
 
     def walk_int_constant(self, formula, args, **kwargs):
-        return formula.constant_value()
+        return sympify(formula.constant_value())
 
     def walk_plus(self, formula, args, **kwargs):
         assert len(args) > 0
@@ -326,22 +426,21 @@ class Sympy2Pysmt(object):
                 return Int(sympy_expr.p)
             else:
                 raise Exception("Found unkonwn operator in " + str(sympy_expr))
-
+        elif (isinstance(sympy_expr, Fraction)):
+            return Real(sympy_expr)
         elif (isinstance(sympy_expr, Mul_sympy)):
-            pysmt_args = map(lambda x: self.walk(x), sympy_expr.args)
+            pysmt_args = list(map(lambda x: self.walk(x), sympy_expr.args))
             return Times(pysmt_args)
         elif (isinstance(sympy_expr, Add_sympy)):
-            pysmt_args = map(lambda x: self.walk(x), sympy_expr.args)
+            pysmt_args = list(map(lambda x: self.walk(x), sympy_expr.args))
             return Plus(pysmt_args)
         elif (isinstance(sympy_expr, Pow_sympy)):
-            pysmt_args = map(lambda x: self.walk(x), sympy_expr.args)
+            pysmt_args = list(map(lambda x: self.walk(x), sympy_expr.args))
 
             # 2nd argument from pow must be constant
             assert (pysmt_args[1].is_constant())
 
             return Pow(pysmt_args[0], pysmt_args[1])
-        elif (isinstance(sympy_expr, Fraction)):
-            return Real(sympy_expr)
         else:
             raise Exception("Found unkonwn operator (%s) in %s" % (type(sympy_expr),
                                                                    str(sympy_expr)))

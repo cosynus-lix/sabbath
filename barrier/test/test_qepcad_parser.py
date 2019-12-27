@@ -13,7 +13,10 @@ from barrier.test import TestCase
 from ply.lex import LexToken
 import ply.yacc as yacc
 
-from cStringIO import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 from barrier.qepcad.lex import lexer, reset
 from barrier.qepcad.parser import qepcad_parser
