@@ -49,12 +49,11 @@ def get_lie(expr, dyn_sys):
 def get_lie_rank(self, expr, dyn_sys):
     """ Get the rank of expr and the vector field of dyn_sys
     """
-    logger = logging.getLogger(__name__)
-
     der = Derivator()
     rank = der.get_lie_rank(dyn_sys.states(), expr, dyn_sys.get_odes())
 
-    logger.debug("get_lie_rank(%s): %d" % (str(expr), rank))
+    # logger = logging.getLogger(__name__)
+    # logger.debug("get_lie_rank(%s): %d" % (str(expr), rank))
 
     return rank
 

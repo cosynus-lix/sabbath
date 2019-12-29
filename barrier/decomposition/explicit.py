@@ -7,27 +7,32 @@ FM2016
 
 """
 
-import barrier.lzz
+import logging
+
+from barrier.lzz.lzz import lzz
 from barrier.system import DynSystem
 
+from pysmt.logics import QF_NRA
 from pysmt.shortcuts import (
     Solver,
-    Implies, And, Not,
+    Implies, And, Not, Or,
     LT, Equals,
     Real
 )
 
-from pysmt.logics import QF_NRA
 
-def get_solver():
+
+def _get_logger():
+    return logging.getLogger(__name__)
+
+def _get_solver():
     solver = Solver(logic=QF_NRA, name="z3")
     return solver
 
-def abstract(solver, polynomials, model):
+def abstract(solver, polynomials, sigma):
     """ Compute the abstract state for model """
 
     abs_preds = []
-    sigma = {v: model[v] for v in dyn_sys.states}
 
     for a in polynomials:
         for (sign, first) in [(LT,True), (LT,False), (Equals,True)]:
@@ -41,10 +46,16 @@ def abstract(solver, polynomials, model):
 
     return abs_state
 
-def get_neighbors(polynomials, abs_state):
+def _get_neighbors(polynomials, abs_state):
+
     """ Get the neighbors of abs_state """
-    def _get_neighbors_rec(polynomials, index, abs_state, res):
+    def _get_neighbors_rec(signs,
+                           polynomials, index,
+                           abs_state,
+                           trail, res):
         if index == len(polynomials):
+            assert(len(trail) == len(polynomials))
+            res.add(frozenset(trail))
             return res
         else:
             a = polynomials[index]
@@ -56,33 +67,76 @@ def get_neighbors(polynomials, abs_state):
                     break
 
             assert not pair is None
+            assert not predicate is None
 
-            if sign == LT:
+            if sign == LT and sign in signs:
                 # < -> {=}
-                res.append(Equals(a, Real(0)))
-                return _get_neighbors_rec(polynomials,
+                new_trail = set(trail)
+                new_trail.add(Equals(a, Real(0)))
+                trail.add(predicate)
+
+                return _get_neighbors_rec(signs, # do not change predicates
+                                          polynomials,
                                           index+1,
                                           abs_state,
-                                          res)
-            else:
+                                          new_trail,
+                                          _get_neighbors_rec(signs,
+                                                             polynomials,
+                                                             index+1,
+                                                             abs_state,
+                                                             trail,
+                                                             res))
+            elif sign == Equals and sign in signs:
                 # = -> {<, >}
-                res.append(LT(a, Real(0)))
-                res.append(LT(Real(0), a))
-                return _get_neighbors_rec(polynomials,
+                new_trail = set(trail)
+                new_new_trail = set(trail)
+
+                trail.add(predicate)
+                new_trail.add(LT(a, Real(0)))
+                new_new_trail.add(LT(Real(0), a))
+
+                return _get_neighbors_rec(signs,
+                                          polynomials,
                                           index+1,
                                           abs_state,
+                                          new_new_trail,
+                                          _get_neighbors_rec(signs,
+                                                             polynomials,
+                                                             index+1,
+                                                             abs_state,
+                                                             new_trail,
+                                                             _get_neighbors_rec(signs,
+                                                                                polynomials,
+                                                                                index+1,
+                                                                                abs_state,
+                                                                                trail,
+                                                                                res)))
+            else:
+                trail.add(predicate)
+                return _get_neighbors_rec(signs,
+                                          polynomials,
+                                          index + 1,
+                                          abs_state,
+                                          trail,
                                           res)
-    res = _get_neighbors_rec(polynomials, 0, abs_state, [])
-    return res
+
+
+    res_lt = _get_neighbors_rec({LT}, polynomials, 0, abs_state, set(), set())
+    res_eq = _get_neighbors_rec({Equals}, polynomials, 0, abs_state, set(), set())
+    res_lt.update(res_eq)
+    res_lt.remove(abs_state)
+    return res_lt
 
 def get_invar_lazy(dyn_sys, invar,
                    polynomials,
                    init, safe,
-                   get_solver = get_solver):
+                   get_solver = _get_solver):
     """
     Implement the LazyReach invariant computation using semi-algebraic
     decomposition.
     """
+
+    _get_logger().info("get_invar_lazy")
 
     # Set of abstract states reachable from init under invar.
     abs_visited = set()
@@ -95,28 +149,42 @@ def get_invar_lazy(dyn_sys, invar,
     invar_solver = get_solver()
     invar_solver.add_assertion(invar)
 
+    _get_logger().info(init_solver.solve())
+
     to_visit = list()
     while (init_solver.solve()):
-        init_abs_state = abstract(get_solver(), polynomials, init_init_solver.get_model())
+        model = init_solver.get_model()
+        sigma = {v: model[v] for v in dyn_sys.states()}
+        init_abs_state = abstract(get_solver(), polynomials,
+                                  sigma)
+
         init_solver.add_assertion(Not(And(init_abs_state)))
 
         if not init_abs_state in abs_visited:
-            to_visit.push(init_abs_state)
+            to_visit.append(init_abs_state)
 
         while 0 < len(to_visit):
             abs_state = to_visit.pop()
+
             if abs_state in abs_visited:
                 continue
+
+            _get_logger().info("Visiting abs state: %s" %
+                               " ".join([s.serialize() for s in abs_state]))
             abs_visited.add(abs_state)
 
             # Visit all the neighbors of abs_state
-            for neigh in get_neighbors(polynomials, abs_state):
+            for neigh in _get_neighbors(polynomials, abs_state):
                 if neigh in abs_visited:
                     continue
 
                 # Check if neigh has some intersection with invariant
-                if not invar_solver.solve(And(abs_state)):
+                invar_solver.push()
+                invar_solver.add_assertion(And(abs_state))
+                if not invar_solver.solve():
+                    invar_solver.pop()
                     continue
+                invar_solver.pop()
 
                 lzz_solver = get_solver()
                 is_invar = lzz(lzz_solver, And(abs_state), dyn_sys,
@@ -124,6 +192,9 @@ def get_invar_lazy(dyn_sys, invar,
                                Or(And(abs_state), And(neigh)))
 
                 if (not is_invar):
+                    _get_logger().info("New trans from %s to %s" %
+                                       (" ".join([s.serialize() for s in abs_state]),
+                                        " ".join([s.serialize() for s in neigh])))
                     to_visit.append(neigh)
 
     return abs_visited

@@ -74,9 +74,9 @@ def get_generic_set(poly, dyn_sys, op, sign_mult, rank = None):
 
         trans_f_p = Or(trans_f_p, trans_f_p_i)
 
-    logger = logging.getLogger(__name__)
-    logger.debug("get_generic_set(%s, %s, %s, %d): %s" %
-                 (str(poly), str(op), str(sign_mult), rank, str(trans_f_p.serialize())))
+    # logger = logging.getLogger(__name__)
+    # logger.debug("get_generic_set(%s, %s, %s, %d): %s" %
+    #              (str(poly), str(op), str(sign_mult), rank, str(trans_f_p.serialize())))
 
     return trans_f_p.simplify()
 
@@ -138,13 +138,13 @@ def is_p_invar(solver, predicate, dyn_sys, init, invar):
         if solver.is_valid(Implies(on_border, inside)):
             return True
         else:
-            logger.debug("%s is not an invariant (consecution "
-                         "condition failed)" % predicate)
+            # logger.debug("%s is not an invariant (consecution "
+            #              "condition failed)" % predicate)
 
             return False
     else:
-        logger.debug("%s is not an invariant (initial "
-                     "condition failed)" % predicate)
+        # logger.debug("%s is not an invariant (initial "
+        #              "condition failed)" % predicate)
         return False
 
 
