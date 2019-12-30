@@ -165,8 +165,8 @@ def get_invar_lazy(dyn_sys, invar,
     safe_solver.add_assertion(Not(safe))
 
     if solve(safe_solver, init):
-        logger.info("Unsafe!")
-        return {}
+        logger.info("Init unsafe!")
+        return set()
     # Here all the initial states are safe
 
     to_visit = list()
@@ -217,7 +217,7 @@ def get_invar_lazy(dyn_sys, invar,
 
                     if solve(safe_solver, And(neigh)):
                         logger.info("Unsafe!")
-                        return {}
+                        return set()
 
 
     return abs_visited

@@ -98,6 +98,7 @@ class TestDecomposition(TestCase):
         return (dyn_sys, TRUE(),[x,y], init, safe,
                 expected_invar)
 
+
     def get_test_case_2(self):
         x, y = [Symbol(var, REAL) for var in ["x", "y"]]
         dyn_sys = DynSystem([x, y], [], [],
@@ -118,6 +119,13 @@ class TestDecomposition(TestCase):
         return (dyn_sys, TRUE(),[x,y], init, safe,
                 expected_invar)
 
+    def get_test_case_3(self):
+        x, y = [Symbol(var, REAL) for var in ["x", "y"]]
+        dyn_sys = DynSystem([x, y], [], [], {x : -y, y : -x}, {}, False)
+        r0 = Real(0)
+        init = get_range_from_int([x, y], [(-2,-1), (-2,-1)])
+        safe = Not(And(Equals(x,r0),y<r0))
+        return (dyn_sys, TRUE(),[x,y], init, safe,[])
 
     def test_invar_lazy(self):
         def eq_sets(got, expected):
@@ -139,7 +147,8 @@ class TestDecomposition(TestCase):
             return same
 
         test_cases = [self.get_test_case_1(),
-                      self.get_test_case_2()]
+                      self.get_test_case_2(),
+                      self.get_test_case_3()]
 
         for t in test_cases:
             (dyn_sys, invar, poly, init, safe, expected) = t
