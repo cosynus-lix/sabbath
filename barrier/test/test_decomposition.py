@@ -49,28 +49,28 @@ class TestDecomposition(TestCase):
 
         tc = [
             # (x<0,y<0) -> [(x=0,y=0),(x<0,y=0),(x=0,y<0)]
-            ({LT(x, r0), LT(y, r0)},
+            ({x<r0, y<r0},
              [{Equals(x, r0), Equals(y, r0)},
-              {LT(x, r0), Equals(y, r0)},
-              {Equals(x, r0), LT(y, r0)}]),
+              {x<r0, Equals(y, r0)},
+              {Equals(x, r0), y<r0}]),
             # (x=0,y=0) -> [(x<0,y<0),(x<0,y=0),(x<0,y>0),
             #               (x>0,y<0),(x>0,y=0),(x>0,y>0),
             #               (x=0,y<0),(x=0,y>0)]
             ({Equals(x, r0), Equals(y, r0)},
-             [{LT(x,r0),LT(y,r0)},
-              {LT(x,r0),Equals(y,r0)},
-              {LT(x,r0),LT(r0,y)},
-              {LT(r0,x),LT(y,r0)},
-              {LT(r0,x),Equals(y,r0)},
-              {LT(r0,x),LT(r0,y)},
-              {Equals(x,r0), LT(y,r0)},
-              {Equals(x,r0),LT(r0,y)},
+             [{x<r0,y<r0},
+              {x<r0,Equals(y,r0)},
+              {x<r0,r0<y},
+              {r0<x,y<r0},
+              {r0<x,Equals(y,r0)},
+              {r0<x,r0<y},
+              {Equals(x,r0), y<r0},
+              {Equals(x,r0),r0<y},
              ]),
             # (x=0,y<0) -> [(x=0,y=0),(x<0,y<0),(x>0,y<0)]
-            ({Equals(x, r0), LT(y, r0)},
+            ({Equals(x, r0), y<r0},
              [{Equals(x, r0), Equals(y, r0)},
-              {LT(x, r0), LT(y, r0)},
-              {LT(r0, x), LT(y, r0)}]),
+              {x<r0, y<r0},
+              {r0<x, y<r0}]),
         ]
 
         for (abs_state, neighbors) in tc:
@@ -99,11 +99,11 @@ class TestDecomposition(TestCase):
         invars = get_invar_lazy(dyn_sys, TRUE(), [y, x],
                                 init, safe)
 
-        expected_invar = set([frozenset({LT(x,r0),LT(y,r0)}),
-                              frozenset({LT(x,r0),Equals(y,r0)}),
-                              frozenset({LT(x,r0),LT(r0,y)}),
-                              frozenset({Equals(x,r0),LT(y,r0)}),
-                              frozenset({LT(r0,x),LT(y,r0)})])
+        expected_invar = set([frozenset({x<r0,y<r0}),
+                              frozenset({x<r0,Equals(y,r0)}),
+                              frozenset({x<r0,r0<y}),
+                              frozenset({Equals(x,r0),y<r0}),
+                              frozenset({r0<x,y<r0})])
 
         # print("RESULT:")
         # for abs_state in invars:
