@@ -13,6 +13,7 @@ We implement the algorithms:
 
 import logging
 
+from barrier.system import DynSystem
 from barrier.lzz.lzz import lzz
 from barrier.system import DynSystem
 
@@ -270,7 +271,7 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
                                    pred, invar)
                     if (is_invar):
                         new_polynomials = list(polynomials)
-                        new_polynomials.remove(poly)
+                        new_polynomials.remove(a)
                         return dwc(dyn_sys, And(invar, pred),
                                    new_polynomials,
                                    init, safe, get_solver)
@@ -281,12 +282,12 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
 
             is_invar = lzz(lzz_solver, eq_0, dyn_sys, eq_0, invar)
             if is_invar:
-                inv_dyn_sys = dyn_sys.get_inverse()
+                inv_dyn_sys = DynSystem.get_inverse(dyn_sys)
                 is_invar = lzz(lzz_solver, eq_0, inv_dyn_sys, eq_0, invar)
 
                 if (is_invar):
                     new_polynomials = list(polynomials)
-                    new_polynomials.remove(poly)
+                    new_polynomials.remove(a)
 
                     res = FALSE()
                     for pred in preds:

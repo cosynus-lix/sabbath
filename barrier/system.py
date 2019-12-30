@@ -88,11 +88,11 @@ class DynSystem(object):
 
         inverse_odes = {}
         for var, ode_expr in iteritems(self._odes):
-            inverse_odes[var] = Minus(ode_expr)
+            inverse_odes[var] = Minus(Real(0), ode_expr)
 
         inverse = DynSystem(self._states,
                             self._inputs,
-                            self.disturbances,
+                            self._disturbances,
                             inverse_odes,
                             self._dist_constraints,
                             False)

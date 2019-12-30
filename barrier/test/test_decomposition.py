@@ -155,31 +155,76 @@ class TestDecomposition(TestCase):
         safe = Not(And(Equals(x,r0),y<r0))
         return (dyn_sys, TRUE(),[x,y], init, safe,[])
 
+    def get_test_case_4(self):
+        def _pow(var, degree):
+            res = Real(1)
+            for i in range(degree-1):
+                res = var * res
+            return res
+
+        x1, x2 = [Symbol(var, REAL) for var in ["x1", "x2"]]
+
+        fx1 = 2 * x1 * (x1*x1 - 3) * (4*x1*x1 - 3) * (x1*x1 + 21*x2*x2 - 12)
+        f2_rh = (35*_pow(x1,6) +
+                 105*_pow(x2,2)*_pow(x1,4) +
+                 (-315)*_pow(x1,4) +
+                 (-63)*_pow(x2,4)*_pow(x1,2) +
+                 378*_pow(x1,2)+
+                 27*_pow(x2,6)+
+                 (-189)*_pow(x2,4)+
+                 378*_pow(x2,2)-
+                 216)
+        fx2 = x2 * f2_rh
+
+        dyn_sys = DynSystem([x1, x2], [], [],
+                            {x1 : fx1, x2 : fx2},
+                            {}, False)
+        r0 = Real(0)
+        init = _pow(x1 - 1,2) + _pow(x2,2) < Real(Fraction(1,4))
+        safe = _pow(x1,2) + _pow(x2,2) < 8
+
+        polynomials = [x1,
+                       _pow(x1,2)-3,
+                       4*_pow(x1,2)-3,
+                       x2,
+                       _pow(x1,2) + _pow(x2,2) - 8,
+                       _pow(x1,2) + 21*_pow(x2,2)-12,
+                       f2_rh]
+
+        return (dyn_sys, TRUE(),[x1,x2], init, safe, FALSE())
+
 
 
     def test_invar_lazy(self):
-        test_cases_all = [self.get_test_case_1(),
-                          self.get_test_case_2(),
-                          self.get_test_case_3()]
+        test_cases = [self.get_test_case_1(),
+                      self.get_test_case_2(),
+                      self.get_test_case_3()]
 
-        test_cases_dwcl = list(test_cases_all) + [
-            self.get_test_case_3()]
-
-        for t in test_cases_all:
+        for t in test_cases:
             (dyn_sys, invar, poly, init, safe, expected) = t
 
             invars = get_invar_lazy_set(dyn_sys, invar, poly, init, safe)
             self.assertTrue(self._eq_sets(invars,expected))
 
-        for t in test_cases_all:
+        for t in test_cases:
             (dyn_sys, invar, poly, init, safe, expected) = t
 
             invars = get_invar_lazy(dyn_sys, invar, poly, init, safe)
             self.assertTrue(self._eq_wformula(invars,expected))
 
-        for t in test_cases_dwcl:
+        for t in test_cases:
             (dyn_sys, invar, poly, init, safe, expected) = t
 
             invars = dwcl(dyn_sys, invar, poly, init, safe)
             self.assertTrue(self._eq_wformula(invars,expected))
 
+
+    def test_invar_dwcl(self):
+        test_cases = [self.get_test_case_4()]
+
+        for t in test_cases:
+            (dyn_sys, invar, poly, init, safe, expected) = t
+
+            invars = dwcl(dyn_sys, invar, poly, init, safe)
+            self.assertTrue(_get_solver().is_valid(Iff(invars,
+                                                       expected)))
