@@ -20,6 +20,7 @@ from pysmt.logics import QF_NRA
 from pysmt.shortcuts import (
     Solver,
     Implies, And, Not, Or,
+    FALSE,
     LT, Equals,
     Real
 )
@@ -131,10 +132,10 @@ def _get_neighbors(polynomials, abs_state):
     res_lt.remove(abs_state)
     return res_lt
 
-def get_invar_lazy(dyn_sys, invar,
-                   polynomials,
-                   init, safe,
-                   get_solver = _get_solver):
+def get_invar_lazy_set(dyn_sys, invar,
+                       polynomials,
+                       init, safe,
+                       get_solver = _get_solver):
     """
     Implement the LazyReach invariant computation using semi-algebraic
     decomposition.
@@ -218,18 +219,96 @@ def get_invar_lazy(dyn_sys, invar,
                     if solve(safe_solver, And(neigh)):
                         logger.info("Unsafe!")
                         return set()
-
-
     return abs_visited
 
-# def dwc(dyn_sys, invar,
-#         polynomials,
-#         init, safe,
-#         get_solver = _get_solver):
-#     """
-#     Implement the Differential Weakening Cut algorithm
-#     """
+def _set_to_formula(abs_state_set):
+    formula = FALSE()
+    for s in abs_state_set:
+        formula = Or(formula, And(s))
+    return formula
 
-#     if (invar and init -> False):
-#         return {} # False, an empty invariant set
-#     elif (H implies safe)
+def get_invar_lazy(dyn_sys, invar,
+                   polynomials,
+                   init, safe,
+                   get_solver = _get_solver):
+    reach = get_invar_lazy_set(dyn_sys, invar,
+                               polynomials,
+                               init, safe,
+                               get_solver)
+    return _set_to_formula(reach)
+
+
+def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
+                get_solver = _get_solver):
+    """
+    Implement the Differential Weakening Cut algorithm
+
+    Returns a formula representing an invariant
+    """
+
+    logger = _get_logger()
+
+    r0 = Real(0)
+
+    solver = get_solver()
+    if (solver.is_unsat(And(invar, init))):
+        logger.info("Init outside invariant!")
+        return FALSE()
+    elif (solver.is_valid(Implies(invar, safe))):
+        # DW - Differential Weakening
+        logger.info("invar -> safe, trivial")
+        return invar
+    else:
+        lzz_solver = get_solver()
+        rt0 = Real(0)
+
+        for a in polynomials:
+            preds = {LT(rt0,a), LT(a,rt0), Equals(a,rt0)}
+            for pred in preds:
+                if solver.is_valid(Implies(And(invar, init), pred)):
+                    is_invar = lzz(lzz_solver, pred, dyn_sys,
+                                   pred, invar)
+                    if (is_invar):
+                        new_polynomials = list(polynomials)
+                        new_polynomials.remove(poly)
+                        return dwc(dyn_sys, And(invar, pred),
+                                   new_polynomials,
+                                   init, safe, get_solver)
+
+        for a in polynomials:
+            preds = {LT(rt0,a), LT(a,rt0), Equals(a,rt0)}
+            eq_0 = Equals(a,rt0)
+
+            is_invar = lzz(lzz_solver, eq_0, dyn_sys, eq_0, invar)
+            if is_invar:
+                inv_dyn_sys = dyn_sys.get_inverse()
+                is_invar = lzz(lzz_solver, eq_0, inv_dyn_sys, eq_0, invar)
+
+                if (is_invar):
+                    new_polynomials = list(polynomials)
+                    new_polynomials.remove(poly)
+
+                    res = FALSE()
+                    for pred in preds:
+                        pred_res = dwc(dyn_sys, And(invar, pred),
+                                       new_polynomials,
+                                       And(init, pred), safe, get_solver)
+                        res = Or(res, pred_res)
+                    return res
+
+        if not dwcl:
+            return invar
+        else:
+            return get_invar_lazy(dyn_sys, invar,
+                                  polynomials,
+                                  init, safe,
+                                  get_solver)
+
+
+def dwc(dyn_sys, invar, polynomials, init, safe,
+        get_solver = _get_solver):
+    return dwc_general(False, dyn_sys, invar, polynomials, init, safe, get_solver)
+
+def dwcl(dyn_sys, invar, polynomials, init, safe,
+         get_solver = _get_solver):
+    return dwc_general(True, dyn_sys, invar, polynomials, init, safe, get_solver)

@@ -29,12 +29,39 @@ from barrier.system import DynSystem
 from barrier.utils import get_range_from_int
 
 from barrier.decomposition.explicit import (
+    _get_solver,
     _get_neighbors,
-    get_invar_lazy
+    _set_to_formula,
+    get_invar_lazy_set,
+    get_invar_lazy,
+    dwc,
+    dwcl
 )
 
 
 class TestDecomposition(TestCase):
+
+    def _eq_sets(self, got, expected):
+        new_exp = set()
+        for s in expected:
+            new_exp.add(frozenset(s))
+        same = got == new_exp
+
+        if not same:
+            logger = logging.getLogger(__name__)
+            logger.info("RESULT:")
+
+            for abs_state in got:
+                abs_state_str = "p(x) := "
+                for pred in abs_state:
+                    abs_state_str += " %s" % pred.serialize()
+                logging.info(abs_state_str)
+        return same
+
+    def _eq_wformula(self, got, expected):
+        solver = _get_solver()
+        formula = _set_to_formula(expected)
+        return solver.is_valid(Iff(got, formula))
 
     def test_get_neighbors(self):
         x, y = [Symbol(var, REAL) for var in ["x", "y"]]
@@ -127,31 +154,28 @@ class TestDecomposition(TestCase):
         safe = Not(And(Equals(x,r0),y<r0))
         return (dyn_sys, TRUE(),[x,y], init, safe,[])
 
+
+
     def test_invar_lazy(self):
-        def eq_sets(got, expected):
-            new_exp = set()
-            for s in expected:
-                new_exp.add(frozenset(s))
-            same = got == new_exp
-
-            if not same:
-                logger = logging.getLogger(__name__)
-                logger.info("RESULT:")
-
-                for abs_state in got:
-                    abs_state_str = "p(x) := "
-                    for pred in abs_state:
-                        abs_state_str += " %s" % pred.serialize()
-                    logging.info(abs_state_str)
-
-            return same
-
         test_cases = [self.get_test_case_1(),
                       self.get_test_case_2(),
                       self.get_test_case_3()]
 
         for t in test_cases:
             (dyn_sys, invar, poly, init, safe, expected) = t
+
+            invars = get_invar_lazy_set(dyn_sys, invar, poly, init, safe)
+            self.assertTrue(self._eq_sets(invars,expected))
+
+        for t in test_cases:
+            (dyn_sys, invar, poly, init, safe, expected) = t
+
             invars = get_invar_lazy(dyn_sys, invar, poly, init, safe)
-            self.assertTrue(eq_sets(invars,expected))
+            self.assertTrue(self._eq_wformula(invars,expected))
+
+        for t in test_cases:
+            (dyn_sys, invar, poly, init, safe, expected) = t
+
+            invars = dwcl(dyn_sys, invar, poly, init, safe)
+            self.assertTrue(self._eq_wformula(invars,expected))
 
