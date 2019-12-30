@@ -26,7 +26,7 @@ from pysmt.logics import QF_NRA
 
 from barrier.test import TestCase
 from barrier.system import DynSystem
-from barrier.utils import get_range
+from barrier.utils import get_range_from_int
 
 from barrier.decomposition.explicit import (
     _get_neighbors,
@@ -92,20 +92,9 @@ class TestDecomposition(TestCase):
 
         [x,y] = [s for s in dyn_sys.states()]
         r0 = Real(0)
-
-        init = get_range([x, y],
-                         [(Real(Fraction(-2,1)),
-                           Real(Fraction(-1,1))),
-                          (Real(Fraction(-2,1)),
-                           Real(Fraction(-1,1)))])
-
-        target = get_range([x, y],
-                           [(Real(Fraction(1,1)),
-                             Real(Fraction(2,1))),
-                            (Real(Fraction(1,1)),
-                             Real(Fraction(2,1)))])
+        init = get_range_from_int([x, y], [(-2,-1), (-2,-1)])
+        target = get_range_from_int([x, y], [(1,2),(1,2)])
         safe = Not(target)
-
 
         invars = get_invar_lazy(dyn_sys, TRUE(), [y, x],
                                 init, safe)
