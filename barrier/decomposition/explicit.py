@@ -5,6 +5,10 @@ A Method for Invariant Generation for Polynomial Continuous Systems
 Sogokon, Ghorbal, Jackson, Platzer
 FM2016
 
+We implement the algorithms:
+  - lazyreach
+  - DWC
+  - DWCL
 """
 
 import logging
@@ -136,7 +140,15 @@ def get_invar_lazy(dyn_sys, invar,
     decomposition.
     """
 
-    _get_logger().info("get_invar_lazy")
+    def solve(solver, formula):
+        solver.push()
+        solver.add_assertion(formula)
+        sat = solver.solve()
+        solver.pop()
+        return sat
+
+    logger = _get_logger()
+    logger.info("get_invar_lazy")
 
     # Set of abstract states reachable from init under invar.
     abs_visited = set()
@@ -149,7 +161,13 @@ def get_invar_lazy(dyn_sys, invar,
     invar_solver = get_solver()
     invar_solver.add_assertion(invar)
 
-    _get_logger().info(init_solver.solve())
+    safe_solver = get_solver()
+    safe_solver.add_assertion(Not(safe))
+
+    if solve(safe_solver, init):
+        logger.info("Unsafe!")
+        return {}
+    # Here all the initial states are safe
 
     to_visit = list()
     while (init_solver.solve()):
@@ -169,8 +187,8 @@ def get_invar_lazy(dyn_sys, invar,
             if abs_state in abs_visited:
                 continue
 
-            _get_logger().info("Visiting abs state: %s" %
-                               " ".join([s.serialize() for s in abs_state]))
+            logger.info("Visiting abs state: %s" %
+                        " ".join([s.serialize() for s in abs_state]))
             abs_visited.add(abs_state)
 
             # Visit all the neighbors of abs_state
@@ -192,9 +210,26 @@ def get_invar_lazy(dyn_sys, invar,
                                Or(And(abs_state), And(neigh)))
 
                 if (not is_invar):
-                    _get_logger().info("New trans from %s to %s" %
-                                       (" ".join([s.serialize() for s in abs_state]),
-                                        " ".join([s.serialize() for s in neigh])))
+                    logger.info("New trans from %s to %s" %
+                                (" ".join([s.serialize() for s in abs_state]),
+                                 " ".join([s.serialize() for s in neigh])))
                     to_visit.append(neigh)
 
+                    if solve(safe_solver, And(neigh)):
+                        logger.info("Unsafe!")
+                        return {}
+
+
     return abs_visited
+
+# def dwc(dyn_sys, invar,
+#         polynomials,
+#         init, safe,
+#         get_solver = _get_solver):
+#     """
+#     Implement the Differential Weakening Cut algorithm
+#     """
+
+#     if (invar and init -> False):
+#         return {} # False, an empty invariant set
+#     elif (H implies safe)
