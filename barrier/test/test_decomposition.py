@@ -61,7 +61,8 @@ class TestDecomposition(TestCase):
     def _eq_wformula(self, got, expected):
         solver = _get_solver()
         formula = _set_to_formula(expected)
-        return solver.is_valid(Iff(got, formula))
+        same = solver.is_valid(Iff(got, formula))
+        return same
 
     def test_get_neighbors(self):
         x, y = [Symbol(var, REAL) for var in ["x", "y"]]
@@ -157,23 +158,26 @@ class TestDecomposition(TestCase):
 
 
     def test_invar_lazy(self):
-        test_cases = [self.get_test_case_1(),
-                      self.get_test_case_2(),
-                      self.get_test_case_3()]
+        test_cases_all = [self.get_test_case_1(),
+                          self.get_test_case_2(),
+                          self.get_test_case_3()]
 
-        for t in test_cases:
+        test_cases_dwcl = list(test_cases_all) + [
+            self.get_test_case_3()]
+
+        for t in test_cases_all:
             (dyn_sys, invar, poly, init, safe, expected) = t
 
             invars = get_invar_lazy_set(dyn_sys, invar, poly, init, safe)
             self.assertTrue(self._eq_sets(invars,expected))
 
-        for t in test_cases:
+        for t in test_cases_all:
             (dyn_sys, invar, poly, init, safe, expected) = t
 
             invars = get_invar_lazy(dyn_sys, invar, poly, init, safe)
             self.assertTrue(self._eq_wformula(invars,expected))
 
-        for t in test_cases:
+        for t in test_cases_dwcl:
             (dyn_sys, invar, poly, init, safe, expected) = t
 
             invars = dwcl(dyn_sys, invar, poly, init, safe)
