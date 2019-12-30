@@ -36,11 +36,6 @@ from barrier.decomposition.explicit import (
 
 class TestDecomposition(TestCase):
 
-    def get_test_case(self):
-        x, y = [Symbol(var, REAL) for var in ["x", "y"]]
-        dyn_sys = DynSystem([x, y], [], [], {x : -y, y : -x}, {}, False)
-        return dyn_sys
-
     def test_get_neighbors(self):
         x, y = [Symbol(var, REAL) for var in ["x", "y"]]
 
@@ -87,30 +82,67 @@ class TestDecomposition(TestCase):
 
             self.assertTrue(res_set == neighbors_set)
 
-    def test_invar_lazy(self):
-        dyn_sys = self.get_test_case()
-
-        [x,y] = [s for s in dyn_sys.states()]
+    def get_test_case_1(self):
+        x, y = [Symbol(var, REAL) for var in ["x", "y"]]
+        dyn_sys = DynSystem([x, y], [], [], {x : -y, y : -x}, {}, False)
         r0 = Real(0)
         init = get_range_from_int([x, y], [(-2,-1), (-2,-1)])
-        target = get_range_from_int([x, y], [(1,2),(1,2)])
-        safe = Not(target)
+        safe = Not(get_range_from_int([x, y], [(1,2),(1,2)]))
 
-        invars = get_invar_lazy(dyn_sys, TRUE(), [y, x],
-                                init, safe)
+        expected_invar = [{x<r0,y<r0},
+                          {x<r0,Equals(y,r0)},
+                          {x<r0,r0<y},
+                          {Equals(x,r0),y<r0},
+                          {r0<x,y<r0}]
 
-        expected_invar = set([frozenset({x<r0,y<r0}),
-                              frozenset({x<r0,Equals(y,r0)}),
-                              frozenset({x<r0,r0<y}),
-                              frozenset({Equals(x,r0),y<r0}),
-                              frozenset({r0<x,y<r0})])
+        return (dyn_sys, TRUE(),[x,y], init, safe,
+                expected_invar)
 
-        # print("RESULT:")
-        # for abs_state in invars:
-        #     sys.stdout.write("p(x) := ")
-        #     for pred in abs_state:
-        #         sys.stdout.write(" %s" % pred.serialize())
-        #     print("")
+    def get_test_case_2(self):
+        x, y = [Symbol(var, REAL) for var in ["x", "y"]]
+        dyn_sys = DynSystem([x, y], [], [],
+                            {x : -(y*y), y : x*x}, {}, False)
+        r0 = Real(0)
+        init = get_range_from_int([x, y], [(2,3), (-1,1)])
+        safe = Not(get_range_from_int([x, y], [(0,0),(0,0)]))
 
-        self.assertTrue(expected_invar == invars)
+        expected_invar = [{(0.0 < x),(y < 0.0)},
+                          {(r0 < x),Equals(y,r0)},
+                          {(r0 < y),(r0 < x)},
+                          {(r0 < y),Equals(x,r0)},
+                          {(r0 < y),(x < r0)},
+                          {Equals(x,r0),(y < r0)},
+                          {(x < r0),(y < r0)},
+                          {(x < r0),Equals(y,r0)}]
+
+        return (dyn_sys, TRUE(),[x,y], init, safe,
+                expected_invar)
+
+
+    def test_invar_lazy(self):
+        def eq_sets(got, expected):
+            new_exp = set()
+            for s in expected:
+                new_exp.add(frozenset(s))
+            same = got == new_exp
+
+            if not same:
+                logger = logging.getLogger(__name__)
+                logger.info("RESULT:")
+
+                for abs_state in got:
+                    abs_state_str = "p(x) := "
+                    for pred in abs_state:
+                        abs_state_str += " %s" % pred.serialize()
+                    logging.info(abs_state_str)
+
+            return same
+
+        test_cases = [self.get_test_case_1(),
+                      self.get_test_case_2()]
+
+        for t in test_cases:
+            (dyn_sys, invar, poly, init, safe, expected) = t
+            invars = get_invar_lazy(dyn_sys, invar, poly, init, safe)
+            self.assertTrue(eq_sets(invars,expected))
 
