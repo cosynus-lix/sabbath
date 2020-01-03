@@ -247,3 +247,47 @@ def lzz(solver, candidate, dyn_sys, init, invar):
                      "condition failed)" % candidate)
         return False
 
+
+def lzz_fast(solver, candidate, dyn_sys, init, invar):
+    """ Implement the "fast" LZZ procedure, as in Pegasus.
+
+    The "fast" LZZ drops the possibly expensive conjuncts from
+    the pre-condition.
+    """
+
+    logger = logging.getLogger(__name__)
+
+    # candidate is an invariant of the dynamical system if:
+    #
+    # 1. init => candidate; and
+    # 2. (candidate /\ Invar) => Inf(candidate); and
+    # 3. (!candidate /\ Invar) => !IvInf(candidate)
+    # are valid
+    print("Checking c1: %s" % Implies(init, candidate).serialize())
+    if (solver.is_valid(Implies(init, candidate))):
+        # Check condition on the differential equation
+
+        c = DNFConverter()
+        candidate_dnf = c.get_dnf(candidate)
+        invar_dnf = c.get_dnf(invar)
+
+        c2 = Implies(And(candidate, invar),
+                     get_inf_dnf(dyn_sys, candidate_dnf))
+
+        if solver.is_valid(c2):
+            c3 = Implies(And(Not(candidate), invar),
+                         Not(get_ivinf_dnf(dyn_sys, candidate_dnf)))
+
+            if solver.is_valid(c3):
+              return True
+            else:
+              logger.debug("c3 failed!")
+              return False
+        else:
+            logger.debug("c2 failed!")
+            return False
+    else:
+        logger.debug("c1 failed!" % candidate)
+        return False
+
+
