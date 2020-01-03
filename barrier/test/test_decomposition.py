@@ -41,6 +41,16 @@ from barrier.decomposition.explicit import (
 
 class TestDecomposition(TestCase):
 
+    def _print_abs_states(self, got):
+        logger = logging.getLogger(__name__)
+        logger.info("RESULT:")
+
+        for abs_state in got:
+            abs_state_str = "p(x) := "
+            for pred in abs_state:
+                abs_state_str += " %s" % pred.serialize()
+            logging.info(abs_state_str)
+
     def _eq_sets(self, got, expected):
         new_exp = set()
         for s in expected:
@@ -48,14 +58,7 @@ class TestDecomposition(TestCase):
         same = got == new_exp
 
         if not same:
-            logger = logging.getLogger(__name__)
-            logger.info("RESULT:")
-
-            for abs_state in got:
-                abs_state_str = "p(x) := "
-                for pred in abs_state:
-                    abs_state_str += " %s" % pred.serialize()
-                logging.info(abs_state_str)
+            self._print_abs_states(got)
         return same
 
     def _eq_wformula(self, got, expected):
@@ -64,6 +67,7 @@ class TestDecomposition(TestCase):
         same = solver.is_valid(Iff(got, formula))
         return same
 
+    @unittest.skip("")
     def test_get_neighbors(self):
         x, y = [Symbol(var, REAL) for var in ["x", "y"]]
 
@@ -110,7 +114,8 @@ class TestDecomposition(TestCase):
 
             self.assertTrue(res_set == neighbors_set)
 
-    def get_test_case_1(self):
+    @staticmethod
+    def get_test_case_1():
         x, y = [Symbol(var, REAL) for var in ["x", "y"]]
         dyn_sys = DynSystem([x, y], [], [], {x : -y, y : -x}, {}, False)
         r0 = Real(0)
@@ -126,8 +131,8 @@ class TestDecomposition(TestCase):
         return (dyn_sys, TRUE(),[x,y], init, safe,
                 expected_invar)
 
-
-    def get_test_case_2(self):
+    @staticmethod
+    def get_test_case_2():
         x, y = [Symbol(var, REAL) for var in ["x", "y"]]
         dyn_sys = DynSystem([x, y], [], [],
                             {x : -(y*y), y : x*x}, {}, False)
@@ -147,7 +152,8 @@ class TestDecomposition(TestCase):
         return (dyn_sys, TRUE(),[x,y], init, safe,
                 expected_invar)
 
-    def get_test_case_3(self):
+    @staticmethod
+    def get_test_case_3():
         x, y = [Symbol(var, REAL) for var in ["x", "y"]]
         dyn_sys = DynSystem([x, y], [], [], {x : -y, y : -x}, {}, False)
         r0 = Real(0)
@@ -155,10 +161,11 @@ class TestDecomposition(TestCase):
         safe = Not(And(Equals(x,r0),y<r0))
         return (dyn_sys, TRUE(),[x,y], init, safe,[])
 
-    def get_test_case_4(self):
+    @staticmethod
+    def get_test_case_4():
         def _pow(var, degree):
             res = Real(1)
-            for i in range(degree-1):
+            for i in range(degree):
                 res = var * res
             return res
 
@@ -180,7 +187,7 @@ class TestDecomposition(TestCase):
                             {x1 : fx1, x2 : fx2},
                             {}, False)
         r0 = Real(0)
-        init = _pow(x1 - 1,2) + _pow(x2,2) < Real(Fraction(1,4))
+        init = _pow(x1,2) - 1 + _pow(x2,2) < Real(Fraction(1,4))
         safe = _pow(x1,2) + _pow(x2,2) < 8
 
         polynomials = [x1,
@@ -191,14 +198,14 @@ class TestDecomposition(TestCase):
                        _pow(x1,2) + 21*_pow(x2,2)-12,
                        f2_rh]
 
-        return (dyn_sys, TRUE(),[x1,x2], init, safe, FALSE())
+        return (dyn_sys, TRUE(), polynomials, init, safe, FALSE())
 
 
-
+    @unittest.skip("")
     def test_invar_lazy(self):
-        test_cases = [self.get_test_case_1(),
-                      self.get_test_case_2(),
-                      self.get_test_case_3()]
+        test_cases = [TestDecomposition.get_test_case_1(),
+                      TestDecomposition.get_test_case_2(),
+                      TestDecomposition.get_test_case_3()]
 
         for t in test_cases:
             (dyn_sys, invar, poly, init, safe, expected) = t
@@ -218,13 +225,60 @@ class TestDecomposition(TestCase):
             invars = dwcl(dyn_sys, invar, poly, init, safe)
             self.assertTrue(self._eq_wformula(invars,expected))
 
-
+    @unittest.skip("")
     def test_invar_dwcl(self):
-        test_cases = [self.get_test_case_4()]
+        test_cases = [TestDecomposition.get_test_case_4()]
 
         for t in test_cases:
             (dyn_sys, invar, poly, init, safe, expected) = t
 
             invars = dwcl(dyn_sys, invar, poly, init, safe)
-            self.assertTrue(_get_solver().is_valid(Iff(invars,
-                                                       expected)))
+
+            same = _get_solver().is_valid(Iff(invars, expected))
+
+            if not same:
+                logger = logging.getLogger(__name__)
+                logger.info("%s\nis not:\n%s" % (invars.serialize(),
+                                                 expected.serialize))
+
+            self.assertTrue(same)
+
+    @unittest.skip("")
+    def test_invar_dwcl_pegasus(self):
+        def rf(a,b):
+            return Real(Fraction(a,b))
+
+        x, y = [Symbol(var, REAL) for var in ["x", "y"]]
+
+        fx = (rf(-3,2) * x * x +
+              rf(-1,2) * x * x * x - y)
+        fy = 3 * x - y
+
+        dyn_sys = DynSystem([x, y], [], [],
+                            {x : fx, y : fy},
+                            {}, False)
+
+        invar = TRUE()
+        init = (x*x + rf(1,10) * x  + rf(1,400) +
+                y*y + rf(3,100) * y + rf(9,40000)) <= rf(1,5000)
+
+        safe = (rf(49,100)) + x + x * x + y + y * y > 0
+
+        poly = [(
+            (rf(366,3125) * (x*x*x*x)) +
+            (rf(-5089,200000) * (x*x*x*y)) +
+            (rf(-19539,250000) * (x*x*x)) +
+            (rf(6907,50000) * (x*x*y*y)) +
+            (rf(7757,10000) * (x*x*y)) +
+            (rf(13077,10000) * (x*x)) +
+            (rf(1,500000) * (x*y*y*y)) +
+            (rf(-11411,100000) * (x*y*y)) +
+            (rf(-2053,5000) * (x*y)) +
+            (rf(1,500000) * (x)) +
+            (rf(11777,500000) * (y*y*y*y)) +
+            (rf(9201,50000) * (y*y*y)) +
+            (rf(25341,50000) * (y*y)) +
+            (rf(1,1000000) * (y)) +
+            rf(-99997,1000000))]
+
+        invars = dwc(dyn_sys, invar, poly, init, safe)

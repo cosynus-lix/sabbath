@@ -14,7 +14,7 @@ We implement the algorithms:
 import logging
 
 from barrier.system import DynSystem
-from barrier.lzz.lzz import lzz
+from barrier.lzz.lzz import (lzz, lzz_fast)
 from barrier.system import DynSystem
 
 from pysmt.logics import QF_NRA
@@ -23,7 +23,8 @@ from pysmt.shortcuts import (
     Implies, And, Not, Or,
     FALSE,
     LT, Equals,
-    Real
+    Real,
+    get_env
 )
 
 
@@ -31,9 +32,22 @@ from pysmt.shortcuts import (
 def _get_logger():
     return logging.getLogger(__name__)
 
+def get_z3():
+    return Solver(logic=QF_NRA, name="z3")
+
+def get_mathsat_smtlib():
+    name = "mathsat-smtlib"
+    logics = [QF_NRA]
+
+    env = get_env()
+    if not env.factory.is_generic_solver(name):
+        path = ["/Users/sergiomover/Tools/mathsat5/build/mathsat"]
+        env.factory.add_generic_solver(name, path, logics)
+
+    return Solver(name=name, logic=logics[0]) #, solver_options={'debug_interaction':True})
+
 def _get_solver():
-    solver = Solver(logic=QF_NRA, name="z3")
-    return solver
+    return get_z3()
 
 def abstract(solver, polynomials, sigma):
     """ Compute the abstract state for model """
@@ -150,7 +164,7 @@ def get_invar_lazy_set(dyn_sys, invar,
         return sat
 
     logger = _get_logger()
-    logger.info("get_invar_lazy")
+    logger.info("get_invar_lazy with %d polynomials" % len(polynomials))
 
     # Set of abstract states reachable from init under invar.
     abs_visited = set()
@@ -248,44 +262,66 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
     """
 
     logger = _get_logger()
+    logger.info("DWC...")
 
     r0 = Real(0)
 
     solver = get_solver()
     if (solver.is_unsat(And(invar, init))):
-        logger.info("Init outside invariant!")
+        logger.info("Init (%s) outside invariant (%s)!" % (init.serialize(), invar.serialize()))
         return FALSE()
     elif (solver.is_valid(Implies(invar, safe))):
         # DW - Differential Weakening
-        logger.info("invar -> safe, trivial")
+        logger.info("DW: invar -> safe!")
+        logger.info("%s -> %s" % (invar, safe))
         return invar
     else:
-        lzz_solver = get_solver()
         rt0 = Real(0)
 
+        logger.debug("Trying to remove predicates...")
+        counter = 0
         for a in polynomials:
+            counter += 1
+            logger.debug("Testing DC on %d/%d..." % (counter, len(polynomials)))
             preds = {LT(rt0,a), LT(a,rt0), Equals(a,rt0)}
             for pred in preds:
                 if solver.is_valid(Implies(And(invar, init), pred)):
-                    is_invar = lzz(lzz_solver, pred, dyn_sys,
-                                   pred, invar)
+
+
+                    lzz_solver = _get_solver()
+                    logger.debug("LZZ for %s..." % (pred.serialize()))
+                    is_invar = lzz_fast(lzz_solver, pred, dyn_sys,
+                                        pred, invar)
+                    lzz_solver = None
+                    logger.debug("LZZ end...")
+
                     if (is_invar):
+                        logger.debug("DC on %s" % (pred.serialize()))
                         new_polynomials = list(polynomials)
                         new_polynomials.remove(a)
                         return dwc(dyn_sys, And(invar, pred),
                                    new_polynomials,
                                    init, safe, get_solver)
 
+        logger.debug("Trying to decompose...")
+        counter = 0
         for a in polynomials:
+            counter += 1
+            logger.debug("Trying to DC %d/%d..." % (counter, len(polynomials)))
+
             preds = {LT(rt0,a), LT(a,rt0), Equals(a,rt0)}
             eq_0 = Equals(a,rt0)
 
+            lzz_solver = _get_solver()
             is_invar = lzz(lzz_solver, eq_0, dyn_sys, eq_0, invar)
             if is_invar:
                 inv_dyn_sys = DynSystem.get_inverse(dyn_sys)
+
+                lzz_solver = _get_solver()
                 is_invar = lzz(lzz_solver, eq_0, inv_dyn_sys, eq_0, invar)
 
                 if (is_invar):
+                    logger.debug("Decomposing on %s" % (eq_0.serialize()))
                     new_polynomials = list(polynomials)
                     new_polynomials.remove(a)
 
@@ -296,6 +332,7 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
                                        And(init, pred), safe, get_solver)
                         res = Or(res, pred_res)
                     return res
+            lzz_solver = None
 
         if not dwcl:
             return invar
