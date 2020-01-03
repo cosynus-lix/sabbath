@@ -49,12 +49,11 @@ def get_lie(expr, dyn_sys):
 def get_lie_rank(self, expr, dyn_sys):
     """ Get the rank of expr and the vector field of dyn_sys
     """
-    logger = logging.getLogger(__name__)
-
     der = Derivator()
     rank = der.get_lie_rank(dyn_sys.states(), expr, dyn_sys.get_odes())
 
-    logger.debug("get_lie_rank(%s): %d" % (str(expr), rank))
+    # logger = logging.getLogger(__name__)
+    # logger.debug("get_lie_rank(%s): %d" % (str(expr), rank))
 
     return rank
 
@@ -403,6 +402,10 @@ class Sympy2Pysmt(object):
     def __init__(self):
         self.cache = {}
 
+    # True if translate Pow to Pow, otherwise expand the
+    # Multiplication
+    USE_POW=False
+
     def walk(self, sympy_expr):
         if sympy_expr in self.cache:
             cached = self.cache[sympy_expr]
@@ -440,7 +443,30 @@ class Sympy2Pysmt(object):
             # 2nd argument from pow must be constant
             assert (pysmt_args[1].is_constant())
 
-            return Pow(pysmt_args[0], pysmt_args[1])
+            if not Sympy2Pysmt.USE_POW:
+              # Alternative version using Times explicitly (mathsat and smtlib do not handle pow)
+              if not (pysmt_args[1].is_int_constant()):
+                exponent = pysmt_args[1].constant_value()
+                exponent = int(exponent)
+              else:
+                # Try to be lucky
+                exp_fraction = Fraction(pysmt_args[1])
+                exponent = int(exp_fraction)
+
+              if (exponent == 0):
+                # Assume real type
+                return Real(1)
+              else:
+                # Issue when power over negative numbers
+                # OK FOR NOW
+                assert exponent > 0
+                res = pysmt_args[0]
+                for i in range(exponent-1):
+                  res = Times(res, pysmt_args[0])
+                return res
+              # End of alternative version
+            else:
+              return Pow(pysmt_args[0], pysmt_args[1])
         else:
             raise Exception("Found unkonwn operator (%s) in %s" % (type(sympy_expr),
                                                                    str(sympy_expr)))
