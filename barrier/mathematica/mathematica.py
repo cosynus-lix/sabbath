@@ -1,3 +1,5 @@
+from six.moves import xrange
+
 from pysmt.exceptions import SolverAPINotFound
 
 try:
@@ -12,7 +14,7 @@ from pysmt import typing as types
 from pysmt.solvers.solver import Solver, Converter, SolverOptions
 from pysmt.solvers.eager import EagerModel
 from pysmt.walkers import DagWalker
-
+from pysmt.constants import Fraction, is_pysmt_fraction, is_pysmt_integer
 from pysmt.decorators import clear_pending_pop, catch_conversion_error
 
 from pysmt.exceptions import (ConvertExpressionError, PysmtValueError,
@@ -25,6 +27,10 @@ class MathematicaOptions(SolverOptions):
 
   def __init__(self, **base_options):
     SolverOptions.__init__(self, **base_options)
+
+  def __call__(self, solver):
+    # do nothing now
+    pass
 
 # EOC MathematicaOptions
 
@@ -45,19 +51,22 @@ class MathematicaSolver(Solver):
     self.converter = MathematicaConverter(environment=self.environment)
     self.options(self)
 
+    # Get the connection to mathematica
+    # TODO: Get as option the path to mathematica
+    self.session = WolframLanguageSession()
+
+    self.backtrack = []
+    self.assertions_stack = []
+    self.reset_assertions()
+
   @clear_pending_pop
   def reset_assertions(self):
     true_formula = self.mgr.Bool(True)
-    self.assertions_stack = [(true_formula,
-                              self.converter.convert(true_formula))]
-
-  @clear_pending_pop
-  def declare_variable(self, var):
-    self.converter.declare_variable(var)
+    self.assertions_stack = [true_formula]
 
   @clear_pending_pop
   def add_assertion(self, formula, named=None):
-    self.assertions_stack.append((formula, None))
+    self.assertions_stack.append(formula)
 
   @clear_pending_pop
   def solve(self, assumptions=None):
@@ -66,18 +75,32 @@ class MathematicaSolver(Solver):
       self.add_assertion(self.mgr.And(assumptions))
       self.pending_pop = True
 
-    for (i, (expr, bdd)) in enumerate(self.assertions_stack):
-      if bdd is None:
-        bdd_expr = self.converter.convert(expr)
-        _, previous_bdd = self.assertions_stack[i-1]
-        new_bdd = self.ddmanager.And(previous_bdd, bdd_expr)
-        self.assertions_stack[i] = (expr, new_bdd)
+    to_solve = None
+    for expr in self.assertions_stack:
+      if to_solve is None:
+        to_solve = expr
+      else:
+        to_solve = self.mgr.And(to_solve, expr)
 
-    _, current_state = self.assertions_stack[-1]
-    res = (current_state != self.ddmanager.Zero())
+    if to_solve is None:
+      to_solve = self.mgr.Bool(True)
+
+    # Here is where we call Reduce from Mathematica
+    #assert self.session.ensure_started()
+
+    free_vars = to_solve.get_free_variables()
+    exists_formula = self.mgr.Exists(free_vars, to_solve)
+    mathematica_exists_formula = self.converter.convert(exists_formula)
+
+    # print(exists_formula)
+    # print(mathematica_exists_formula)
+
+    reduce_cmd = wl.Reduce(mathematica_exists_formula, wlexpr('Real'))
+    exist_res = self.session.evaluate(reduce_cmd)
+
     # Invalidate cached model
     self.latest_model = None
-    return res
+    return exist_res
 
   def get_value(self, item):
     if self.latest_model is None:
@@ -99,7 +122,8 @@ class MathematicaSolver(Solver):
       self.assertions_stack = self.assertions_stack[:l]
 
   def _exit(self):
-    pass
+    self.session.stop()
+    self.session = None
 
 # EOC MathematicaSolver
 
@@ -156,15 +180,17 @@ class MathematicaConverter(Converter, DagWalker):
     frac = formula.constant_value()
     n,d = frac.numerator, frac.denominator
     rep = str(n) + "/" + str(d)
-    return wlexpr(repr)
+    return wlexpr(rep)
 
   def walk_int_constant(self, formula, **kwargs):
     raise ConvertExpressionError("Integer constants (%s) are not"
                                  "allowed!" % str(formula) )
 
   def walk_bool_constant(self, formula, **kwargs):
-    raise ConvertExpressionError("Boolean constants (%s) are not"
-                                 "allowed!" % str(formula) )
+    if formula.constant_value():
+      return wlexpr('True')
+    else:
+      return wlexpr('False')
 
   def walk_bv_constant(self, formula, **kwargs):
     raise ConvertExpressionError("BV constants (%s) are not"
@@ -218,6 +244,22 @@ class MathematicaConverter(Converter, DagWalker):
     else:
       raise ConvertExpressionError("Trying to convert a non-boolean "
                                    "ITE statement (%s)" % formula)
+
+  def walk_exists(self, formula, args, **kwargs):
+    assert len(args) == 1
+    sf = args[0]
+    varset = [self.walk_symbol(x) for x in formula.quantifier_vars()]
+    if len(varset) == 0:
+      return sf
+    return wl.Exists(varset, sf)
+
+  def walk_forall(self, formula, args, **kwargs):
+    assert len(args) == 1
+    sf = args[0]
+    varset = [self.walk_symbol(x) for x in formula.quantifier_vars()]
+    if len(varset) == 0:
+      return sf
+    return wl.ForAll(varset, sf)
 
   def walk_function(self, formula, args, **kwargs):
     raise ConvertExpressionError("Uninterpreted functions (%s) are not "

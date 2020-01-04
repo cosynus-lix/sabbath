@@ -10,6 +10,7 @@ try:
 except ImportError:
     import unittest
 
+from pysmt.logics import QF_NRA
 from pysmt.environment import Environment
 from pysmt.typing import BOOL, REAL, INT, FunctionType, BV8, BVType
 from pysmt.shortcuts import (
@@ -20,7 +21,8 @@ from pysmt.shortcuts import (
 
 from barrier.test import TestCase
 from barrier.mathematica.mathematica import (
-  MathematicaConverter
+  MathematicaSolver,
+  MathematicaConverter,
 )
 
 class TestConverter(TestCase):
@@ -58,3 +60,29 @@ class TestConverter(TestCase):
       # print(math_expr)
       # print(res_str)
       self.assertTrue(res_str == math_expr)
+
+class TestMathematica(TestCase):
+  def test_solve(self):
+    env = Environment()
+    solver = MathematicaSolver(env, QF_NRA)
+
+
+    x,y,z = [Symbol(s,REAL) for s in ["x","y","z"]]
+
+    formula = And(x*x + y*y >= 3, x > 0)
+    solver.add_assertion(formula)
+
+    self.assertTrue(solver.solve())
+
+    solver.reset_assertions()
+    solver.add_assertion(formula)
+    solver.add_assertion(x < 0)
+    self.assertFalse(solver.solve())
+
+    solver.reset_assertions()
+    solver.add_assertion(formula)
+    solver.push()
+    solver.add_assertion(x < 0)
+    self.assertFalse(solver.solve())
+    solver.pop()
+    self.assertTrue(solver.solve())
