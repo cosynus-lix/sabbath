@@ -46,14 +46,15 @@ class TestConverter(TestCase):
       (Not(LT(x,y)), "Not[Less[(x), (y)]]"),
       (Iff(LT(x,y),LT(x,z)), "Equivalent[Less[(x), (y)], Less[(x), (z)]]"),
       (Implies(LT(x,y),LT(x,z)), "Implies[Less[(x), (y)], Less[(x), (z)]]"),
-#      (ITE(LT(x,y),LT(x,z),LT(x,y)), "Implies[Less[(x), (y)], Less[(x), (z)]]"),
+      (Ite(LT(x,y),LT(x,z),LT(x,y)),
+       "And[Implies[Less[(x), (y)], Less[(x), (z)]], Implies[Not[Less[(x), (y)]], Less[(x), (y)]]]"),
 #      (And(x,y), "And[(x), (y)]")
     ]
+
 
     for (pysmt_expr, math_expr) in test_cases:
       res = convert.convert(pysmt_expr)
       res_str = str(res)
-      print(math_expr)
-      print(res_str)
+      # print(math_expr)
+      # print(res_str)
       self.assertTrue(res_str == math_expr)
-

@@ -114,11 +114,11 @@ class MathematicaConverter(Converter, DagWalker):
     DagWalker.__init__(self)
 
     self.environment = environment
-    self.fmgr = self.environment.formula_manager
+    self.mgr = self.environment.formula_manager
+    self._get_type = environment.stc.get_type
 
-    self.idx2var = {}
-    self.var2node = {}
-    self.back_memoization = {}
+    # todo: remember mapping of symbols
+    # todo: implement back mapping
 
 
   @catch_conversion_error
