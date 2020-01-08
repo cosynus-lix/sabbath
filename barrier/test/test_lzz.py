@@ -36,13 +36,13 @@ from barrier.lzz.lzz import (
 from barrier.lzz.serialization import importLzz
 from barrier.lzz.dnf import DNFConverter
 
+from barrier.mathematica.mathematica import get_mathematica
 
 def run_lzz(lzz_problem):
-    solver = Solver(logic=QF_NRA, name="z3")
-    (name, candidate, dyn_sys, candidate, invar) = lzz_problem
-    print("LZZ %s..." % name)
-    is_invar = lzz(solver, candidate, dyn_sys, candidate, invar)
-    del solver
+    with Solver(logic=QF_NRA, name="z3") as solver:
+        (name, candidate, dyn_sys, candidate, invar) = lzz_problem
+        print("LZZ %s..." % name)
+        is_invar = lzz(solver, candidate, dyn_sys, candidate, invar)
     return is_invar
 
 
@@ -170,7 +170,7 @@ class TestLzz(TestCase):
         import barrier.test
 
         def run_with_timeout(lzz_problem,time_out):
-            # solver = Solver(logic=QF_NRA, name="z3")
+            is_invar = None
             try:
                 name = lzz_problem[0]
                 print("Running %s" % name)
@@ -187,10 +187,8 @@ class TestLzz(TestCase):
                 except TimeoutError:
                     print("%s time out!" % name)
                     is_invar = None
-            except Exception:
-                is_invar = None
             finally:
-                pass #del solver
+                pass
 
             return is_invar
 
@@ -204,5 +202,5 @@ class TestLzz(TestCase):
             with open(os.path.join(input_path, lzz_file), "r") as f:
                 lzz_problem = importLzz(f)
 
-                is_invar = run_with_timeout(lzz_problem, 1)
+                is_invar = run_with_timeout(lzz_problem, 5)
                 self.assertTrue((is_invar is None) or is_invar)
