@@ -30,6 +30,8 @@ from barrier.lzz.lzz import (
     is_p_invar, lzz, get_inf_dnf, get_ivinf_dnf
 )
 
+from barrier.lzz.serialization import importLzz
+
 from barrier.lzz.dnf import DNFConverter
 
 
@@ -151,3 +153,23 @@ class TestLzz(TestCase):
         p3 = y >= 0
 
         _test_dnf(And(Or(p1,p2), Or(p1,p3), Or(p2)))
+
+
+    def test_battery(self):
+        import barrier.test
+        current_path = os.path.dirname(os.path.abspath(barrier.test.__file__))
+        input_path = os.path.join(current_path, "lzz_inputs")
+
+        for lzz_file in os.listdir(input_path):
+            if not lzz_file.endswith(".lzz"):
+                continue
+            with open(os.path.join(input_path, lzz_file), "r") as f:
+                lzz_problem = importLzz(f)
+                (name, candidate, dyn_sys, candidate, invar) = lzz_problem
+                solver = Solver(logic=QF_NRA, name="z3")
+
+                print("Processing %s" % name)
+
+                is_invar = lzz(solver, candidate, dyn_sys, candidate, invar)
+                self.assertTrue(is_invar)
+        aaa

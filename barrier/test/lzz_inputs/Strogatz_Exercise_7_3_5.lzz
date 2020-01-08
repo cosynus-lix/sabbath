@@ -1,0 +1,8 @@
+{
+  "candidate": "(and (and (and true (> (+ (* _x (* _x 1)) (* _y (* _y 1))) 0)) (< (+ (+ (* 5 (* _x (* _x 1))) (* (* 2 _x) _y)) (* 7 (* _y (* _y 1)))) 4)) (and (> (+ (* _x (* _x 1)) (* _y (* _y 1))) 0) (< (+ (+ (* 5 (* _x (* _x 1))) (* (* 2 _x) _y)) (* 7 (* _y (* _y 1)))) 4)))",
+  "constraints": "(and (and (and true (> (+ (* _x (* _x 1)) (* _y (* _y 1))) 0)) (< (+ (+ (* 5 (* _x (* _x 1))) (* (* 2 _x) _y)) (* 7 (* _y (* _y 1)))) 4)) (and (> (+ (* _x (* _x 1)) (* _y (* _y 1))) 0) (< (+ (+ (* 5 (* _x (* _x 1))) (* (* 2 _x) _y)) (* 7 (* _y (* _y 1)))) 4)))",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Strogatz Exercise 7_3_5",
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (+ (- (- _x) _y) (* _x (+ (* _x (* _x 1)) (* 2 (* _y (* _y 1)))))) 0)", "(= (+ (- _x _y) (* _y (+ (* _x (* _x 1)) (* 2 (* _y (* _y 1)))))) 0)"]
+}

@@ -1,0 +1,8 @@
+{
+  "candidate": "(and true (>= (+ 2 _x) 0))",
+  "constraints": "(and true (>= (+ 2 _x) 0))",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Wiggins Example 17_1_2",
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (* (+ 2 _x) (+ (- (* (- 1 _x) _x)) _y)) 0)", "(= (- _y) 0)"]
+}

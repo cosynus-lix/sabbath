@@ -1,0 +1,8 @@
+{
+  "candidate": "(and true (<= (+ (- 1) (* (- 1) (* _x (* _x (* _x 1))))) 0))",
+  "constraints": "(and true (<= (+ (- 1) (* (- 1) (* _x (* _x (* _x 1))))) 0))",
+  "contVars": ["(declare-fun _a () Real)", "(declare-fun _x () Real)"],
+  "name": "KeYmaera Nonlinear 1",
+  "varsDecl": ["(declare-fun _a () Real)", "(declare-fun _x () Real)"],
+  "vectorField": ["(= (+ _a (* (+ (- 3) _x) (* (+ (- 3) _x) (* (+ (- 3) _x) (* (+ (- 3) _x) 1))))) 0)", "(= 0 0)"]
+}

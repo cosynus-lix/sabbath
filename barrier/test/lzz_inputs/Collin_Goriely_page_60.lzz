@@ -1,0 +1,8 @@
+{
+  "candidate": "(and (and (and (and true (< _x _y)) (> _y 0)) (< (+ _x _y) 0)) (and (and (< _x _y) (> _y 0)) (< (+ _x _y) 0)))",
+  "constraints": "(and (and (and (and true (< _x _y)) (> _y 0)) (< (+ _x _y) 0)) (and (and (< _x _y) (> _y 0)) (< (+ _x _y) 0)))",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Collin Goriely page 60",
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (+ (+ (* _x (* _x 1)) (* (* 2 _x) _y)) (* 3 (* _y (* _y 1)))) 0)", "(= (* (* 2 _y) (+ (* 2 _x) _y)) 0)"]
+}

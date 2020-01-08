@@ -1,0 +1,8 @@
+{
+  "candidate": "(and true (>= _y 0))",
+  "constraints": "(and true (>= _y 0))",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Forsman Phd Ex 6_14 page 119",
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (+ (* (- 2) _x) (* _y (* _y (* _y (* _y 1))))) 0)", "(= (+ (- _y) (* (* 3 _x) (* _y (* _y (* _y 1))))) 0)"]
+}

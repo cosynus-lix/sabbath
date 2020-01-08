@@ -1,0 +1,8 @@
+{
+  "candidate": "(and true (= (- 12 (* 1 (- (* _x (* _x 1)) (* _y (* _y 1))))) 0))",
+  "constraints": "(and true (= (- 12 (* 1 (- (* _x (* _x 1)) (* _y (* _y 1))))) 0))",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Invariant Clusters Example 6",
+  "varsDecl": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "vectorField": ["(= (* _y (* _y 1)) 0)", "(= (* _x _y) 0)"]
+}
