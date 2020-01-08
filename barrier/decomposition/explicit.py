@@ -16,7 +16,6 @@ import logging
 from barrier.system import DynSystem
 from barrier.lzz.lzz import (lzz, lzz_fast)
 from barrier.system import DynSystem
-from barrier.mathematica.mathematica import MathematicaSolver
 
 from pysmt.logics import QF_NRA
 from pysmt.shortcuts import (
@@ -28,7 +27,7 @@ from pysmt.shortcuts import (
     get_env
 )
 
-
+from barrier.mathematica import Mathematica.get_mathematica
 
 def _get_logger():
     return logging.getLogger(__name__)
@@ -46,16 +45,6 @@ def get_mathsat_smtlib():
         env.factory.add_generic_solver(name, path, logics)
 
     return Solver(name=name, logic=logics[0]) #, solver_options={'debug_interaction':True})
-
-def get_mathematica():
-    name = "mathematica"
-    logics = [QF_NRA]
-
-    env = get_env()
-    if not env.factory.is_generic_solver(name):
-        env.factory.add_generic_solver(name, [], logics)
-
-    return MathematicaSolver(env, QF_NRA)
 
 def _get_solver():
     return get_z3()
