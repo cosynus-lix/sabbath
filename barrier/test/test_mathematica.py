@@ -15,7 +15,7 @@ from pysmt.environment import Environment
 from pysmt.typing import BOOL, REAL, INT, FunctionType, BV8, BVType
 from pysmt.shortcuts import (
   Symbol, is_sat, Not, Implies, GT, Plus, Int, Real,
-  Minus, Times, Xor, And, Or, TRUE, Iff, FALSE, Ite,
+  Minus, Times, Xor, And, Or, TRUE, Iff, FALSE, Ite, Div,
   Equals,LT,GT,LE,GE
 )
 
@@ -38,6 +38,7 @@ class TestConverter(TestCase):
       (Plus(x,y), "Plus[(x), (y)]"),
       (Minus(x,y), "Plus[(x), Minus[(y)]]"),
       (Times(x,y), "Times[(x), (y)]"),
+      (Div(x,y), "Divide[(x), (y)]"),
       #
       (Equals(x,y), "Equal[(x), (y)]"),
       (LT(x,y), "Less[(x), (y)]"),
@@ -50,15 +51,12 @@ class TestConverter(TestCase):
       (Implies(LT(x,y),LT(x,z)), "Implies[Less[(x), (y)], Less[(x), (z)]]"),
       (Ite(LT(x,y),LT(x,z),LT(x,y)),
        "And[Implies[Less[(x), (y)], Less[(x), (z)]], Implies[Not[Less[(x), (y)]], Less[(x), (y)]]]"),
-#      (And(x,y), "And[(x), (y)]")
     ]
 
 
     for (pysmt_expr, math_expr) in test_cases:
       res = convert.convert(pysmt_expr)
       res_str = str(res)
-      # print(math_expr)
-      # print(res_str)
       self.assertTrue(res_str == math_expr)
 
 class TestMathematica(TestCase):

@@ -9,7 +9,7 @@ try:
 except ImportError:
   raise SolverAPINotFound
 
-import pysmt.logics
+from pysmt.logics import QF_NRA
 from pysmt import typing as types
 from pysmt.solvers.solver import Solver, Converter, SolverOptions
 from pysmt.solvers.eager import EagerModel
@@ -20,6 +20,9 @@ from pysmt.decorators import clear_pending_pop, catch_conversion_error
 from pysmt.exceptions import (ConvertExpressionError, PysmtValueError,
                               PysmtTypeError)
 from pysmt.oracles import get_logic
+
+
+from pysmt.shortcuts import get_env
 
 class MathematicaOptions(SolverOptions):
   """Options for the Mathematica Solver.
@@ -38,7 +41,7 @@ class MathematicaOptions(SolverOptions):
 class MathematicaSolver(Solver):
   """Solver based on the Mathematica Reduce function
   """
-  LOGICS = [ pysmt.logics.NRA ]
+  LOGICS = [ QF_NRA ]
   OptionsClass = MathematicaOptions
 
   def __init__(self, environment, logic, **options):
@@ -205,6 +208,9 @@ class MathematicaConverter(Converter, DagWalker):
   def walk_times(self, formula, args, **kwargs):
     return wl.Times(args[0],args[1])
 
+  def walk_div(self, formula, args, **kwargs):
+    return wl.Divide(args[0],args[1])
+
   def walk_equals(self, formula, args, **kwargs):
     return wl.Equal(args[0], args[1])
 
@@ -269,3 +275,12 @@ class MathematicaConverter(Converter, DagWalker):
     raise ConvertExpressionError("toreal operator (%s) are not "
                                  "allowed!" % str(formula) )
 # EOC MathematicaConverter
+
+def get_mathematica(env=get_env()):
+  name = "mathematica"
+  logics = [QF_NRA]
+
+  if not env.factory.is_generic_solver(name):
+    env.factory.add_generic_solver(name, [], logics)
+
+  return MathematicaSolver(env, QF_NRA)
