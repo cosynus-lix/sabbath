@@ -1,0 +1,8 @@
+{
+  "candidate": "(and true (>= (+ _x (* (- 1) (* _y (* _y 1)))) 0))",
+  "constraints": "(and true (>= (+ _x (* (- 1) (* _y (* _y 1)))) 0))",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Arrowsmith Place Fig_3_11 page 83",
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (- _x (* _y (* _y 1))) 0)", "(= (* _y (- _x (* _y (* _y 1)))) 0)"]
+}

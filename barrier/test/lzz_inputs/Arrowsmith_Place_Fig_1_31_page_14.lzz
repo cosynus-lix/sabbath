@@ -1,0 +1,8 @@
+{
+  "candidate": "(and (and (and true (and (< (* (- 1) _y) 0) (<= _x 0))) (< (* (- 1) _y) 0)) (<= _x 0))",
+  "constraints": "(and (and (and true (and (< (* (- 1) _y) 0) (<= _x 0))) (< (* (- 1) _y) 0)) (<= _x 0))",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Arrowsmith Place Fig_1_31 page 14",
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (* _x (* _x 1)) 0)", "(= (* (- (* 2 _x) _y) _y) 0)"]
+}

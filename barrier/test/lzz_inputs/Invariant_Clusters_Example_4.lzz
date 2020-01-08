@@ -1,0 +1,8 @@
+{
+  "candidate": "(and (and (and (and true (= (+ (+ (+ (* (- (- 1) 0) (* _x (* _x 1))) (* 1 (* _y (* _y 1)))) (* 0 (* _z (* _z 1)))) (- 3)) 0)) (= (+ (+ (+ (* (- (- 0) 1) (* _x (* _x 1))) (* 0 (* _y (* _y 1)))) (* 1 (* _z (* _z 1)))) (- 8)) 0)) (= (- (- (* _y (* _y 1)) (* _x (* _x 1))) 3) 0)) (= (- (- (* _z (* _z 1)) (* _x (* _x 1))) 8) 0))",
+  "constraints": "(and (and (and (and true (= (+ (+ (+ (* (- (- 1) 0) (* _x (* _x 1))) (* 1 (* _y (* _y 1)))) (* 0 (* _z (* _z 1)))) (- 3)) 0)) (= (+ (+ (+ (* (- (- 0) 1) (* _x (* _x 1))) (* 0 (* _y (* _y 1)))) (* 1 (* _z (* _z 1)))) (- 8)) 0)) (= (- (- (* _y (* _y 1)) (* _x (* _x 1))) 3) 0)) (= (- (- (* _z (* _z 1)) (* _x (* _x 1))) 8) 0))",
+  "contVars": ["(declare-fun _z () Real)", "(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Invariant Clusters Example 4",
+  "varsDecl": ["(declare-fun _y () Real)", "(declare-fun _z () Real)", "(declare-fun _x () Real)"],
+  "vectorField": ["(= (* _y _z) 0)", "(= (* _x _z) 0)", "(= (* _x _y) 0)"]
+}

@@ -1,0 +1,8 @@
+{
+  "candidate": "(and true (= (+ (+ (+ 31 (* (* 5 (* _Il (* _Il 1))) (+ (- 12) (* _Il (+ (- 4) (* 3 _Il)))))) (* 30 (* _Vc (* _Vc 1)))) (* 4 (* _Vc (* _Vc (* _Vc 1))))) 0))",
+  "constraints": "(and true (= (+ (+ (+ 31 (* (* 5 (* _Il (* _Il 1))) (+ (- 12) (* _Il (+ (- 4) (* 3 _Il)))))) (* 30 (* _Vc (* _Vc 1)))) (* 4 (* _Vc (* _Vc (* _Vc 1))))) 0))",
+  "contVars": ["(declare-fun _Vc () Real)", "(declare-fun _Il () Real)"],
+  "name": "Nonlinear Circuit RLC Circuit Oscillator",
+  "varsDecl": ["(declare-fun _Vc () Real)", "(declare-fun _Il () Real)"],
+  "vectorField": ["(= (- (- _Vc) (* (/ 1 5) (* _Vc (* _Vc 1)))) 0)", "(= (+ (- (* (- 2) _Il) (* _Il (* _Il 1))) (* _Il (* _Il (* _Il 1)))) 0)"]
+}

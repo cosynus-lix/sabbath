@@ -27,7 +27,7 @@ from pysmt.shortcuts import (
     get_env
 )
 
-
+from barrier.mathematica import Mathematica.get_mathematica
 
 def _get_logger():
     return logging.getLogger(__name__)
@@ -260,6 +260,8 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
 
     Returns a formula representing an invariant
     """
+    def _get_lzz_solver():
+      return get_mathematica()
 
     logger = _get_logger()
     logger.info("DWC...")
@@ -288,7 +290,7 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
                 if solver.is_valid(Implies(And(invar, init), pred)):
 
 
-                    lzz_solver = _get_solver()
+                    lzz_solver = _get_lzz_solver()
                     logger.debug("LZZ for %s..." % (pred.serialize()))
                     is_invar = lzz_fast(lzz_solver, pred, dyn_sys,
                                         pred, invar)
@@ -312,12 +314,12 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
             preds = {LT(rt0,a), LT(a,rt0), Equals(a,rt0)}
             eq_0 = Equals(a,rt0)
 
-            lzz_solver = _get_solver()
+            lzz_solver = _get_lzz_solver()
             is_invar = lzz(lzz_solver, eq_0, dyn_sys, eq_0, invar)
             if is_invar:
                 inv_dyn_sys = DynSystem.get_inverse(dyn_sys)
 
-                lzz_solver = _get_solver()
+                lzz_solver = _get_lzz_solver()
                 is_invar = lzz(lzz_solver, eq_0, inv_dyn_sys, eq_0, invar)
 
                 if (is_invar):

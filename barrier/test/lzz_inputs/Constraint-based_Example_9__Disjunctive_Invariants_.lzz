@@ -1,0 +1,8 @@
+{
+  "candidate": "(and true (or (>= _x 0) (>= _y 0)))",
+  "constraints": "(and true (or (>= _x 0) (>= _y 0)))",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Constraint-based Example 9 (Disjunctive Invariants)",
+  "varsDecl": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "vectorField": ["(= (- _y) 0)", "(= (- _x) 0)"]
+}

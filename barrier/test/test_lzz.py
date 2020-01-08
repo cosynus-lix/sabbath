@@ -13,6 +13,9 @@ except ImportError:
 
 import sys
 
+from multiprocessing import Pool
+from multiprocessing.context import TimeoutError
+
 from pysmt.typing import BOOL, REAL, INT
 from pysmt.shortcuts import (
     is_valid,
@@ -30,7 +33,17 @@ from barrier.lzz.lzz import (
     is_p_invar, lzz, get_inf_dnf, get_ivinf_dnf
 )
 
+from barrier.lzz.serialization import importLzz
 from barrier.lzz.dnf import DNFConverter
+
+from barrier.mathematica.mathematica import get_mathematica
+
+def run_lzz(lzz_problem):
+    with Solver(logic=QF_NRA, name="z3") as solver:
+        (name, candidate, dyn_sys, candidate, invar) = lzz_problem
+        print("LZZ %s..." % name)
+        is_invar = lzz(solver, candidate, dyn_sys, candidate, invar)
+    return is_invar
 
 
 class TestLzz(TestCase):
@@ -151,3 +164,43 @@ class TestLzz(TestCase):
         p3 = y >= 0
 
         _test_dnf(And(Or(p1,p2), Or(p1,p3), Or(p2)))
+
+
+    def test_battery(self):
+        import barrier.test
+
+        def run_with_timeout(lzz_problem,time_out):
+            is_invar = None
+            try:
+                name = lzz_problem[0]
+                print("Running %s" % name)
+                kwargs = {"lzz_problem": lzz_problem}
+                pool = Pool(1)
+                future_res_run_lzz = pool.apply_async(run_lzz, kwds=kwargs)
+                pool.close()
+
+                # Get result after 10 seconds or kill
+                try:
+                    is_invar = future_res_run_lzz.get(time_out)
+                    is_invar = future_res_run_lzz.get(0)
+                    print("%s is %s!" % (name, "True" if is_invar else "False"))
+                except TimeoutError:
+                    print("%s time out!" % name)
+                    is_invar = None
+            finally:
+                pass
+
+            return is_invar
+
+
+        current_path = os.path.dirname(os.path.abspath(barrier.test.__file__))
+        input_path = os.path.join(current_path, "lzz_inputs")
+
+        for lzz_file in os.listdir(input_path):
+            if not lzz_file.endswith(".lzz"):
+                continue
+            with open(os.path.join(input_path, lzz_file), "r") as f:
+                lzz_problem = importLzz(f)
+
+                is_invar = run_with_timeout(lzz_problem, 5)
+                self.assertTrue((is_invar is None) or is_invar)
