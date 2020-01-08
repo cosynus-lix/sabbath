@@ -16,6 +16,7 @@ import logging
 from barrier.system import DynSystem
 from barrier.lzz.lzz import (lzz, lzz_fast)
 from barrier.system import DynSystem
+from barrier.mathematica.mathematica import MathematicaSolver
 
 from pysmt.logics import QF_NRA
 from pysmt.shortcuts import (
@@ -45,6 +46,16 @@ def get_mathsat_smtlib():
         env.factory.add_generic_solver(name, path, logics)
 
     return Solver(name=name, logic=logics[0]) #, solver_options={'debug_interaction':True})
+
+def get_mathematica():
+    name = "mathematica"
+    logics = [QF_NRA]
+
+    env = get_env()
+    if not env.factory.is_generic_solver(name):
+        env.factory.add_generic_solver(name, [], logics)
+
+    return MathematicaSolver(env, QF_NRA)
 
 def _get_solver():
     return get_z3()
@@ -260,6 +271,8 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
 
     Returns a formula representing an invariant
     """
+    def _get_lzz_solver():
+      return get_mathematica()
 
     logger = _get_logger()
     logger.info("DWC...")
@@ -288,7 +301,7 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
                 if solver.is_valid(Implies(And(invar, init), pred)):
 
 
-                    lzz_solver = _get_solver()
+                    lzz_solver = _get_lzz_solver()
                     logger.debug("LZZ for %s..." % (pred.serialize()))
                     is_invar = lzz_fast(lzz_solver, pred, dyn_sys,
                                         pred, invar)
@@ -312,12 +325,12 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
             preds = {LT(rt0,a), LT(a,rt0), Equals(a,rt0)}
             eq_0 = Equals(a,rt0)
 
-            lzz_solver = _get_solver()
+            lzz_solver = _get_lzz_solver()
             is_invar = lzz(lzz_solver, eq_0, dyn_sys, eq_0, invar)
             if is_invar:
                 inv_dyn_sys = DynSystem.get_inverse(dyn_sys)
 
-                lzz_solver = _get_solver()
+                lzz_solver = _get_lzz_solver()
                 is_invar = lzz(lzz_solver, eq_0, inv_dyn_sys, eq_0, invar)
 
                 if (is_invar):
