@@ -66,7 +66,6 @@ class TestMathematica(TestCase):
     env = Environment()
     solver = MathematicaSolver(env, QF_NRA)
 
-
     x,y,z = [Symbol(s,REAL) for s in ["x","y","z"]]
 
     formula = And(x*x + y*y >= 3, x > 0)
