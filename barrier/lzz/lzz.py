@@ -129,8 +129,8 @@ def is_p_invar(solver, predicate, dyn_sys, init, invar):
     #      trans_f_p); or
     #    - do not belong to the points escaping the invariants
 
-    # check [init -> predicate]
-    if (solver.is_valid(Implies(init, predicate))):
+    # check [init -> predicate]]
+    if (solver.is_valid(Implies(And(init, invar), predicate))):
         # Check condition on the differential equation
         on_border = Equals(p_poly, Real(0))
         inside = Implies(on_border, Or(Not(trans_f_p), trans_f_h))
@@ -138,13 +138,13 @@ def is_p_invar(solver, predicate, dyn_sys, init, invar):
         if solver.is_valid(Implies(on_border, inside)):
             return True
         else:
-            # logger.debug("%s is not an invariant (consecution "
-            #              "condition failed)" % predicate)
+            logger.debug("%s is not an invariant (consecution "
+                         "condition failed)" % predicate)
 
             return False
     else:
-        # logger.debug("%s is not an invariant (initial "
-        #              "condition failed)" % predicate)
+        logger.debug("%s is not an invariant (initial "
+                     "condition failed)" % predicate)
         return False
 
 
@@ -215,11 +215,11 @@ def lzz(solver, candidate, dyn_sys, init, invar):
 
     # candidate is an invariant of the dynamical system if:
     #
-    # 1. init => candidate; and
+    # 1. (init /\ Invar) => candidate; and
     # 2. (candidate /\ Invar /\ Inf(Invar)) => Inf(candidate); and
     # 3. (!candidate /\ Invar /\ IvInf(Invar)) => !IvInf(candidate)
     # are valid
-    if (solver.is_valid(Implies(init, candidate))):
+    if (solver.is_valid(Implies(And(init, invar), candidate))):
         # Check condition on the differential equation
 
         c = DNFConverter()

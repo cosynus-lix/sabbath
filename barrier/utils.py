@@ -12,6 +12,8 @@ from pysmt.shortcuts import (
     Real
 )
 
+from pysmt.logics import QF_NRA
+from pysmt.shortcuts import get_env
 
 def get_range(var_list, range_matrix):
     """
@@ -53,3 +55,22 @@ def get_range_from_int(var_list, range_matrix):
 
     return get_range(var_list, new_range_matrix)
 
+def get_mathsat_smtlib(path, env = None):
+    """
+    Get the mathsat SMT lib solver
+    """
+
+    name = "mathsat-smtlib"
+    logics = [QF_NRA]
+
+    if env is None:
+        env = get_env()
+
+    if not env.factory.is_generic_solver(name):
+        path = ["/Users/sergiomover/Tools/mathsat5/build/mathsat"]
+        env.factory.add_generic_solver(name, path, logics)
+
+    # solver_options={'debug_interaction':True})
+    solver = env.factory.Solver(name=name,
+                                logic=logics[0])
+    return solver

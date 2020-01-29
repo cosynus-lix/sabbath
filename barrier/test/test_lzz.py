@@ -36,9 +36,8 @@ from barrier.lzz.lzz import (
 from barrier.lzz.serialization import importLzz
 from barrier.lzz.dnf import DNFConverter
 
-from barrier.mathematica.mathematica import get_mathematica
 
-def run_lzz(lzz_problem):
+def run_lzz(lzz_problem, env):
     with Solver(logic=QF_NRA, name="z3") as solver:
         (name, candidate, dyn_sys, candidate, invar) = lzz_problem
         print("LZZ %s..." % name)
@@ -52,15 +51,14 @@ class TestLzz(TestCase):
         x, y = [Symbol(var, REAL) for var in ["x","y"]]
         # der(x) = -2y, der(y) = x^2
         dyn_sys = DynSystem([x, y], [], [],
-                        {x : -Fraction(2,2) * y, y : x * x},
+                        {x : -Fraction(2,1) * y, y : x * x},
                         {})
 
-        init = And(Fraction(-1,1) <= x,
+        init = And(Fraction(0,1) <= x,
                    x <= Fraction(1,2),
-                   Fraction(-1, 2) <= y,
+                   Fraction(-1,2) <= y,
+                   y <= Fraction(3, 5))
 
-
-                   x <= Fraction(-3,5))
         h = GE(-x - y * y, Real(0))
         p = GE(-x * y + y * y, Real(0))
 
@@ -169,18 +167,20 @@ class TestLzz(TestCase):
     def test_battery(self):
         import barrier.test
 
-        def run_with_timeout(lzz_problem,time_out):
+        def run_with_timeout(lzz_problem,time_out,env):
             is_invar = None
             try:
                 name = lzz_problem[0]
                 print("Running %s" % name)
-                kwargs = {"lzz_problem": lzz_problem}
+                kwargs = {"lzz_problem": lzz_problem,
+                          "env" : env}
                 pool = Pool(1)
                 future_res_run_lzz = pool.apply_async(run_lzz, kwds=kwargs)
                 pool.close()
 
                 # Get result after 10 seconds or kill
                 try:
+                    # is_invar = run_lzz(lzz_problem, env)
                     is_invar = future_res_run_lzz.get(time_out)
                     is_invar = future_res_run_lzz.get(0)
                     print("%s is %s!" % (name, "True" if is_invar else "False"))
@@ -196,11 +196,23 @@ class TestLzz(TestCase):
         current_path = os.path.dirname(os.path.abspath(barrier.test.__file__))
         input_path = os.path.join(current_path, "lzz_inputs")
 
+        env = get_env()
+
+        # Ignore longer checks
+        to_ignore = ["3D Lotka Volterra (III)",
+            "3D Lotka Volterra (I)",
+            "Ben Sassi Girard 20104 Moore-Greitzer Jet",
+            "Coupled Spring-Mass System (I)",
+            "Coupled Spring-Mass System (II)",
+            "3D Lotka Volterra (II)",
+            "Longitudinal Motion of an Aircraft",
+            "Collision Avoidance Maneuver (I)"]
+
         for lzz_file in os.listdir(input_path):
             if not lzz_file.endswith(".lzz"):
                 continue
             with open(os.path.join(input_path, lzz_file), "r") as f:
-                lzz_problem = importLzz(f)
-
-                is_invar = run_with_timeout(lzz_problem, 5)
-                self.assertTrue((is_invar is None) or is_invar)
+                lzz_problem = importLzz(f, env)
+                if (not lzz_problem[0] in to_ignore):
+                    is_invar = run_lzz(lzz_problem, env)
+                    self.assertTrue(is_invar)
