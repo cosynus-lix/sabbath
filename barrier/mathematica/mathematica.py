@@ -95,13 +95,11 @@ class MathematicaSolver(Solver):
     exists_formula = self.mgr.Exists(free_vars, to_solve)
     mathematica_exists_formula = self.converter.convert(exists_formula)
 
-    print(mathematica_exists_formula)
-
-    # print(exists_formula)
-    # print(mathematica_exists_formula)
-
     reduce_cmd = wl.Reduce(mathematica_exists_formula, wlexpr('Reals'))
-    print(reduce_cmd)
+
+    # DEBUG
+    # print(reduce_cmd)
+
     exist_res = self.session.evaluate(reduce_cmd)
 
     # Invalidate cached model
