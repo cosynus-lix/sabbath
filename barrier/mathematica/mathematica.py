@@ -95,10 +95,13 @@ class MathematicaSolver(Solver):
     exists_formula = self.mgr.Exists(free_vars, to_solve)
     mathematica_exists_formula = self.converter.convert(exists_formula)
 
+    print(mathematica_exists_formula)
+
     # print(exists_formula)
     # print(mathematica_exists_formula)
 
-    reduce_cmd = wl.Reduce(mathematica_exists_formula, wlexpr('Real'))
+    reduce_cmd = wl.Reduce(mathematica_exists_formula, wlexpr('Reals'))
+    print(reduce_cmd)
     exist_res = self.session.evaluate(reduce_cmd)
 
     # Invalidate cached model
@@ -203,10 +206,11 @@ class MathematicaConverter(Converter, DagWalker):
     return wl.Plus(*args)
 
   def walk_minus(self, formula, args, **kwargs):
+    assert(len(args) == 2)
     return wl.Plus(args[0], wl.Minus(args[1]))
 
   def walk_times(self, formula, args, **kwargs):
-    return wl.Times(args[0],args[1])
+    return wl.Times(*args)
 
   def walk_div(self, formula, args, **kwargs):
     return wl.Divide(args[0],args[1])
