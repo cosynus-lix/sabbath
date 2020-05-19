@@ -28,6 +28,8 @@ from barrier.test import TestCase
 from barrier.system import DynSystem
 from barrier.utils import get_range_from_int
 
+from barrier.lzz.lzz import lzz
+
 from barrier.decomposition.explicit import (
     _get_solver,
     _get_neighbors,
@@ -37,6 +39,8 @@ from barrier.decomposition.explicit import (
     dwc,
     dwcl
 )
+
+from barrier.mathematica.mathematica import get_mathematica
 
 class TestDecomposition(TestCase):
 
@@ -182,7 +186,6 @@ class TestDecomposition(TestCase):
             invars = dwcl(dyn_sys, invar, poly, init, safe)
             self.assertTrue(self._eq_wformula(invars,expected))
 
-    @unittest.skip("To fix")
     def test_invar_dwcl_pegasus(self):
         def rf(a,b):
             return Real(Fraction(a,b))
@@ -221,3 +224,9 @@ class TestDecomposition(TestCase):
             rf(-99997,1000000))]
 
         invars = dwc(dyn_sys, invar, poly, init, safe)
+
+        env = get_env()
+        solver = get_mathematica(env)
+        is_invar = lzz(solver, invars, dyn_sys, invars, invar)
+        solver.exit()
+        self.assertTrue(is_invar)
