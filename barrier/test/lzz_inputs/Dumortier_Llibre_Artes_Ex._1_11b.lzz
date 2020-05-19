@@ -1,8 +1,8 @@
 {
   "candidate": "(and true (<= (+ (+ (- 5) (* _a (* _a 1))) (* _y (* _y 1))) 0))",
-  "constraints": "(and true (<= (+ (+ (- 5) (* _a (* _a 1))) (* _y (* _y 1))) 0))",
+  "constraints": "true",
   "contVars": ["(declare-fun _y () Real)", "(declare-fun _a () Real)"],
   "name": "Dumortier Llibre Artes Ex. 1_11b",
   "varsDecl": ["(declare-fun _a () Real)", "(declare-fun _y () Real)"],
-  "vectorField": ["(= (- (- (* 2 _a) (* _a (* _a (* _a (* _a (* _a 1)))))) (* _a (* _y (* _y (* _y (* _y 1)))))) 0)", "(= (- (- _y (* (* _a (* _a 1)) _y)) (* _y (* _y (* _y 1)))) 0)"]
+  "vectorField": ["(= (- (- _y (* (* _a (* _a 1)) _y)) (* _y (* _y (* _y 1)))) 0)", "(= (- (- (* 2 _a) (* _a (* _a (* _a (* _a (* _a 1)))))) (* _a (* _y (* _y (* _y (* _y 1)))))) 0)"]
 }

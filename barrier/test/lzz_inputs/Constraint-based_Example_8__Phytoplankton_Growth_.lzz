@@ -1,8 +1,8 @@
 {
   "candidate": "(and true (and (<= 0 _x1) (and (<= _x1 2) (and (<= 0 _x2) (and (<= _x2 1) (and (<= 0 _x3) (<= _x3 (/ 1 2))))))))",
-  "constraints": "(and true (and (<= 0 _x1) (and (<= _x1 2) (and (<= 0 _x2) (and (<= _x2 1) (and (<= 0 _x3) (<= _x3 (/ 1 2))))))))",
+  "constraints": "true",
   "contVars": ["(declare-fun _x3 () Real)", "(declare-fun _x2 () Real)", "(declare-fun _x1 () Real)"],
   "name": "Constraint-based Example 8 (Phytoplankton Growth)",
-  "varsDecl": ["(declare-fun _x1 () Real)", "(declare-fun _x2 () Real)", "(declare-fun _x3 () Real)"],
-  "vectorField": ["(= (- (- 1 _x1) (/ (* _x1 _x2) 4)) 0)", "(= (* _x2 (+ (- 1) (* 2 _x3))) 0)", "(= (- (/ _x1 4) (* 2 (* _x3 (* _x3 1)))) 0)"]
+  "varsDecl": ["(declare-fun _x1 () Real)", "(declare-fun _x3 () Real)", "(declare-fun _x2 () Real)"],
+  "vectorField": ["(= (- (/ _x1 4) (* 2 (* _x3 (* _x3 1)))) 0)", "(= (* _x2 (+ (- 1) (* 2 _x3))) 0)", "(= (- (- 1 _x1) (/ (* _x1 _x2) 4)) 0)"]
 }

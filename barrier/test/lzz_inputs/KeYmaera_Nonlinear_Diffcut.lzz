@@ -1,8 +1,8 @@
 {
   "candidate": "(and (and (and true (and (<= (+ (- 1) (* (- 1) _x)) 0) (<= (* (- 1) _y) 0))) (<= (+ (- 1) (* (- 1) _x)) 0)) (<= (* (- 1) _y) 0))",
-  "constraints": "(and (and (and true (and (<= (+ (- 1) (* (- 1) _x)) 0) (<= (* (- 1) _y) 0))) (<= (+ (- 1) (* (- 1) _x)) 0)) (<= (* (- 1) _y) 0))",
+  "constraints": "true",
   "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
   "name": "KeYmaera Nonlinear Diffcut",
-  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
-  "vectorField": ["(= (+ (* (+ (- 3) _x) (* (+ (- 3) _x) (* (+ (- 3) _x) (* (+ (- 3) _x) 1)))) (* _y (* _y (* _y (* _y (* _y 1)))))) 0)", "(= (* _y (* _y 1)) 0)"]
+  "varsDecl": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "vectorField": ["(= (* _y (* _y 1)) 0)", "(= (+ (* (+ (- 3) _x) (* (+ (- 3) _x) (* (+ (- 3) _x) (* (+ (- 3) _x) 1)))) (* _y (* _y (* _y (* _y (* _y 1)))))) 0)"]
 }

@@ -72,4 +72,4 @@ def importLzz(json_stream, env):
 
     dyn_sys = DynSystem(cont_vars, [], [], odes, {}, False)
 
-    return (problem_json["name"], candidate, dyn_sys, candidate, invar)
+    return (problem_json["name"], candidate, dyn_sys, invar)

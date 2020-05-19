@@ -71,16 +71,15 @@ class DynSystem(object):
         stream.write("ODEs:\n")
         for s in self._states:
             stream.write("%s' = " % (str(s)))
-            stream.write(self._odes[s])
+            stream.write(self._odes[s].serialize())
             stream.write("\n")
 
         stream.write("Disturbances:\n")
         for s in self._disturbances:
             stream.write("%s = " % (str(s)))
-            stream.write(self._dist_constraints[s])
+            stream.write(self._dist_constraints[s].serialize())
             stream.write("\n")
 
-    @staticmethod
     def get_inverse(self):
         """ Invert the ODE der(x) = f(x) to der(x) = -f(x)
         Create a new dynamical system.

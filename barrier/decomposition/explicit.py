@@ -259,7 +259,8 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
 
     solver = get_solver()
     if (solver.is_unsat(And(invar, init))):
-        logger.info("Init (%s) outside invariant (%s)!" % (init.serialize(), invar.serialize()))
+        logger.info("Init (%s) outside invariant (%s)!" % (init.serialize(),
+                                                           invar.serialize()))
         return FALSE()
     elif (solver.is_valid(Implies(invar, safe))):
         # DW - Differential Weakening
@@ -277,8 +278,6 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
             preds = {LT(rt0,a), LT(a,rt0), Equals(a,rt0)}
             for pred in preds:
                 if solver.is_valid(Implies(And(invar, init), pred)):
-
-
                     lzz_solver = _get_lzz_solver()
                     logger.debug("LZZ for %s..." % (pred.serialize()))
                     is_invar = lzz_fast(lzz_solver, pred, dyn_sys,
@@ -306,7 +305,7 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
             lzz_solver = _get_lzz_solver()
             is_invar = lzz(lzz_solver, eq_0, dyn_sys, eq_0, invar)
             if is_invar:
-                inv_dyn_sys = DynSystem.get_inverse(dyn_sys)
+                inv_dyn_sys = dyn_sys.get_inverse()
 
                 lzz_solver = _get_lzz_solver()
                 is_invar = lzz(lzz_solver, eq_0, inv_dyn_sys, eq_0, invar)

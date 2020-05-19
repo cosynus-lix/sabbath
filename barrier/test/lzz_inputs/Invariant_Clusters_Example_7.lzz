@@ -1,8 +1,8 @@
 {
   "candidate": "(and true (< (* (* _x (* _x 1)) (+ 3 _x)) (+ 394 (* (+ (- 3) _y) (* _y (* _y 1))))))",
-  "constraints": "(and true (< (* (* _x (* _x 1)) (+ 3 _x)) (+ 394 (* (+ (- 3) _y) (* _y (* _y 1))))))",
+  "constraints": "true",
   "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
   "name": "Invariant Clusters Example 7",
-  "varsDecl": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
-  "vectorField": ["(= (- (* _y (* _y 1)) (* 2 _y)) 0)", "(= (+ (* _x (* _x 1)) (* 2 _x)) 0)"]
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (+ (* _x (* _x 1)) (* 2 _x)) 0)", "(= (- (* _y (* _y 1)) (* 2 _y)) 0)"]
 }

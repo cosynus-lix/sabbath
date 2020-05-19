@@ -1,8 +1,8 @@
 {
   "candidate": "(and true (<= (+ (+ (- 1) (* _x (* _x 1))) (* _y (* _y 1))) 0))",
-  "constraints": "(and true (<= (+ (+ (- 1) (* _x (* _x 1))) (* _y (* _y 1))) 0))",
+  "constraints": "(and (>= _x 0) (>= _y 0))",
   "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
   "name": "Unstable Unit Circle 3",
   "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
-  "vectorField": ["(= (+ (- (+ (- _x) (* _x (* _x (* _x 1)))) _y) (* _x (* _y (* _y 1)))) 0)", "(= (+ (+ (- _x _y) (* (* _x (* _x 1)) _y)) (* _y (* _y (* _y 1)))) 0)"]
+  "vectorField": ["(= (+ (+ (- _x _y) (* (* _x (* _x 1)) _y)) (* _y (* _y (* _y 1)))) 0)", "(= (+ (- (+ (- _x) (* _x (* _x (* _x 1)))) _y) (* _x (* _y (* _y 1)))) 0)"]
 }

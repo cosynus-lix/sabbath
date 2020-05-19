@@ -70,7 +70,6 @@ def get_mathsat_smtlib(path, env = None):
         path = ["/Users/sergiomover/Tools/mathsat5/build/mathsat"]
         env.factory.add_generic_solver(name, path, logics)
 
-    # solver_options={'debug_interaction':True})
     solver = env.factory.Solver(name=name,
                                 logic=logics[0])
     return solver
