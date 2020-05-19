@@ -38,7 +38,6 @@ from barrier.decomposition.explicit import (
     dwcl
 )
 
-
 class TestDecomposition(TestCase):
 
     def _print_abs_states(self, got):
@@ -67,7 +66,6 @@ class TestDecomposition(TestCase):
         same = solver.is_valid(Iff(got, formula))
         return same
 
-    @unittest.skip("")
     def test_get_neighbors(self):
         x, y = [Symbol(var, REAL) for var in ["x", "y"]]
 
@@ -161,7 +159,6 @@ class TestDecomposition(TestCase):
         safe = Not(And(Equals(x,r0),y<r0))
         return (dyn_sys, TRUE(),[x,y], init, safe,[])
 
-    @unittest.skip("")
     def test_invar_lazy(self):
         test_cases = [TestDecomposition.get_test_case_1(),
                       TestDecomposition.get_test_case_2(),
