@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(< (+ (* (+ (/ (- 1) 3) _x) (* (+ (/ (- 1) 3) _x) 1)) (* 2 (* (+ (/ (- 1) 3) _y) (* (+ (/ (- 1) 3) _y) 1)))) (/ 1 25))",
+  "consequent": "(not (or (>= _x 2) (<= _x (- 2))))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Strogatz Exercise 6_1_5",
+  "predicates": ["(= (+ (* (- 1) _x) _y) 0)", "(= (+ _x (* (- 1) _y)) 0)", "(= (+ (+ (- 2) _x) _y) 0)", "(= _x 0)"],
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (- _x _y) 0)", "(= (* _x (- (- 2 _x) _y)) 0)"]
+}]

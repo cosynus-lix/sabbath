@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(and (= _Vc 0.131) (= _Il 0.055))",
+  "consequent": "(and (<= (- 0.5) _Vc) (and (<= _Vc 1.2) (and (<= (- 0.5) _Il) (<= _Il 0.2))))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _Il () Real)", "(declare-fun _Vc () Real)"],
+  "name": "Nonlinear Circuit Example 1+2 (Tunnel Diode Oscillator)",
+  "predicates": ["(= (+ (+ (/ (- 3) 5) _Il) (* 2 _Vc)) 0)", "(= (+ (+ (/ (- 3) 10) (* (/ 1 2) _Il)) _Vc) 0)"],
+  "varsDecl": ["(declare-fun _Il () Real)", "(declare-fun _Vc () Real)", "(declare-fun _Id (Real) Real)"],
+  "vectorField": ["(= (* (/ 1 0.000001) (+ (- (- _Vc) (* (/ 1 2) _Il)) 0.3)) 0)", "(= (* (/ 1 1E-9) (+ (- (_Id _Vc)) _Il)) 0)"]
+}]

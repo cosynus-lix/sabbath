@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(and (<= 0.5 _x) (and (<= _x 0.7) (and (<= 0 _y) (<= _y 0.3))))",
+  "consequent": "(not (and (>= (- 0.8) _x) (and (>= _x (- 1)) (and (>= (- 0.7) _y) (>= _y (- 1))))))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Ahmadi Parrilo Krstic",
+  "predicates": ["(= _y 0)", "(= (+ (- 1) _y) 0)", "(= _x 0)"],
+  "varsDecl": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "vectorField": ["(= (- _y) 0)", "(= (+ (- _x) (* _x _y)) 0)"]
+}]

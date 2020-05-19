@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(and (= _x (- 1)) (= _y (- 1)))",
+  "consequent": "(not (or (> _x 0) (> _y 0)))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Arrowsmith Place Fig_3_9 page 83",
+  "predicates": ["(= (+ (* (- 2) _x) _y) 0)", "(= _y 0)", "(= (+ _x (* (/ (- 1) 2) _y)) 0)", "(= (+ (* (/ (- 1) 2) _x) _y) 0)", "(= (+ _x (* (- 2) _y)) 0)", "(= _x 0)"],
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (- (* (- (* 2 _x) _y) _y)) 0)", "(= (* _x (- _x (* 2 _y))) 0)"]
+}]

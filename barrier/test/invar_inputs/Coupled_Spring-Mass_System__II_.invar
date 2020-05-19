@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(and (= _x1 0) (and (= _x2 0) (and (= _v1 1) (= _v2 (- 1)))))",
+  "consequent": "true",
+  "constraints": "true",
+  "contVars": ["(declare-fun _v2 () Real)", "(declare-fun _v1 () Real)", "(declare-fun _x2 () Real)", "(declare-fun _x1 () Real)"],
+  "name": "Coupled Spring-Mass System (II)",
+  "predicates": ["(= (+ (* (- 1) _x1) _x2) 0)", "(= (+ _x1 (* (- 1) _x2)) 0)", "(= (+ (* (- 1) _x1) _x2) 0)", "(= (+ _x1 (* (- 1) _x2)) 0)", "(= _v2 0)", "(= _v1 0)"],
+  "varsDecl": ["(declare-fun _k () Real)", "(declare-fun _v2 () Real)", "(declare-fun _x1 () Real)", "(declare-fun _v1 () Real)", "(declare-fun _x2 () Real)"],
+  "vectorField": ["(= (* _k (- _x1 _x2)) 0)", "(= (- (* (/ _k 5) (- _x1 _x2))) 0)", "(= _v2 0)", "(= _v1 0)"]
+}]

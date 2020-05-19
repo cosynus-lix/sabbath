@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(and (>= _x1 2) (<= (* _x2 (* _x2 1)) 1))",
+  "consequent": "(>= _x1 1)",
+  "constraints": "true",
+  "contVars": ["(declare-fun _x2 () Real)", "(declare-fun _x1 () Real)"],
+  "name": "Nonlinear Circuit Example 3",
+  "predicates": ["(= (+ (- 1) _x1) 0)", "(= _x1 0)", "(= (+ 1 _x1) 0)", "(= _x2 0)"],
+  "varsDecl": ["(declare-fun _x1 () Real)", "(declare-fun _x2 () Real)"],
+  "vectorField": ["(= (- _x1 (* _x1 (* _x1 (* _x1 1)))) 0)", "(= (- (* _x2 (* _x2 (* _x2 1)))) 0)"]
+}]

@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(< (+ (* _x (* _x 1)) (* _y (* _y 1))) (/ 1 16))",
+  "consequent": "(not (or (<= _x (- 2)) (> _y 2)))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Stable Limit Cycle 1",
+  "predicates": [],
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (- (- (+ (- _x) _y) (* (* _x (* _x 1)) _y)) (* _y (* _y (* _y 1)))) 0)", "(= (- (+ (- _x (* _x (* _x (* _x 1)))) _y) (* _x (* _y (* _y 1)))) 0)"]
+}]

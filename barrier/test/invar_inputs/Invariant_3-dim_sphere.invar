@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(and (= _x (/ 1 4)) (and (= _y (/ 1 8)) (= _z (/ 1 10))))",
+  "consequent": "(not (or (> _x 10) (or (> _y 5) (<= _z (- 20)))))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _z () Real)", "(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Invariant 3-dim sphere",
+  "predicates": ["(= _z 0)", "(= _y 0)", "(= _x 0)"],
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)", "(declare-fun _z () Real)"],
+  "vectorField": ["(= (- (* _z (* _z 1)) (* _z (+ (+ (* _x (* _x (* _x 1))) (* _y (* _y (* _y 1)))) (* _z (* _z (* _z 1)))))) 0)", "(= (- (* _y (* _y 1)) (* _y (+ (+ (* _x (* _x (* _x 1))) (* _y (* _y (* _y 1)))) (* _z (* _z (* _z 1)))))) 0)", "(= (- (* _x (* _x 1)) (* _x (+ (+ (* _x (* _x (* _x 1))) (* _y (* _y (* _y 1)))) (* _z (* _z (* _z 1)))))) 0)"]
+}]

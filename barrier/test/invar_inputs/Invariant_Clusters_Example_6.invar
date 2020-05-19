@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(<= (- (+ (* (+ _x 15) (* (+ _x 15) 1)) (* (- _y 17) (* (- _y 17) 1))) 1) 0)",
+  "consequent": "(not (<= (- (+ (* (- _x 11) (* (- _x 11) 1)) (* (- _y 16.5) (* (- _y 16.5) 1))) 1) 0))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Invariant Clusters Example 6",
+  "predicates": ["(= _y 0)", "(= _x 0)", "(= _y 0)"],
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (* _x _y) 0)", "(= (* _y (* _y 1)) 0)"]
+}]

@@ -1,0 +1,10 @@
+[{
+  "antecedent": "true",
+  "consequent": "false",
+  "constraints": "true",
+  "contVars": ["(declare-fun _d2 () Real)", "(declare-fun _d1 () Real)", "(declare-fun _q () Real)", "(declare-fun _theta () Real)", "(declare-fun _z () Real)", "(declare-fun _w () Real)", "(declare-fun _x () Real)", "(declare-fun _u () Real)"],
+  "name": "Longitudinal Motion of an Aircraft",
+  "predicates": ["(= _d1 0)", "(= _q 0)", "(= _d2 0)", "(= _q 0)", "(= _q 0)", "(= (+ _d2 (* (* (* (- 1) (^ _g (- 1))) (^ _m (- 1))) (+ (* (* (* (- 1) _m) _q) _u) (* (- 1) _Z)))) 0)", "(= (+ _d1 (* (* (^ _g (- 1)) (^ _m (- 1))) (+ (* (* _m _q) _w) (* (- 1) _X)))) 0)"],
+  "varsDecl": ["(declare-fun _M () Real)", "(declare-fun _d2 () Real)", "(declare-fun _d1 () Real)", "(declare-fun _Z () Real)", "(declare-fun _g () Real)", "(declare-fun _Iyy () Real)", "(declare-fun _u () Real)", "(declare-fun _w () Real)", "(declare-fun _q () Real)", "(declare-fun _m () Real)", "(declare-fun _X () Real)"],
+  "vectorField": ["(= (- (* _q _d1)) 0)", "(= (* _q _d2) 0)", "(= (/ _M _Iyy) 0)", "(= _q 0)", "(= (+ (- (* _d1 _u)) (* _d2 _w)) 0)", "(= (+ (+ (/ _Z _m) (* _g _d2)) (* _q _u)) 0)", "(= (+ (* _d2 _u) (* _d1 _w)) 0)", "(= (- (- (/ _X _m) (* _g _d1)) (* _q _w)) 0)"]
+}]

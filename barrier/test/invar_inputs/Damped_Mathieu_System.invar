@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(and (< (+ (+ (+ (* 98 (* _x1 (* _x1 1))) (* (* 24 _x1) _x2)) (* (* 24 _x2) _x1)) (* 55 (* _x2 (* _x2 1)))) 0) (and (= _sint 0) (= _cost 1)))",
+  "consequent": "(< (+ (+ (+ (* 98 (* _x1 (* _x1 1))) (* (* 24 _x1) _x2)) (* (* 24 _x2) _x1)) (* 55 (* _x2 (* _x2 1)))) 0)",
+  "constraints": "true",
+  "contVars": ["(declare-fun _cost () Real)", "(declare-fun _sint () Real)", "(declare-fun _x2 () Real)", "(declare-fun _x1 () Real)"],
+  "name": "Damped Mathieu System",
+  "predicates": ["(= _sint 0)", "(= _cost 0)", "(= (+ (+ (* 2 _x1) (* _sint _x1)) _x2) 0)", "(= _x2 0)"],
+  "varsDecl": ["(declare-fun _sint () Real)", "(declare-fun _cost () Real)", "(declare-fun _x1 () Real)", "(declare-fun _x2 () Real)"],
+  "vectorField": ["(= (- _sint) 0)", "(= _cost 0)", "(= (- (- _x2) (* (+ 2 _sint) _x1)) 0)", "(= _x2 0)"]
+}]

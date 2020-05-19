@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(and (= _Il 1) (= _Vc 1))",
+  "consequent": "(<= _Vc 3)",
+  "constraints": "true",
+  "contVars": ["(declare-fun _Vc () Real)", "(declare-fun _Il () Real)"],
+  "name": "Nonlinear Circuit RLC Circuit Oscillator",
+  "predicates": ["(= (+ (- 2) _Il) 0)", "(= _Il 0)", "(= (+ 1 _Il) 0)", "(= _Vc 0)", "(= (+ 5 _Vc) 0)"],
+  "varsDecl": ["(declare-fun _Il () Real)", "(declare-fun _Vc () Real)"],
+  "vectorField": ["(= (+ (- (* (- 2) _Il) (* _Il (* _Il 1))) (* _Il (* _Il (* _Il 1)))) 0)", "(= (- (- _Vc) (* (/ 1 5) (* _Vc (* _Vc 1)))) 0)"]
+}]

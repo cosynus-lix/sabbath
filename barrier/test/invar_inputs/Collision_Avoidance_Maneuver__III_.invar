@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(and (= _w1 _w2) (> (+ (* (- _x1 _y1) (* (- _x1 _y1) 1)) (* (- _x2 _y2) (* (- _x2 _y2) 1))) 0))",
+  "consequent": "(> (+ (* (- _x1 _y1) (* (- _x1 _y1) 1)) (* (- _x2 _y2) (* (- _x2 _y2) 1))) 0)",
+  "constraints": "true",
+  "contVars": ["(declare-fun _e2 () Real)", "(declare-fun _e1 () Real)", "(declare-fun _y2 () Real)", "(declare-fun _y1 () Real)", "(declare-fun _d2 () Real)", "(declare-fun _d1 () Real)", "(declare-fun _x2 () Real)", "(declare-fun _x1 () Real)"],
+  "name": "Collision Avoidance Maneuver (III)",
+  "predicates": ["(= _e1 0)", "(= _e2 0)", "(= _e2 0)", "(= _e1 0)", "(= _d1 0)", "(= _d2 0)", "(= _d2 0)", "(= _d1 0)"],
+  "varsDecl": ["(declare-fun _e1 () Real)", "(declare-fun _e2 () Real)", "(declare-fun _w2 () Real)", "(declare-fun _d2 () Real)", "(declare-fun _d1 () Real)", "(declare-fun _y1 () Real)", "(declare-fun _y2 () Real)", "(declare-fun _w1 () Real)", "(declare-fun _x1 () Real)", "(declare-fun _x2 () Real)"],
+  "vectorField": ["(= (* _w2 _e1) 0)", "(= (- (* _w2 _e2)) 0)", "(= _e2 0)", "(= _e1 0)", "(= (* _w1 _d1) 0)", "(= (- (* _w1 _d2)) 0)", "(= _d2 0)", "(= _d1 0)"]
+}]

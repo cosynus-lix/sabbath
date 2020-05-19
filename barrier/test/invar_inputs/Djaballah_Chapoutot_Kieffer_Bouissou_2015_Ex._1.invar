@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(<= (+ (+ (/ (- 1) 20) (* (+ (/ 5 4) _x) (* (+ (/ 5 4) _x) 1))) (* (+ (/ (- 5) 4) _y) (* (+ (/ (- 5) 4) _y) 1))) 0)",
+  "consequent": "(not (<= (+ (* (+ (/ 5 2) _x) (* (+ (/ 5 2) _x) 1)) (* (+ (/ (- 4) 5) _y) (* (+ (/ (- 4) 5) _y) 1))) (/ 1 20)))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Djaballah Chapoutot Kieffer Bouissou 2015 Ex. 1",
+  "predicates": ["(= (+ (* (- 2) _x) _y) 0)", "(= _y 0)", "(= (+ _x (* (/ (- 1) 2) _y)) 0)", "(= (+ _x _y) 0)"],
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (- (* _x _y) (/ (* _y (* _y 1)) 2)) 0)", "(= (+ _x _y) 0)"]
+}]
