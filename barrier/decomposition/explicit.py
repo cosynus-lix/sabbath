@@ -24,30 +24,20 @@ from pysmt.shortcuts import (
     FALSE,
     LT, Equals,
     Real,
-    get_env
 )
 
-from barrier.mathematica import Mathematica.get_mathematica
+from barrier.mathematica.mathematica import get_mathematica
 
 def _get_logger():
     return logging.getLogger(__name__)
 
-def get_z3():
-    return Solver(logic=QF_NRA, name="z3")
-
-def get_mathsat_smtlib():
-    name = "mathsat-smtlib"
-    logics = [QF_NRA]
-
-    env = get_env()
-    if not env.factory.is_generic_solver(name):
-        path = ["/Users/sergiomover/Tools/mathsat5/build/mathsat"]
-        env.factory.add_generic_solver(name, path, logics)
-
-    return Solver(name=name, logic=logics[0]) #, solver_options={'debug_interaction':True})
+def _get_lzz_solver():
+  return get_mathematica()
 
 def _get_solver():
-    return get_z3()
+    """ Use Z3 as standard solver for now.
+    """
+    return Solver(logic=QF_NRA, name="z3")
 
 def abstract(solver, polynomials, sigma):
     """ Compute the abstract state for model """
@@ -254,14 +244,13 @@ def get_invar_lazy(dyn_sys, invar,
 
 
 def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
-                get_solver = _get_solver):
+                get_solver = _get_solver,
+                get_lzz_solver = _get_lzz_solver):
     """
     Implement the Differential Weakening Cut algorithm
 
     Returns a formula representing an invariant
     """
-    def _get_lzz_solver():
-      return get_mathematica()
 
     logger = _get_logger()
     logger.info("DWC...")
@@ -270,7 +259,8 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
 
     solver = get_solver()
     if (solver.is_unsat(And(invar, init))):
-        logger.info("Init (%s) outside invariant (%s)!" % (init.serialize(), invar.serialize()))
+        logger.info("Init (%s) outside invariant (%s)!" % (init.serialize(),
+                                                           invar.serialize()))
         return FALSE()
     elif (solver.is_valid(Implies(invar, safe))):
         # DW - Differential Weakening
@@ -288,8 +278,6 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
             preds = {LT(rt0,a), LT(a,rt0), Equals(a,rt0)}
             for pred in preds:
                 if solver.is_valid(Implies(And(invar, init), pred)):
-
-
                     lzz_solver = _get_lzz_solver()
                     logger.debug("LZZ for %s..." % (pred.serialize()))
                     is_invar = lzz_fast(lzz_solver, pred, dyn_sys,
@@ -317,7 +305,7 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
             lzz_solver = _get_lzz_solver()
             is_invar = lzz(lzz_solver, eq_0, dyn_sys, eq_0, invar)
             if is_invar:
-                inv_dyn_sys = DynSystem.get_inverse(dyn_sys)
+                inv_dyn_sys = dyn_sys.get_inverse()
 
                 lzz_solver = _get_lzz_solver()
                 is_invar = lzz(lzz_solver, eq_0, inv_dyn_sys, eq_0, invar)
@@ -347,8 +335,10 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
 
 def dwc(dyn_sys, invar, polynomials, init, safe,
         get_solver = _get_solver):
-    return dwc_general(False, dyn_sys, invar, polynomials, init, safe, get_solver)
+    return dwc_general(False, dyn_sys, invar, polynomials, init, safe,
+                       get_solver)
 
 def dwcl(dyn_sys, invar, polynomials, init, safe,
          get_solver = _get_solver):
-    return dwc_general(True, dyn_sys, invar, polynomials, init, safe, get_solver)
+    return dwc_general(True, dyn_sys, invar, polynomials, init, safe,
+                       get_solver)

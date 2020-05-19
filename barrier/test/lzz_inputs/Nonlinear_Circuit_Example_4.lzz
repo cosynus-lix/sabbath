@@ -1,8 +1,8 @@
 {
   "candidate": "(and (and true (= (- (- 1 (* _x1 (* _x1 1))) (* _x2 (* _x2 1))) 0)) (= (+ (- 1 (* _x1 (* _x1 1))) (* _x2 (* _x2 1))) 0))",
-  "constraints": "(and (and true (= (- (- 1 (* _x1 (* _x1 1))) (* _x2 (* _x2 1))) 0)) (= (+ (- 1 (* _x1 (* _x1 1))) (* _x2 (* _x2 1))) 0))",
+  "constraints": "true",
   "contVars": ["(declare-fun _x2 () Real)", "(declare-fun _x1 () Real)"],
   "name": "Nonlinear Circuit Example 4",
-  "varsDecl": ["(declare-fun _x2 () Real)", "(declare-fun _x1 () Real)"],
-  "vectorField": ["(= (- (* _x2 (* _x2 (* _x2 1)))) 0)", "(= (- _x1 (* _x1 (* _x1 (* _x1 1)))) 0)"]
+  "varsDecl": ["(declare-fun _x1 () Real)", "(declare-fun _x2 () Real)"],
+  "vectorField": ["(= (- _x1 (* _x1 (* _x1 (* _x1 1)))) 0)", "(= (- (* _x2 (* _x2 (* _x2 1)))) 0)"]
 }

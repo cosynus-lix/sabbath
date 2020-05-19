@@ -1,8 +1,8 @@
 {
   "candidate": "(and true (<= _z 0))",
-  "constraints": "(and true (<= _z 0))",
+  "constraints": "(= (+ (+ (* _x (* _x 1)) (* _y (* _y 1))) (* _z (* _z 1))) 1)",
   "contVars": ["(declare-fun _z () Real)", "(declare-fun _y () Real)", "(declare-fun _x () Real)"],
   "name": "Alongi Nelson Ex_4_1_9 page 143",
-  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _z () Real)", "(declare-fun _y () Real)"],
-  "vectorField": ["(= (* _x _z) 0)", "(= (* _y _z) 0)", "(= (- (- (* _x (* _x 1))) (* _y (* _y 1))) 0)"]
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)", "(declare-fun _z () Real)"],
+  "vectorField": ["(= (- (- (* _x (* _x 1))) (* _y (* _y 1))) 0)", "(= (* _y _z) 0)", "(= (* _x _z) 0)"]
 }

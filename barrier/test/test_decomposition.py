@@ -28,6 +28,8 @@ from barrier.test import TestCase
 from barrier.system import DynSystem
 from barrier.utils import get_range_from_int
 
+from barrier.lzz.lzz import lzz
+
 from barrier.decomposition.explicit import (
     _get_solver,
     _get_neighbors,
@@ -38,6 +40,7 @@ from barrier.decomposition.explicit import (
     dwcl
 )
 
+from barrier.mathematica.mathematica import get_mathematica
 
 class TestDecomposition(TestCase):
 
@@ -67,7 +70,6 @@ class TestDecomposition(TestCase):
         same = solver.is_valid(Iff(got, formula))
         return same
 
-    @unittest.skip("")
     def test_get_neighbors(self):
         x, y = [Symbol(var, REAL) for var in ["x", "y"]]
 
@@ -161,47 +163,6 @@ class TestDecomposition(TestCase):
         safe = Not(And(Equals(x,r0),y<r0))
         return (dyn_sys, TRUE(),[x,y], init, safe,[])
 
-    @staticmethod
-    def get_test_case_4():
-        def _pow(var, degree):
-            res = Real(1)
-            for i in range(degree):
-                res = var * res
-            return res
-
-        x1, x2 = [Symbol(var, REAL) for var in ["x1", "x2"]]
-
-        fx1 = 2 * x1 * (x1*x1 - 3) * (4*x1*x1 - 3) * (x1*x1 + 21*x2*x2 - 12)
-        f2_rh = (35*_pow(x1,6) +
-                 105*_pow(x2,2)*_pow(x1,4) +
-                 (-315)*_pow(x1,4) +
-                 (-63)*_pow(x2,4)*_pow(x1,2) +
-                 378*_pow(x1,2)+
-                 27*_pow(x2,6)+
-                 (-189)*_pow(x2,4)+
-                 378*_pow(x2,2)-
-                 216)
-        fx2 = x2 * f2_rh
-
-        dyn_sys = DynSystem([x1, x2], [], [],
-                            {x1 : fx1, x2 : fx2},
-                            {}, False)
-        r0 = Real(0)
-        init = _pow(x1,2) - 1 + _pow(x2,2) < Real(Fraction(1,4))
-        safe = _pow(x1,2) + _pow(x2,2) < 8
-
-        polynomials = [x1,
-                       _pow(x1,2)-3,
-                       4*_pow(x1,2)-3,
-                       x2,
-                       _pow(x1,2) + _pow(x2,2) - 8,
-                       _pow(x1,2) + 21*_pow(x2,2)-12,
-                       f2_rh]
-
-        return (dyn_sys, TRUE(), polynomials, init, safe, FALSE())
-
-
-    @unittest.skip("")
     def test_invar_lazy(self):
         test_cases = [TestDecomposition.get_test_case_1(),
                       TestDecomposition.get_test_case_2(),
@@ -225,25 +186,6 @@ class TestDecomposition(TestCase):
             invars = dwcl(dyn_sys, invar, poly, init, safe)
             self.assertTrue(self._eq_wformula(invars,expected))
 
-    @unittest.skip("")
-    def test_invar_dwcl(self):
-        test_cases = [TestDecomposition.get_test_case_4()]
-
-        for t in test_cases:
-            (dyn_sys, invar, poly, init, safe, expected) = t
-
-            invars = dwcl(dyn_sys, invar, poly, init, safe)
-
-            same = _get_solver().is_valid(Iff(invars, expected))
-
-            if not same:
-                logger = logging.getLogger(__name__)
-                logger.info("%s\nis not:\n%s" % (invars.serialize(),
-                                                 expected.serialize))
-
-            self.assertTrue(same)
-
-    @unittest.skip("")
     def test_invar_dwcl_pegasus(self):
         def rf(a,b):
             return Real(Fraction(a,b))
@@ -282,3 +224,9 @@ class TestDecomposition(TestCase):
             rf(-99997,1000000))]
 
         invars = dwc(dyn_sys, invar, poly, init, safe)
+
+        env = get_env()
+        solver = get_mathematica(env)
+        is_invar = lzz(solver, invars, dyn_sys, invars, invar)
+        solver.exit()
+        self.assertTrue(is_invar)

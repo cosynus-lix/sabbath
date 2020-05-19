@@ -1,8 +1,8 @@
 {
   "candidate": "(and true (= (+ (+ (- (+ (* (* (/ 4 5) 138.44) (* _x (* _x 1))) (* (* (/ 1 10) 138.44) (* _y (* _y 1)))) (* (* 32 138.44) _x)) (* 138.44 _y)) 2.9747) 0))",
-  "constraints": "(and true (= (+ (+ (- (+ (* (* (/ 4 5) 138.44) (* _x (* _x 1))) (* (* (/ 1 10) 138.44) (* _y (* _y 1)))) (* (* 32 138.44) _x)) (* 138.44 _y)) 2.9747) 0))",
+  "constraints": "(and (<= 5 _x) (<= _x 35))",
   "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
   "name": "Hybrid Controller Mode 2",
-  "varsDecl": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
-  "vectorField": ["(= (- (- (- (* _y (* _y 1))) (* 10 _y)) 25) 0)", "(= (- (- (+ (* (* 8 _x) _y) (* 40 _x)) (* 160 _y)) 800) 0)"]
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (- (- (+ (* (* 8 _x) _y) (* 40 _x)) (* 160 _y)) 800) 0)", "(= (- (- (- (* _y (* _y 1))) (* 10 _y)) 25) 0)"]
 }

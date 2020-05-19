@@ -1,8 +1,8 @@
 {
   "candidate": "(and true (>= _y 0))",
-  "constraints": "(and true (>= _y 0))",
+  "constraints": "true",
   "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
   "name": "Ahmadi Parrilo Krstic",
-  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
-  "vectorField": ["(= (+ (- _x) (* _x _y)) 0)", "(= (- _y) 0)"]
+  "varsDecl": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "vectorField": ["(= (- _y) 0)", "(= (+ (- _x) (* _x _y)) 0)"]
 }

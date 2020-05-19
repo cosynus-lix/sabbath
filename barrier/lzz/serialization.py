@@ -42,9 +42,9 @@ def readVar(parser, var_decl, all_vars):
         elif cmd.name == smtcmd.DEFINE_FUN:
             (var, formals, typename, body) = cmd.args
 
-def importLzz(json_stream):
+def importLzz(json_stream, env):
     problem_json = json.load(json_stream)
-    parser = SmtLibParser()
+    parser = SmtLibParser(env)
 
     # Read all the variables
     all_vars = []
@@ -72,4 +72,4 @@ def importLzz(json_stream):
 
     dyn_sys = DynSystem(cont_vars, [], [], odes, {}, False)
 
-    return (problem_json["name"], candidate, dyn_sys, candidate, invar)
+    return (problem_json["name"], candidate, dyn_sys, invar)

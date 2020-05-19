@@ -1,8 +1,8 @@
 {
   "candidate": "(and true (>= _x 0))",
-  "constraints": "(and true (>= _x 0))",
+  "constraints": "true",
   "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
   "name": "Prajna PhD Thesis 2-4-1 Page 31",
   "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
-  "vectorField": ["(= _x 0)", "(= (- (+ (- _x) (/ (* _x (* _x (* _x 1))) 3)) _y) 0)"]
+  "vectorField": ["(= (- (+ (- _x) (/ (* _x (* _x (* _x 1))) 3)) _y) 0)", "(= _x 0)"]
 }

@@ -8,6 +8,7 @@ Computing Semi-algebraic Invariants for Polynomial Dynamical Systems, Liu, Zhan,
 import logging
 from functools import partial
 
+from barrier.system import DynSystem
 from barrier.lie import get_lie, get_lie_rank
 from barrier.lzz.dnf import ApplyPredicate, DNFConverter
 
@@ -129,8 +130,8 @@ def is_p_invar(solver, predicate, dyn_sys, init, invar):
     #      trans_f_p); or
     #    - do not belong to the points escaping the invariants
 
-    # check [init -> predicate]
-    if (solver.is_valid(Implies(init, predicate))):
+    # check [init -> predicate]]
+    if (solver.is_valid(Implies(And(init, invar), predicate))):
         # Check condition on the differential equation
         on_border = Equals(p_poly, Real(0))
         inside = Implies(on_border, Or(Not(trans_f_p), trans_f_h))
@@ -138,13 +139,13 @@ def is_p_invar(solver, predicate, dyn_sys, init, invar):
         if solver.is_valid(Implies(on_border, inside)):
             return True
         else:
-            # logger.debug("%s is not an invariant (consecution "
-            #              "condition failed)" % predicate)
+            logger.debug("%s is not an invariant (consecution "
+                         "condition failed)" % predicate)
 
             return False
     else:
-        # logger.debug("%s is not an invariant (initial "
-        #              "condition failed)" % predicate)
+        logger.debug("%s is not an invariant (initial "
+                     "condition failed)" % predicate)
         return False
 
 
@@ -198,11 +199,18 @@ def get_inf_dnf(dyn_sys, formula):
     inf_dnf = app.walk(formula)
     return inf_dnf
 
+
+# DEBUG
+IVINF_VIA_MINUS_F = True
 def get_ivinf_dnf(dyn_sys, formula):
-    app = ApplyPredicate({pysmt_op.LT : partial(get_ivinf_lt_pred, dyn_sys),
-                          pysmt_op.LE : partial(get_ivinf_le_pred, dyn_sys)})
-    ivinf_dnf = app.walk(formula)
-    return ivinf_dnf
+    if IVINF_VIA_MINUS_F:
+        dyn_sys_inv = dyn_sys.get_inverse()
+        return get_inf_dnf(dyn_sys_inv, formula)
+    else:
+        app = ApplyPredicate({pysmt_op.LT : partial(get_ivinf_lt_pred, dyn_sys),
+                              pysmt_op.LE : partial(get_ivinf_le_pred, dyn_sys)})
+        ivinf_dnf = app.walk(formula)
+        return ivinf_dnf
 
 def lzz(solver, candidate, dyn_sys, init, invar):
     """ Implement the LZZ procedure.
@@ -210,16 +218,15 @@ def lzz(solver, candidate, dyn_sys, init, invar):
     Check if the candidate an invariant for dyn_sys, starting from
     init and subject to the invariant invar.
     """
-
     logger = logging.getLogger(__name__)
 
     # candidate is an invariant of the dynamical system if:
     #
-    # 1. init => candidate; and
+    # 1. (init /\ Invar) => candidate; and
     # 2. (candidate /\ Invar /\ Inf(Invar)) => Inf(candidate); and
     # 3. (!candidate /\ Invar /\ IvInf(Invar)) => !IvInf(candidate)
     # are valid
-    if (solver.is_valid(Implies(init, candidate))):
+    if (solver.is_valid(Implies(And(init, invar), candidate))):
         # Check condition on the differential equation
 
         c = DNFConverter()
@@ -234,6 +241,16 @@ def lzz(solver, candidate, dyn_sys, init, invar):
             c3 = Implies(And(Not(candidate), invar,
                              get_ivinf_dnf(dyn_sys, invar_dnf)),
                          Not(get_ivinf_dnf(dyn_sys, candidate_dnf)))
+
+
+            # # DEBUG
+            # print((And(Not(candidate), invar,
+            #            get_ivinf_dnf(dyn_sys, invar_dnf))).serialize())
+            # print("candidatednf")
+            # print(candidate_dnf.serialize())
+            # print("! IvInf(candidate)")
+            # print((Not(get_ivinf_dnf(dyn_sys, candidate_dnf))).serialize())
+
             if solver.is_valid(c3):
                 return True
             else:
@@ -263,7 +280,7 @@ def lzz_fast(solver, candidate, dyn_sys, init, invar):
     # 2. (candidate /\ Invar) => Inf(candidate); and
     # 3. (!candidate /\ Invar) => !IvInf(candidate)
     # are valid
-    print("Checking c1: %s" % Implies(init, candidate).serialize())
+    logger.debug("Checking c1: %s" % Implies(init, candidate).serialize())
     if (solver.is_valid(Implies(init, candidate))):
         # Check condition on the differential equation
 

@@ -8,7 +8,7 @@ import logging
 
 from pysmt.shortcuts import (
     Real, Symbol,
-    Plus, Times, Pow
+    Plus, Times, Pow, Div
 )
 from pysmt.walkers import DagWalker
 from pysmt.typing import REAL
@@ -457,12 +457,17 @@ class Sympy2Pysmt(object):
                 # Assume real type
                 return Real(1)
               else:
-                # Issue when power over negative numbers
-                # OK FOR NOW
-                assert exponent > 0
+                flip = (exponent < 0)
+                if exponent < 0:
+                  exponent = - exponent
+
                 res = pysmt_args[0]
                 for i in range(exponent-1):
                   res = Times(res, pysmt_args[0])
+
+                if (flip):
+                  res = Div(Real(1), res)
+
                 return res
               # End of alternative version
             else:

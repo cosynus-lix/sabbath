@@ -85,9 +85,17 @@ class TestLie(TestCase):
         for (sys, expr, expected_lie) in exprs:
             lie = get_lie(expr, sys)
             eq = Equals(lie, expected_lie)
+
+            # print("\nAAA")
+            # print(sys)
+            # print("Lie 0: " + str(expr))
+            # print("Lie 1: " + str(lie))
+            # print("Lie 2: " + str(get_lie(lie, sys)))
+            # print("Lie 3: " + str(get_lie(get_lie(lie, sys), sys)))
+
+
             same = is_valid(eq)
             self.assertTrue(same)
-
 
     def test_rank(self):
         x, y = [Symbol(var, REAL) for var in ["x","y"]]

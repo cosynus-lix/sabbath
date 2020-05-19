@@ -1,8 +1,8 @@
 {
   "candidate": "(and true (<= (+ (- 2) _y) 0))",
-  "constraints": "(and true (<= (+ (- 2) _y) 0))",
+  "constraints": "true",
   "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
   "name": "Dumortier Llibre Artes Ex. 5_13",
   "varsDecl": ["(declare-fun _y () Real)"],
-  "vectorField": ["(= _y 0)", "(= (* (* 2 (- (- 1) _y)) _y) 0)"]
+  "vectorField": ["(= (* (* 2 (- (- 1) _y)) _y) 0)", "(= _y 0)"]
 }
