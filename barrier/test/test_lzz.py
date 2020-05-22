@@ -33,7 +33,7 @@ from barrier.lzz.lzz import (
     is_p_invar, lzz, get_inf_dnf, get_ivinf_dnf
 )
 
-from barrier.lzz.serialization import importLzz
+from barrier.lzz.serialization import importLzz, importInvar
 from barrier.lzz.dnf import DNFConverter
 
 from barrier.mathematica.mathematica import get_mathematica
@@ -268,3 +268,17 @@ class TestLzz(TestCase):
 
                     solver.exit()
                     solver = None
+
+    def test_import_invar(self):
+        current_path = os.path.dirname(os.path.abspath(__file__))
+        input_path = os.path.join(current_path, "invar_inputs")
+
+        env = get_env()
+
+        for invar_file in os.listdir(input_path):
+            with open(os.path.join(input_path, invar_file), "r") as json_stream:
+                problem_list = importInvar(json_stream, env)
+                assert(len(problem_list) == 1)
+                for p in problem_list:
+                    (problem_name, ant, cons, dyn_sys, invar, predicates) = p
+
