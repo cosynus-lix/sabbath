@@ -215,7 +215,7 @@ def get_invar_lazy_set(dyn_sys, invar,
                         " ".join([s.serialize() for s in abs_state]))
 
             if solve(safe_solver, And(abs_state)):
-                logger.info("Abstraction is Unsafe!")
+                logger.info("Abstract state %s is Unsafe!" % (" ".join([s.serialize() for s in abs_state])))
                 return (Result.UNKNOWN, set())
 
             abs_visited.add(abs_state)
@@ -245,7 +245,7 @@ def get_invar_lazy_set(dyn_sys, invar,
                     to_visit.append(neigh)
 
                     if solve(safe_solver, And(neigh)):
-                        logger.info("Abstraction is Unsafe!")
+                        logger.info("Abstract state %s is Unsafe!" % (" ".join([s.serialize() for s in neigh])))
                         return (Result.UNKNOWN, set())
 
     return (Result.SAFE, abs_visited)
