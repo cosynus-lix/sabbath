@@ -13,6 +13,8 @@ We implement the algorithms:
 
 import logging
 
+from enum import Enum
+
 from barrier.system import DynSystem
 from barrier.lzz.lzz import (lzz, lzz_fast)
 from barrier.system import DynSystem
@@ -21,12 +23,17 @@ from pysmt.logics import QF_NRA
 from pysmt.shortcuts import (
     Solver,
     Implies, And, Not, Or,
-    FALSE,
+    FALSE, TRUE,
     LT, Equals,
     Real,
 )
 
 from barrier.mathematica.mathematica import get_mathematica
+
+class Result(Enum):
+    UNSAFE=0
+    UNKNOWN=1
+    SAFE=2
 
 def _get_logger():
     return logging.getLogger(__name__)
@@ -130,7 +137,6 @@ def _get_neighbors(polynomials, abs_state):
                                           trail,
                                           res)
 
-
     res_lt = _get_neighbors_rec({LT}, polynomials, 0, abs_state, set(), set())
     res_eq = _get_neighbors_rec({Equals}, polynomials, 0, abs_state, set(), set())
     res_lt.update(res_eq)
@@ -144,6 +150,9 @@ def get_invar_lazy_set(dyn_sys, invar,
     """
     Implement the LazyReach invariant computation using semi-algebraic
     decomposition.
+
+    Returns a pair (is_invar, set of abstract states) reachable from
+    init and that is safe.
     """
 
     def solve(solver, formula):
@@ -154,6 +163,16 @@ def get_invar_lazy_set(dyn_sys, invar,
         return sat
 
     logger = _get_logger()
+
+    # remove duplicates, keep order
+    has_poly = set()
+    new_polynomials = []
+    for p in polynomials:
+        if not p in has_poly:
+            new_polynomials.append(p)
+            has_poly.add(p)
+    polynomials = new_polynomials
+
     logger.info("get_invar_lazy with %d polynomials" % len(polynomials))
 
     # Set of abstract states reachable from init under invar.
@@ -171,9 +190,8 @@ def get_invar_lazy_set(dyn_sys, invar,
     safe_solver.add_assertion(Not(safe))
 
     if solve(safe_solver, init):
-        logger.info("Init unsafe!")
-        return set()
-    # Here all the initial states are safe
+        logger.info("Init is unsafe!")
+        return (Result.UNSAFE, set())
 
     to_visit = list()
     while (init_solver.solve()):
@@ -195,6 +213,11 @@ def get_invar_lazy_set(dyn_sys, invar,
 
             logger.info("Visiting abs state: %s" %
                         " ".join([s.serialize() for s in abs_state]))
+
+            if solve(safe_solver, And(abs_state)):
+                logger.info("Abstraction is Unsafe!")
+                return (Result.UNKNOWN, set())
+
             abs_visited.add(abs_state)
 
             # Visit all the neighbors of abs_state
@@ -222,9 +245,10 @@ def get_invar_lazy_set(dyn_sys, invar,
                     to_visit.append(neigh)
 
                     if solve(safe_solver, And(neigh)):
-                        logger.info("Unsafe!")
-                        return set()
-    return abs_visited
+                        logger.info("Abstraction is Unsafe!")
+                        return (Result.UNKNOWN, set())
+
+    return (Result.SAFE, abs_visited)
 
 def _set_to_formula(abs_state_set):
     formula = FALSE()
@@ -232,24 +256,29 @@ def _set_to_formula(abs_state_set):
         formula = Or(formula, And(s))
     return formula
 
-def get_invar_lazy(dyn_sys, invar,
-                   polynomials,
+def get_invar_lazy(dyn_sys, invar, polynomials,
                    init, safe,
                    get_solver = _get_solver):
-    reach = get_invar_lazy_set(dyn_sys, invar,
-                               polynomials,
-                               init, safe,
-                               get_solver)
-    return _set_to_formula(reach)
+    """
+    Compute the set of abstract reachable states for dyn_sys, starting
+    from init and staying inside safe.
+
+    """
+    (res, reach_states) = get_invar_lazy_set(dyn_sys, invar,
+                                             polynomials,
+                                             init, safe,
+                                             get_solver)
+    return (res, _set_to_formula(reach_states))
 
 
-def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
+def dwc_general(dwcl, dyn_sys, invar, polynomials,
+                init, safe,
                 get_solver = _get_solver,
                 get_lzz_solver = _get_lzz_solver):
     """
-    Implement the Differential Weakening Cut algorithm
+    Implements the Differential Weakening Cut (dwc) algorithm.
 
-    Returns a formula representing an invariant
+    Returns a formula representing an invariant for dyn_sys.
     """
 
     logger = _get_logger()
@@ -259,14 +288,13 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
 
     solver = get_solver()
     if (solver.is_unsat(And(invar, init))):
-        logger.info("Init (%s) outside invariant (%s)!" % (init.serialize(),
-                                                           invar.serialize()))
-        return FALSE()
+        logger.info("Init and invar unsat!")
+        return (Result.SAFE, FALSE())
     elif (solver.is_valid(Implies(invar, safe))):
         # DW - Differential Weakening
         logger.info("DW: invar -> safe!")
         logger.info("%s -> %s" % (invar, safe))
-        return invar
+        return (Result.SAFE, invar)
     else:
         rt0 = Real(0)
 
@@ -278,59 +306,97 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials, init, safe,
             preds = {LT(rt0,a), LT(a,rt0), Equals(a,rt0)}
             for pred in preds:
                 if solver.is_valid(Implies(And(invar, init), pred)):
-                    lzz_solver = _get_lzz_solver()
-                    logger.debug("LZZ for %s..." % (pred.serialize()))
+                    lzz_solver = get_lzz_solver()
                     is_invar = lzz_fast(lzz_solver, pred, dyn_sys,
                                         pred, invar)
-                    lzz_solver = None
+                    lzz_solver.exit()
                     logger.debug("LZZ end...")
 
                     if (is_invar):
-                        logger.debug("DC on %s" % (pred.serialize()))
+                        logger.debug("[DC] Found %s is invar (under %s)" % (pred.serialize(), invar.serialize()))
                         new_polynomials = list(polynomials)
                         new_polynomials.remove(a)
-                        return dwc(dyn_sys, And(invar, pred),
-                                   new_polynomials,
-                                   init, safe, get_solver)
+                        dwc_invar = dwc_general(dwcl, dyn_sys,
+                                                And(invar, pred),
+                                                new_polynomials,
+                                                init, safe,
+                                                get_solver)
+                        return dwc_invar
 
         logger.debug("Trying to decompose...")
         counter = 0
         for a in polynomials:
             counter += 1
-            logger.debug("Trying to DC %d/%d..." % (counter, len(polynomials)))
+            logger.debug("Trying DDC %d/%d..." % (counter, len(polynomials)))
 
             preds = {LT(rt0,a), LT(a,rt0), Equals(a,rt0)}
             eq_0 = Equals(a,rt0)
 
-            lzz_solver = _get_lzz_solver()
+            lzz_solver = get_lzz_solver()
             is_invar = lzz(lzz_solver, eq_0, dyn_sys, eq_0, invar)
+            lzz_solver.exit()
+
             if is_invar:
                 inv_dyn_sys = dyn_sys.get_inverse()
 
-                lzz_solver = _get_lzz_solver()
+                lzz_solver = get_lzz_solver()
                 is_invar = lzz(lzz_solver, eq_0, inv_dyn_sys, eq_0, invar)
+                lzz_solver.exit()
 
                 if (is_invar):
-                    logger.debug("Decomposing on %s" % (eq_0.serialize()))
+                    logger.debug("[DDC] Cannot leave %s = 0 " % (eq_0.serialize()))
                     new_polynomials = list(polynomials)
                     new_polynomials.remove(a)
 
-                    res = FALSE()
+                    def or_simpl(a,b):
+                        if a == TRUE(): return a
+                        elif b == TRUE(): return b
+                        elif a == FALSE(): return b
+                        elif b == FALSE(): return a
+                        else: return Or(a,b)
+
+                    result = Result.SAFE
+                    res_invar = FALSE()
                     for pred in preds:
-                        pred_res = dwc(dyn_sys, And(invar, pred),
-                                       new_polynomials,
-                                       And(init, pred), safe, get_solver)
-                        res = Or(res, pred_res)
-                    return res
-            lzz_solver = None
+                        (dwc_res, dwc_invar) = dwc_general(dwcl,
+                                                           dyn_sys,
+                                                           And(invar, pred),
+                                                           new_polynomials,
+                                                           And(init, pred),
+                                                           safe,
+                                                           get_solver)
+
+                        # Invar holds under pred
+                        dwc_invar = And(dwc_invar, pred)
+
+                        if (dwc_res == Result.SAFE):
+                            res_invar = or_simpl(res_invar, dwc_invar)
+                        elif (dwc_res == Result.UNKNOWN):
+                            # We cannot prove that one partition stays
+                            # inside the safe states
+                            res_invar = or_simpl(res_invar, dwc_invar)
+                            result = Result.UNKNOWN
+                        elif (dwc_res == Result.UNSAFE):
+                            return (Result.UNSAFE, FALSE())
+                        else:
+                            # unreachable
+                            assert (False)
+
+                    return (result, res_invar)
 
         if not dwcl:
-            return invar
+            return (Result.UNKNOWN, invar)
         else:
-            return get_invar_lazy(dyn_sys, invar,
-                                  polynomials,
-                                  init, safe,
-                                  get_solver)
+            logging.debug("Calling lazy invar computation with %d polynomials..." % (len(polynomials)))
+            (res, reach_states) = get_invar_lazy(dyn_sys,
+                                                 invar,
+                                                 polynomials,
+                                                 init, safe,
+                                                 get_solver)
+
+            # Add the invariant states to the set of reachable states
+            # The predicates cut from DW are in the invariant
+            return (res, And(invar, reach_states))
 
 
 def dwc(dyn_sys, invar, polynomials, init, safe,

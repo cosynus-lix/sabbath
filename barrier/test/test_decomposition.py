@@ -28,9 +28,12 @@ from barrier.test import TestCase
 from barrier.system import DynSystem
 from barrier.utils import get_range_from_int
 
+from barrier.lzz.serialization import importInvar
+
 from barrier.lzz.lzz import lzz
 
 from barrier.decomposition.explicit import (
+    Result,
     _get_solver,
     _get_neighbors,
     _set_to_formula,
@@ -40,6 +43,7 @@ from barrier.decomposition.explicit import (
     dwcl
 )
 
+from barrier.utils import get_mathsat_smtlib
 from barrier.mathematica.mathematica import get_mathematica
 
 class TestDecomposition(TestCase):
@@ -171,22 +175,22 @@ class TestDecomposition(TestCase):
         for t in test_cases:
             (dyn_sys, invar, poly, init, safe, expected) = t
 
-            invars = get_invar_lazy_set(dyn_sys, invar, poly, init, safe)
-            self.assertTrue(self._eq_sets(invars,expected))
+            (res,invars) = get_invar_lazy_set(dyn_sys, invar, poly, init, safe)
+            self.assertTrue(res == Result.SAFE and self._eq_sets(invars,expected))
 
         for t in test_cases:
             (dyn_sys, invar, poly, init, safe, expected) = t
 
-            invars = get_invar_lazy(dyn_sys, invar, poly, init, safe)
-            self.assertTrue(self._eq_wformula(invars,expected))
+            (res, invars) = get_invar_lazy(dyn_sys, invar, poly, init, safe)
+            self.assertTrue(res and self._eq_wformula(invars,expected))
 
         for t in test_cases:
             (dyn_sys, invar, poly, init, safe, expected) = t
 
-            invars = dwcl(dyn_sys, invar, poly, init, safe)
-            self.assertTrue(self._eq_wformula(invars,expected))
+            (res, invars) = dwcl(dyn_sys, invar, poly, init, safe)
+            self.assertTrue(res and self._eq_wformula(invars,expected))
 
-    def test_invar_dwcl_pegasus(self):
+    def test_invar_dwcl(self):
         def rf(a,b):
             return Real(Fraction(a,b))
 
@@ -223,10 +227,101 @@ class TestDecomposition(TestCase):
             (rf(1,1000000) * (y)) +
             rf(-99997,1000000))]
 
-        invars = dwc(dyn_sys, invar, poly, init, safe)
-
+        (res, invars) = dwc(dyn_sys, invar, poly, init, safe)
         env = get_env()
         solver = get_mathematica(env)
         is_invar = lzz(solver, invars, dyn_sys, invars, invar)
         solver.exit()
         self.assertTrue(is_invar)
+
+        (res, invars) = dwcl(dyn_sys, invar, poly, init, safe)
+        env = get_env()
+        solver = get_mathematica(env)
+        is_invar = lzz(solver, invars, dyn_sys, invars, invar)
+        solver.exit()
+        self.assertTrue(is_invar)
+
+
+
+    def test_invar(self):
+        current_path = os.path.dirname(os.path.abspath(__file__))
+        input_path = os.path.join(current_path, "invar_inputs")
+
+        env = get_env()
+
+        long_tests = ["Wiggins Example 18_1_2",
+                      "Forsman Phd Ex 6_1 page 99",
+                      "Djaballah Chapoutot Kieffer Bouissou 2015 Ex. 1",
+                      "Dai Gan Xia Zhan JSC14 Ex. 2",
+                      "Ben Sassi Girard 20104 Moore-Greitzer Jet",
+                      "3D Lotka Volterra (III)",
+                      "Shimizu Morioka System",
+                      "Forsman Phd Ex 6_14 page 119",
+                      "Prajna PhD Thesis 2-4-1 Page 31",
+                      "Dai Gan Xia Zhan JSC14 Ex. 5",
+                      "Bhatia Szego Ex_2_4 page 68",
+                      "Collin Goriely page 60",
+                      "Hamiltonian System 1",
+                      "Strogatz Exercise 6_1_5",
+                      "Strogatz Exercise 6_1_9 Dipole",
+                      "Strogatz Example 6_8_3",
+                      "Locally stable nonlinear system"]
+
+        long_tests_dwcl = ["Dai Gan Xia Zhan JSC14 Ex. 1"]
+
+        not_supported = ["Nonlinear Circuit Example 1+2 (Tunnel Diode Oscillator)"]
+
+        for invar_file in os.listdir(input_path):
+            with open(os.path.join(input_path, invar_file), "r") as json_stream:
+                problem_list = importInvar(json_stream, env)
+                assert(len(problem_list) == 1)
+                for p in problem_list:
+                    (problem_name, init, safe, dyn_sys, invariants, predicates) = p
+
+                    if (problem_name in long_tests):
+                        continue
+                    if (problem_name in not_supported):
+                        continue
+                    if (problem_name in long_tests_dwcl):
+                        continue
+
+                    print("Computing DWCL %s..." % (problem_name))
+                    (res, invars) = dwcl(dyn_sys, invariants, predicates, init, safe)
+                    print("%s %s: %s" % (problem_name, str(res), str(invars)))
+
+                    if (res == Result.SAFE):
+                        solver = get_mathematica(env)
+                        print("Sufficient %s: %s" % (problem_name, str(invars)))
+                        is_unsafe = solver.solve(And(Not(safe), invars))
+                        solver.exit()
+                        self.assertFalse(is_unsafe)
+
+                        print("Checking invar for %s: %s" % (problem_name, str(invars)))
+                        assert (not invars is None)
+                        assert (not init is None)
+                        assert (not invariants is None)
+                        solver = get_mathematica(env)
+
+                        # print("INIT " + str(solver.converter.convert(init)))
+                        # print("INVAR " + str(solver.converter.convert(invariants)))
+                        # print("Candidate " + str(solver.converter.convert(invars)))
+                        # print("ODEs:")
+                        # for var,ode in dyn_sys.get_odes().items():
+                        #     print("\t" + str(var) + " " + str(solver.converter.convert(ode)))
+                        # print(dyn_sys)
+
+                        is_invar = lzz(solver, invars, dyn_sys, init, invariants)
+                        solver.exit()
+                        self.assertTrue(is_invar)
+
+                    elif (res == Result.UNSAFE):
+                        solver = Solver(logic=QF_NRA, name="z3")
+
+                        print("Checking unsafe %s:" % (problem_name))
+
+                        solver.add_assertion(And(init, Not(safe)))
+                        is_unsafe = solver.solve()
+                        solver.exit()
+                        self.assertTrue(is_unsafe)
+
+
