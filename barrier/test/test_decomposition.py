@@ -135,7 +135,7 @@ class TestDecomposition(TestCase):
                           {r0<x,y<r0}]
 
         return (dyn_sys, TRUE(),[x,y], init, safe,
-                expected_invar)
+                (Result.SAFE,expected_invar))
 
     @staticmethod
     def get_test_case_2():
@@ -156,7 +156,7 @@ class TestDecomposition(TestCase):
                           {(x < r0),Equals(y,r0)}]
 
         return (dyn_sys, TRUE(),[x,y], init, safe,
-                expected_invar)
+                (Result.SAFE, expected_invar))
 
     @staticmethod
     def get_test_case_3():
@@ -165,7 +165,8 @@ class TestDecomposition(TestCase):
         r0 = Real(0)
         init = get_range_from_int([x, y], [(-2,-1), (-2,-1)])
         safe = Not(And(Equals(x,r0),y<r0))
-        return (dyn_sys, TRUE(),[x,y], init, safe,[])
+        # (dyn_sys, invar, abstraction, init, safe, expected)
+        return (dyn_sys, TRUE(),[x,y], init, safe, (Result.UNKNOWN, []))
 
     def test_invar_lazy(self):
         test_cases = [TestDecomposition.get_test_case_1(),
@@ -176,19 +177,21 @@ class TestDecomposition(TestCase):
             (dyn_sys, invar, poly, init, safe, expected) = t
 
             (res,invars) = get_invar_lazy_set(dyn_sys, invar, poly, init, safe)
-            self.assertTrue(res == Result.SAFE and self._eq_sets(invars,expected))
+
+            self.assertTrue(res == expected[0] and self._eq_sets(invars,expected[1]))
 
         for t in test_cases:
             (dyn_sys, invar, poly, init, safe, expected) = t
 
             (res, invars) = get_invar_lazy(dyn_sys, invar, poly, init, safe)
-            self.assertTrue(res and self._eq_wformula(invars,expected))
+
+            self.assertTrue(res == expected[0] and self._eq_wformula(invars, expected[1]))
 
         for t in test_cases:
             (dyn_sys, invar, poly, init, safe, expected) = t
 
             (res, invars) = dwcl(dyn_sys, invar, poly, init, safe)
-            self.assertTrue(res and self._eq_wformula(invars,expected))
+            self.assertTrue(res == expected[0] and self._eq_wformula(invars,expected[1]))
 
     def test_invar_dwcl(self):
         def rf(a,b):
