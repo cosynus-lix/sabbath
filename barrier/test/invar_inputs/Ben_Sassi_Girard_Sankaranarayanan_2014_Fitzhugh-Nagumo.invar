@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(<= (+ (+ (/ (- 1) 20) (* (+ (/ 5 4) _x) (* (+ (/ 5 4) _x) 1))) (* (+ (/ (- 5) 4) _y) (* (+ (/ (- 5) 4) _y) 1))) 0)",
+  "consequent": "(not (<= (+ (+ (+ (+ (/ 36 5) (* 5 _x)) (* _x (* _x 1))) (* 2 _y)) (* _y (* _y 1))) 0))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Ben Sassi Girard Sankaranarayanan 2014 Fitzhugh-Nagumo",
+  "predicates": ["(= (+ (+ (/ (- 7) 8) (* (/ (- 5) 4) _x)) _y) 0)", "(= (+ (+ (/ 7 10) _x) (* (/ (- 4) 5) _y)) 0)", "(= (+ (* (/ 1 24) (+ (+ (- 21) (* (- 24) _x)) (* 8 (* _x (* _x (* _x 1)))))) _y) 0)"],
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (/ (* 2 (- (+ (/ 7 10) _x) (/ (* 4 _y) 5))) 25) 0)", "(= (- (- (+ (/ 7 8) _x) (/ (* _x (* _x (* _x 1))) 3)) _y) 0)"]
+}]

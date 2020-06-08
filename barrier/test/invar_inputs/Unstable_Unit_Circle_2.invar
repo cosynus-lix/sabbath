@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(and (= _b (/ 1 2)) (= _y (/ 1 2)))",
+  "consequent": "(not (> (+ (* _b (* _b 1)) (* _y (* _y 1))) 2))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _b () Real)"],
+  "name": "Unstable Unit Circle 2",
+  "predicates": [],
+  "varsDecl": ["(declare-fun _b () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (+ (+ (- _b _y) (* (* _b (* _b 1)) _y)) (* _y (* _y (* _y 1)))) 0)", "(= (+ (- (+ (- _b) (* _b (* _b (* _b 1)))) _y) (* _b (* _y (* _y 1)))) 0)"]
+}]

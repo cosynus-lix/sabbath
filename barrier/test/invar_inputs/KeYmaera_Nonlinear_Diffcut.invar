@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(and (>= (* _x (* _x (* _x 1))) (- 1)) (>= (* _y (* _y (* _y (* _y (* _y 1))))) 0))",
+  "consequent": "(not (or (< (+ 1 _x) 0) (< _y 0)))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "KeYmaera Nonlinear Diffcut",
+  "predicates": ["(= _y 0)"],
+  "varsDecl": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "vectorField": ["(= (* _y (* _y 1)) 0)", "(= (+ (* (+ (- 3) _x) (* (+ (- 3) _x) (* (+ (- 3) _x) (* (+ (- 3) _x) 1)))) (* _y (* _y (* _y (* _y (* _y 1)))))) 0)"]
+}]

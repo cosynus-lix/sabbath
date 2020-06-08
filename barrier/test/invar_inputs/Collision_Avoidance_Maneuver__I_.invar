@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(and (= _x1 _r1) (and (= _y1 _r1) (and (= _x2 _r2) (and (= _y2 _r2) (and (= _d1 _a) (and (= _d2 0) (and (= _e1 _b) (and (= _e2 0) (> (+ (* (- _x1 _y1) (* (- _x1 _y1) 1)) (* (- _x2 _y2) (* (- _x2 _y2) 1))) 0)))))))))",
+  "consequent": "(> (+ (* (- _x1 _y1) (* (- _x1 _y1) 1)) (* (- _x2 _y2) (* (- _x2 _y2) 1))) 0)",
+  "constraints": "true",
+  "contVars": ["(declare-fun _e2 () Real)", "(declare-fun _e1 () Real)", "(declare-fun _y2 () Real)", "(declare-fun _y1 () Real)", "(declare-fun _d2 () Real)", "(declare-fun _d1 () Real)", "(declare-fun _x2 () Real)", "(declare-fun _x1 () Real)"],
+  "name": "Collision Avoidance Maneuver (I)",
+  "predicates": ["(= _e1 0)", "(= _e2 0)", "(= _e2 0)", "(= _e1 0)", "(= _d1 0)", "(= _d2 0)", "(= _d2 0)", "(= _d1 0)"],
+  "varsDecl": ["(declare-fun _e1 () Real)", "(declare-fun _e2 () Real)", "(declare-fun _b () Real)", "(declare-fun _d2 () Real)", "(declare-fun _d1 () Real)", "(declare-fun _y1 () Real)", "(declare-fun _y2 () Real)", "(declare-fun _theta () Real)", "(declare-fun _r1 () Real)", "(declare-fun _a () Real)", "(declare-fun _x1 () Real)", "(declare-fun _w () Real)", "(declare-fun _x2 () Real)", "(declare-fun _r2 () Real)"],
+  "vectorField": ["(= (* _theta _e1) 0)", "(= (- (* _theta _e2)) 0)", "(= _e2 0)", "(= _e1 0)", "(= (* _w _d1) 0)", "(= (- (* _w _d2)) 0)", "(= _d2 0)", "(= _d1 0)"]
+}]

@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(and (= _x 0) (= _y 1))",
+  "consequent": "(not (> (+ (* _x (* _x 1)) (* _y (* _y 1))) 10))",
+  "constraints": "(and (<= _x 0) (>= _y 0))",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Van der Pol Fourth Quadrant",
+  "predicates": ["(= _y 0)"],
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (+ (- _x) (* (- 1 (* _x (* _x 1))) _y)) 0)", "(= _y 0)"]
+}]

@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(and (> _x (/ (- 1) 2)) (and (< _x 0) (and (< _y 0) (>= _y (/ (- 1) 2)))))",
+  "consequent": "(not (> _y 2))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Dumortier Llibre Artes Ex. 5_13",
+  "predicates": ["(= _y 0)", "(= (+ 1 _y) 0)", "(= _y 0)"],
+  "varsDecl": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "vectorField": ["(= (* (* 2 (- (- 1) _y)) _y) 0)", "(= _y 0)"]
+}]

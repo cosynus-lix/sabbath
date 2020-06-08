@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(and (= _x 1) (and (= _y 2) (= _z 3)))",
+  "consequent": "(not (and (= _x 5) (and (= (* _y (* _y 1)) 27) (= (* _z (* _z 1)) 34))))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _z () Real)", "(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Invariant Clusters Example 4",
+  "predicates": ["(= _y 0)", "(= _x 0)", "(= _z 0)", "(= _x 0)", "(= _z 0)", "(= _y 0)"],
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)", "(declare-fun _z () Real)"],
+  "vectorField": ["(= (* _x _y) 0)", "(= (* _x _z) 0)", "(= (* _y _z) 0)"]
+}]

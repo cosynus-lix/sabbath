@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(<= (+ (* (- _x 9) (* (- _x 9) 1)) (* (- _y 20) (* (- _y 20) (* (- _y 20) (* (- _y 20) (* (- _y 20) (* (- _y 20) (* (- _y 20) (* (- _y 20) (* (- _y 20) (* (- _y 20) (* (- _y 20) (* (- _y 20) (* (- _y 20) (* (- _y 20) (* (- _y 20) (* (- _y 20) (* (- _y 20) (* (- _y 20) (* (- _y 20) (* (- _y 20) 1))))))))))))))))))))) 4)",
+  "consequent": "(<= _y 48)",
+  "constraints": "(and (<= 5 _x) (<= _x 35))",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Hybrid Controller Mode 1",
+  "predicates": ["(= (+ 5 _y) 0)"],
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (- (- (+ (* (* 2 _x) _y) (* 10 _x)) (* 40 _y)) 200) 0)", "(= (+ (+ (* _y (* _y 1)) (* 10 _y)) 25) 0)"]
+}]

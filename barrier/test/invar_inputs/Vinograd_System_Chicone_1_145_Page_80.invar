@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(and (= _x 1) (= _y 0))",
+  "consequent": "(not (or (> _y 0) (< _y 0)))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Vinograd System Chicone 1_145 Page 80",
+  "predicates": ["(= (+ (* (- 2) _x) _y) 0)", "(= _y 0)", "(= (+ _x (* (/ (- 1) 2) _y)) 0)"],
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (* (* _y (* _y 1)) (+ (* (- 2) _x) _y)) 0)", "(= (+ (* _y (* _y (* _y (* _y (* _y 1))))) (* (* _x (* _x 1)) (+ (- _x) _y))) 0)"]
+}]

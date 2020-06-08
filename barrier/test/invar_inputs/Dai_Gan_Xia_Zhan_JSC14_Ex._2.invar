@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(<= (+ (* _x (* _x 1)) (* (+ 2 _y) (* (+ 2 _y) 1))) 1)",
+  "consequent": "(not (<= (+ (* _x (* _x 1)) (* (+ (- 1) _y) (* (+ (- 1) _y) 1))) (/ 9 100)))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Dai Gan Xia Zhan JSC14 Ex. 2",
+  "predicates": ["(= (+ (* (- 2) (* _x (* _x 1))) _y) 0)", "(= (+ (- 2) _y) 0)", "(= _x 0)"],
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (- (* 2 (* _x (* _x 1))) _y) 0)", "(= (- (* 2 _x) (* _x _y)) 0)"]
+}]

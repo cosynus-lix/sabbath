@@ -1,0 +1,10 @@
+[{
+  "antecedent": "true",
+  "consequent": "false",
+  "constraints": "true",
+  "contVars": ["(declare-fun _z () Real)", "(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Rigid Body",
+  "predicates": ["(= _y 0)", "(= _x 0)", "(= _z 0)", "(= _x 0)", "(= _z 0)", "(= _y 0)"],
+  "varsDecl": ["(declare-fun _y () Real)", "(declare-fun _c2 () Real)", "(declare-fun _x () Real)", "(declare-fun _c3 () Real)", "(declare-fun _c1 () Real)", "(declare-fun _z () Real)"],
+  "vectorField": ["(= (- (/ (* _x _y) _c2) (/ (* _y _x) _c1)) 0)", "(= (+ (- (/ (* _x _z) _c3)) (/ (* _z _x) _c1)) 0)", "(= (- (/ (* _y _z) _c3) (/ (* _z _y) _c2)) 0)"]
+}]

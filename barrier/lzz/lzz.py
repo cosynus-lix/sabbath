@@ -242,15 +242,6 @@ def lzz(solver, candidate, dyn_sys, init, invar):
                              get_ivinf_dnf(dyn_sys, invar_dnf)),
                          Not(get_ivinf_dnf(dyn_sys, candidate_dnf)))
 
-
-            # # DEBUG
-            # print((And(Not(candidate), invar,
-            #            get_ivinf_dnf(dyn_sys, invar_dnf))).serialize())
-            # print("candidatednf")
-            # print(candidate_dnf.serialize())
-            # print("! IvInf(candidate)")
-            # print((Not(get_ivinf_dnf(dyn_sys, candidate_dnf))).serialize())
-
             if solver.is_valid(c3):
                 return True
             else:

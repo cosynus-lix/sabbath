@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(< (+ (* _x (* _x 1)) (* (+ (- 2) _y) (* (+ (- 2) _y) 1))) (/ 1 24))",
+  "consequent": "(not (or (<= _x (- 2)) (<= _y (- 1))))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Forsman Phd Ex 6_1 page 99",
+  "predicates": ["(= _y 0)", "(= _x 0)"],
+  "varsDecl": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "vectorField": ["(= (- _y) 0)", "(= (+ (- _x) (* (* 2 (* _x (* _x 1))) _y)) 0)"]
+}]

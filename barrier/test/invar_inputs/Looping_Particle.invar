@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(and (= _x 2) (and (= _y 0) (and (= (+ (* _x (* _x 1)) (* _y (* _y 1))) (* _r (* _r 1))) (not (= _r 0)))))",
+  "consequent": "(= (+ (* _x (* _x 1)) (* _y (* _y 1))) (* _r (* _r 1)))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _omega () Real)", "(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Looping Particle",
+  "predicates": ["(= _x 0)", "(= _omega 0)", "(= _x 0)", "(= _omega 0)", "(= _y 0)"],
+  "varsDecl": ["(declare-fun _y () Real)", "(declare-fun _r () Real)", "(declare-fun _x () Real)", "(declare-fun _omega () Real)", "(declare-fun _g () Real)"],
+  "vectorField": ["(= (- (* (/ _g (* _r (* _r 1))) _x)) 0)", "(= (* _x _omega) 0)", "(= (- (* _y _omega)) 0)"]
+}]

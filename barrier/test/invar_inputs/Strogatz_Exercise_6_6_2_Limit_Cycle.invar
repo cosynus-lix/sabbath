@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(< (+ (* (+ (/ (- 1) 3) _x) (* (+ (/ (- 1) 3) _x) 1)) (* (+ (/ (- 1) 3) _y) (* (+ (/ (- 1) 3) _y) 1))) (/ 1 16))",
+  "consequent": "(not (or (= (+ (* _x (* _x 1)) (* _y (* _y 1))) 0) (or (>= _x 2) (<= _x (- 2)))))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Strogatz Exercise 6_6_2 Limit Cycle",
+  "predicates": ["(= _y 0)"],
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (+ (- _x) (* _y (- (- 1 (* _x (* _x 1))) (* _y (* _y 1))))) 0)", "(= _y 0)"]
+}]
