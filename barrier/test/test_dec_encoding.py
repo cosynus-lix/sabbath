@@ -33,7 +33,9 @@ from barrier.lzz.serialization import importInvar
 from barrier.lzz.lzz import lzz
 from barrier.formula_utils import FormulaHelper
 
-from barrier.decomposition.encoding import DecompositionEncoder
+from barrier.decomposition.encoding import (
+    DecompositionEncoder, _get_neigh_encoding
+)
 
 from functools import partial
 
@@ -45,12 +47,13 @@ class TestDecompositionEncoding(TestCase):
         x = poly[0]
         y = poly[1]
         vars = [x,y]
+
         next_p = lambda x : partial(FormulaHelper.rename_formula,
                                     env = get_env(),
                                     vars = vars,
                                     suffix = "_next")(formula=x)
 
-        res = DecompositionEncoder._get_neigh_encoding(poly, next_p)
+        res = _get_neigh_encoding(poly, next_p)
 
         x_next = FormulaHelper.rename_formula(get_env(),vars, "_next", x)
         y_next = FormulaHelper.rename_formula(get_env(),vars, "_next", y)
@@ -74,3 +77,24 @@ class TestDecompositionEncoding(TestCase):
         )
 
         self.assertTrue(is_valid(Iff(res, expected)))
+
+
+    def test_enc(self):
+        x, y = [Symbol(var, REAL) for var in ["x", "y"]]
+        dyn_sys = DynSystem([x, y], [], [], {x : -y, y : -x}, {}, False)
+        r0 = Real(0)
+        init = get_range_from_int([x, y], [(-2,-1), (-2,-1)])
+        safe = Not(get_range_from_int([x, y], [(1,2),(1,2)]))
+
+        encoder  = DecompositionEncoder(get_env(),
+                                        dyn_sys,
+                                        TRUE(),
+                                        [x,y],
+                                        init,
+                                        safe)
+        (i,t,p) = encoder.get_symbolic_decomposition()
+
+        print(i.serialize())
+        print(t.serialize())
+        print(p.serialize())
+        aaa

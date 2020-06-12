@@ -15,7 +15,19 @@ class FormulaHelper:
         self.time_memo = {}
 
     @staticmethod
-    def get_new_var(var, mgr, old2new_map, prefix, suffix):
+    def get_fresh_var_name(mgr, var_name, index = 0):
+        created = False
+        while (not created):
+            try:
+                base = "%s_%d" % (var_name, index)
+                new_symbol = mgr.get_symbol(base)
+                index = index + 1
+            except UndefinedSymbolError as e:
+                created = True
+        return var_name
+
+    @staticmethod
+    def get_new_var(var, mgr, old2new_map, prefix, suffix, type=None):
         """Returns a variable named as
         <prefix>_var_<suffix> of the same type of var.
 
@@ -27,29 +39,34 @@ class FormulaHelper:
         try:
             new_symbol = mgr.get_symbol(base)
         except UndefinedSymbolError as e:
-            new_symbol = Symbol(base, var.symbol_type())
+            new_symbol = Symbol(base,
+                                var.symbol_type() if type is None else type)
             assert new_symbol != None
         if None != old2new_map:
             old2new_map[var] = new_symbol
+
+        if not type is None:
+            assert(new_symbol.symbol_type() == type)
+
         return new_symbol
 
     @staticmethod
-    def get_new_variables(vars, mgr, old2new_map, prefix, suffix):
+    def get_new_variables(vars, mgr, old2new_map, prefix, suffix, type=None):
         """As get_new_var for a list of variables"""
         var_list = []
         for v in vars:
             assert v.is_symbol()
-            new_symbol = FormulaHelper.get_new_var(v, mgr, old2new_map, prefix, suffix)
+            new_symbol = FormulaHelper.get_new_var(v, mgr, old2new_map, prefix, suffix, type)
             var_list.append(new_symbol)
         return frozenset(var_list)
 
     @staticmethod
-    def rename_formula(env, vars, suffix, formula):
+    def rename_formula(env, vars, suffix, formula, type=None):
         """Given a formula returns the same formula where all the variables
         in vars are renamed to var_ + suffix.
         """
         symb_map = {}
-        FormulaHelper.get_new_variables(vars, env.formula_manager, symb_map, "", suffix)
+        FormulaHelper.get_new_variables(vars, env.formula_manager, symb_map, "", suffix, type)
 
         sub_formula = substitute(formula, symb_map)
         return sub_formula
@@ -105,4 +122,5 @@ class FormulaHelper:
         """Given a formula returns the same formula where all the variables
         in vars are renamed to var_next"""
         return FormulaHelper.rename_formula(self.env.formula_manager,
-                                            vars, "_next", formula)
+                                            vars, "_next", formula,
+                                            type=None)
