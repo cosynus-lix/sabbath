@@ -14,6 +14,8 @@ except ImportError:
 
 import sys
 
+from functools import partial
+
 from pysmt.typing import BOOL, REAL, INT
 from pysmt.shortcuts import (
     is_valid,
@@ -37,7 +39,6 @@ from barrier.decomposition.encoding import (
     DecompositionEncoder, _get_neigh_encoding
 )
 
-from functools import partial
 
 class TestDecompositionEncoding(TestCase):
 
@@ -92,9 +93,8 @@ class TestDecompositionEncoding(TestCase):
                                         [x,y],
                                         init,
                                         safe)
-        (i,t,p) = encoder.get_symbolic_decomposition()
+        (ts, p) = encoder.get_quantified_ts()
 
-        print(i.serialize())
-        print(t.serialize())
+        print(ts.init.serialize())
+        print(ts.trans.serialize())
         print(p.serialize())
-        aaa

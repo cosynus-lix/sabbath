@@ -6,6 +6,7 @@ TODO: memoization needs to be aware of the prefix
 from pysmt import shortcuts
 from pysmt.shortcuts import Symbol, substitute
 
+import pysmt.typing as types
 from pysmt.exceptions import UndefinedSymbolError
 
 
@@ -15,16 +16,9 @@ class FormulaHelper:
         self.time_memo = {}
 
     @staticmethod
-    def get_fresh_var_name(mgr, var_name, index = 0):
-        created = False
-        while (not created):
-            try:
-                base = "%s_%d" % (var_name, index)
-                new_symbol = mgr.get_symbol(base)
-                index = index + 1
-            except UndefinedSymbolError as e:
-                created = True
-        return var_name
+    def get_fresh_var_name(mgr, var_name, typename=types.BOOL):
+        base_name = var_name + "_%d"
+        return mgr.new_fresh_symbol(typename, base=base_name)
 
     @staticmethod
     def get_new_var(var, mgr, old2new_map, prefix, suffix, type=None):
