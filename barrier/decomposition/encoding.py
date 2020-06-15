@@ -146,16 +146,20 @@ class DecompositionEncoder:
         can be used for predicate abstraction.
         """
 
-        new_init = And(self.init, self.invar)
         new_trans = self._get_trans_enc()
-        new_prop = self.safe
+
+        abs_rel = _get_abs_rel(_get_preds_list(self.poly),
+                               self.pred_vars_f)
+        new_init = And([self.init, self.invar, abs_rel])
+        new_prop = And([self.safe, abs_rel])
 
         return (new_init, new_trans, new_prop)
 
     def _get_trans_enc(self):
         sys = self.dyn_sys.get_renamed(self.lzz_f)
 
-        abs_rel = _get_abs_rel(_get_preds_list(self.poly), self.pred_vars_f)
+        abs_rel = _get_abs_rel(_get_preds_list(self.poly),
+                               self.pred_vars_f)
         abs_rel_next = self.next_f(abs_rel)
 
         lzz_in = _get_lzz_in(sys, self.poly,
