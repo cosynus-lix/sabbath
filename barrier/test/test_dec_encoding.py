@@ -94,7 +94,7 @@ class TestDecompositionEncoding(TestCase):
                                         init,
                                         safe)
         (ts, p) = encoder.get_quantified_ts()
+        (ts, p) = encoder.get_ts()
 
-        print(ts.init.serialize())
-        print(ts.trans.serialize())
-        print(p.serialize())
+        # TODO: add test about encoding correctness
+        self.assertTrue(True)
