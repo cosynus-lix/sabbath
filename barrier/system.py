@@ -80,6 +80,28 @@ class DynSystem(object):
             stream.write(self._dist_constraints[s].serialize())
             stream.write("\n")
 
+
+    def get_renamed(self, rename):
+        """ Returns a copy of the dynamical system with variables
+        renamed as renamed_f
+        """
+
+        new_odes = {}
+        for var, expr in iteritems(self._odes):
+            new_odes[rename(var)] = rename(expr)
+
+        new_constraints = {}
+        for var, expr in iteritems(self._dist_constraints):
+            new_constraints[rename(var)] = rename(expr)
+
+        renamed_sys = DynSystem(list(map(rename, self._states)),
+                                list(map(rename, self._inputs)),
+                                list(map(rename, self._disturbances)),
+                                new_odes,
+                                new_constraints,
+                                False)
+        return renamed_sys
+
     def get_inverse(self):
         """ Invert the ODE der(x) = f(x) to der(x) = -f(x)
         Create a new dynamical system.
