@@ -17,12 +17,17 @@ from pysmt.walkers import DagWalker
 from pysmt.constants import Fraction, is_pysmt_fraction, is_pysmt_integer
 from pysmt.decorators import clear_pending_pop, catch_conversion_error
 
-from pysmt.exceptions import (ConvertExpressionError, PysmtValueError,
-                              PysmtTypeError)
+from pysmt.exceptions import (PysmtException, ConvertExpressionError,
+                              PysmtValueError, PysmtTypeError)
 from pysmt.oracles import get_logic
 
 
 from pysmt.shortcuts import get_env
+
+class OutOfTimeSolverError(PysmtException):
+  def __init__(self, budget):
+    PysmtException.__init__(self,
+                            "The solver used already a maximum budget (%s)" % str(budget))
 
 class MathematicaOptions(SolverOptions):
   """Options for the Mathematica Solver.
@@ -30,6 +35,19 @@ class MathematicaOptions(SolverOptions):
 
   def __init__(self, **base_options):
     SolverOptions.__init__(self, **base_options)
+
+    self.budget_time = 0
+    for k,v in self.solver_options.items():
+      if k == "budget_time":
+        try:
+          v_float = float(v)
+        except:
+          raise ValueError("Invalid value for %s: %s" % \
+                           (str(k),str(v)))
+      else:
+        raise ValueError("Unrecognized option '%s'." % k)
+      # Store option
+      setattr(self, k, v)
 
   def __call__(self, solver):
     # do nothing now
@@ -54,9 +72,7 @@ class MathematicaSolver(Solver):
     self.converter = MathematicaConverter(environment=self.environment)
     self.options(self)
 
-    # Get the connection to mathematica
-    # TODO: Get as option the path to mathematica
-    self.session = WolframLanguageSession()
+    self.used_time = 0
 
     self.backtrack = []
     self.assertions_stack = []
@@ -89,18 +105,33 @@ class MathematicaSolver(Solver):
       to_solve = self.mgr.Bool(True)
 
     # Here is where we call Reduce from Mathematica
-    #assert self.session.ensure_started()
-
     free_vars = to_solve.get_free_variables()
     exists_formula = self.mgr.Exists(free_vars, to_solve)
     mathematica_exists_formula = self.converter.convert(exists_formula)
 
     reduce_cmd = wl.Reduce(mathematica_exists_formula, wlexpr('Reals'))
 
-    # DEBUG
-    # print(reduce_cmd)
+    with WolframLanguageSession() as session:
+      budget_time = self.options.budget_time
+      if (self.options.budget_time > 0):
 
-    exist_res = self.session.evaluate(reduce_cmd)
+        remaining_time = (
+          self.options.budget_time -
+          self.used_time)
+
+        if (remaining_time <= 0):
+          raise OutOfTimeSolverError(budget_time)
+
+        timed_eval_cmd = wl.TimeConstrained(reduce_cmd,
+                                            remaining_time)
+        exist_res = session.evaluate(timed_eval_cmd)
+
+        if (type(exist_res) != bool):
+          if (exist_res.name == '$Aborted'):
+            raise OutOfTimeSolverError(self.options.budget_time)
+        self.used_time = session.evaluate(wl.TimeUsed())
+      else:
+        exist_res = session.evaluate(reduce_cmd)
 
     # Invalidate cached model
     self.latest_model = None
@@ -126,8 +157,8 @@ class MathematicaSolver(Solver):
       self.assertions_stack = self.assertions_stack[:l]
 
   def _exit(self):
-    self.session.stop()
-    self.session = None
+    # nothing to do
+    pass
 
 # EOC MathematicaSolver
 
@@ -278,11 +309,12 @@ class MathematicaConverter(Converter, DagWalker):
                                  "allowed!" % str(formula) )
 # EOC MathematicaConverter
 
-def get_mathematica(env=get_env()):
+def get_mathematica(env=get_env(), budget_time=0):
   name = "mathematica"
   logics = [QF_NRA]
 
   if not env.factory.is_generic_solver(name):
     env.factory.add_generic_solver(name, [], logics)
 
-  return MathematicaSolver(env, QF_NRA)
+  return MathematicaSolver(env, QF_NRA,
+                           solver_options={"budget_time":budget_time})
