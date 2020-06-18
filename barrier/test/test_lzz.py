@@ -244,6 +244,7 @@ class TestLzz(TestCase):
             "Collision Avoidance Maneuver (III)"]
 
         solvers = ["msat","z3","mathematica"]
+        solvers = ["mathematica"]
 
         for solver_name in solvers:
             for lzz_file in os.listdir(input_path):
@@ -261,6 +262,7 @@ class TestLzz(TestCase):
                     elif (solver_name == "mathematica"):
                         solver = get_mathematica(env)
                         to_ignore = long_tests + not_supported + long_tests_mathematica
+
                     if (not lzz_problem[0] in to_ignore):
                         print("Running LZZ problem from %s (%s)..." % (lzz_file, lzz_problem[0]))
                         is_invar = run_lzz(lzz_problem, env, solver)

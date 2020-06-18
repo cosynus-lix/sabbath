@@ -10,7 +10,8 @@ from pysmt.shortcuts import (
     Not, And, Or, Implies, Iff, Equals,
     Equals, GE, GT, LT, LE,
     Exists,
-    Symbol
+    Symbol,
+    get_atoms
 )
 
 from pysmt.typing import BOOL, REAL
@@ -27,6 +28,14 @@ def _get_preds_list(poly):
         [LT(p, zero) for p in poly] +
         [And(GE(p, zero), LE(p, zero)) for p in poly]
     )
+
+def _get_preds_ia_list(poly):
+    zero = Real(0)
+    return (
+        [GE(p, zero) for p in poly] +
+        [LE(p, zero) for p in poly]
+    )
+
 
 
 def _get_lzz_in(dyn_sys, preds_list, next_f, lzz_f):
@@ -90,9 +99,70 @@ def _get_neigh_encoding(poly, get_next_formula):
               _iter(poly, partial(_change_eq, get_next = get_next_formula)))
 
 
+def get_preds(formula):
+    print(get_atoms(formula))
+    return []
+
+
+def rewrite_init(env, ts, prop):
+    reset = FormulaHelper.get_fresh_var_name(env.formula_manager, "reset")
+
+    new_vars = set(ts.state_vars)
+    new_vars.add(reset)
+    next_f = lambda x : partial(FormulaHelper.rename_formula,
+                                env = env,
+                                vars = set(new_vars),
+                                suffix = "_next")(formula=x)
+
+    new_prop = Or(reset, prop)
+    new_init = reset
+    new_trans = And(Not(next_f(reset)),
+                    And(Or(Not(reset), next_f(ts.init)),
+                        Or(reset, ts.trans)))
+
+    new_ts = TS(new_vars, next_f, new_init, new_trans)
+    return (new_ts, new_prop, [reset])
+
+def rewrite_prop(env, ts, prop):
+    new_prop = FormulaHelper.get_fresh_var_name(env.formula_manager, "new_prop")
+
+    new_vars = set(ts.state_vars)
+    new_vars.add(new_prop)
+
+    next_f = lambda x : partial(FormulaHelper.rename_formula,
+                                env = env,
+                                vars = set(new_vars),
+                                suffix = "_next")(formula=x)
+
+    new_init = And(ts.init, Iff(new_prop, prop))
+    new_trans = And([ts.trans,
+                     Iff(new_prop, prop),
+                     Iff(next_f(new_prop), next_f(prop))])
+
+    new_ts = TS(new_vars, next_f, new_init, new_trans)
+    return (new_ts, new_prop, [new_prop])
+
+
+class DecompositionOptions:
+    def __init__(self, rewrite_init = True,
+                 rewrite_property = True):
+        self.rewrite_init = rewrite_init
+        self.rewrite_property = rewrite_property
+
 class DecompositionEncoder:
-    def __init__(self, env, dyn_sys, invar, poly, init, safe):
+    def __init__(self, env, dyn_sys, invar, poly, init, safe,
+                 options = DecompositionOptions()):
+        """
+        Input (a safety verification problem):
+        - a polynomial dynamical system der(X) = p(X)
+        - a set of invariant sates Inv(X)
+        - a set of polynomials (not predicates) defining the abstraction
+        - a set of initial states I(X)
+        - a safety property P(X)
+        """
+
         self.env = env
+        self.options = options
         self.dyn_sys = dyn_sys
         self.invar = invar
         self.poly = poly
@@ -129,25 +199,37 @@ class DecompositionEncoder:
 
     def get_ts(self):
         """
-        Input (a safety verification problem):
-        - a polynomial dynamical system der(X) = p(X)
-        - a set of initial states I(X)
-        - a set of invariant sates Inv(X)
-        - a safety property P(X)
-        - a set of polynomials defining the abstraction
-
-        Output (a symbolic transition system):
-        - I'(X)
-        - T'(X,X',Z)
-        - P'(X)
-        that can be used with implicit predicate abstraction
+        Output:
+        - TS a symbolic transition system,
+        - P property
+        - List of abstraction polynomials
         """
-
         new_trans = self._get_trans_enc()
         new_init = And([self.init, self.invar])
         new_prop = self.safe
 
-        return (TS(self.vars, self.next_f, new_init, new_trans), new_prop)
+        preds_for_ia = _get_preds_ia_list(self.poly)
+        ts_vars = self.vars
+        ts_next = self.next_f
+
+        ts = TS(self.vars, self.next_f, new_init, new_trans)
+
+        if (not (self.options.rewrite_init and
+                 self.options.rewrite_property)):
+            # we need to add the predicate from init and property
+            # to the decomposition if we want to use IA later
+            #
+            raise NotImplementedException()
+
+        if (self.options.rewrite_init):
+            (ts, new_prop, new_preds) = rewrite_init(self.env, ts, new_prop)
+            preds_for_ia += new_preds
+
+        if (self.options.rewrite_property):
+            (ts, new_prop, new_preds) = rewrite_prop(self.env, ts, new_prop)
+            preds_for_ia += new_preds
+
+        return (ts, new_prop, preds_for_ia)
 
 
     def get_quantified_ts(self):

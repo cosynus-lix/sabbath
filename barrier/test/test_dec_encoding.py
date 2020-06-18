@@ -35,6 +35,8 @@ from barrier.lzz.serialization import importInvar
 from barrier.lzz.lzz import lzz
 from barrier.formula_utils import FormulaHelper
 
+from barrier.ts import TS
+
 from barrier.decomposition.encoding import (
     DecompositionEncoder, _get_neigh_encoding
 )
@@ -94,7 +96,7 @@ class TestDecompositionEncoding(TestCase):
                                         init,
                                         safe)
         (ts, p) = encoder.get_quantified_ts()
-        (ts, p) = encoder.get_ts()
+        (ts, p, predicates) = encoder.get_ts()
 
         # TODO: add test about encoding correctness
         self.assertTrue(True)

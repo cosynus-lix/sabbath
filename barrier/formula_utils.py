@@ -118,3 +118,4 @@ class FormulaHelper:
         return FormulaHelper.rename_formula(self.env.formula_manager,
                                             vars, "_next", formula,
                                             type=None)
+
