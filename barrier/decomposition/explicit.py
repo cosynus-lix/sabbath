@@ -38,13 +38,13 @@ class Result(Enum):
 def _get_logger():
     return logging.getLogger(__name__)
 
-def _get_lzz_solver():
-  return get_mathematica()
-
 def _get_solver():
     """ Use Z3 as standard solver for now.
     """
     return Solver(logic=QF_NRA, name="z3")
+
+def _get_lzz_solver():
+    return _get_solver()
 
 def abstract(solver, polynomials, sigma):
     """ Compute the abstract state for model """
@@ -320,7 +320,8 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials,
                                                 And(invar, pred),
                                                 new_polynomials,
                                                 init, safe,
-                                                get_solver)
+                                                get_solver,
+                                                get_lzz_solver)
                         return dwc_invar
 
         logger.debug("Trying to decompose...")
@@ -364,7 +365,8 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials,
                                                            new_polynomials,
                                                            And(init, pred),
                                                            safe,
-                                                           get_solver)
+                                                           get_solver,
+                                                           get_lzz_solver)
 
                         # Invar holds under pred
                         dwc_invar = And(dwc_invar, pred)

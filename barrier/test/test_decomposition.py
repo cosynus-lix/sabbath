@@ -268,7 +268,9 @@ class TestDecomposition(TestCase):
                       "Strogatz Exercise 6_1_5",
                       "Strogatz Exercise 6_1_9 Dipole",
                       "Strogatz Example 6_8_3",
-                      "Locally stable nonlinear system"]
+                      "Locally stable nonlinear system",
+                      "Strogatz Example 6_3_2",
+                      "Dumortier Llibre Artes Ex. 5_2"]
 
         long_tests_dwcl = ["Dai Gan Xia Zhan JSC14 Ex. 1"]
 
