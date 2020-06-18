@@ -225,9 +225,9 @@ class DecompositionEncoder:
             (ts, new_prop, new_preds) = rewrite_init(self.env, ts, new_prop)
             preds_for_ia += new_preds
 
-        # if (self.options.rewrite_property):
-        #     (ts, new_prop, new_preds) = rewrite_prop(self.env, ts, new_prop)
-        #     preds_for_ia += new_preds
+        if (self.options.rewrite_property):
+            (ts, new_prop, new_preds) = rewrite_prop(self.env, ts, new_prop)
+            preds_for_ia += new_preds
 
         return (ts, new_prop, preds_for_ia)
 
