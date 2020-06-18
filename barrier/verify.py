@@ -4,13 +4,15 @@
 
 import sys
 import argparse
+import logging
 
 from pysmt.shortcuts import get_env
 
 from barrier.lzz.serialization import importInvar
 from barrier.decomposition.explicit import (
     Result,
-    dwcl
+    dwcl,
+    get_invar_lazy
 )
 from barrier.decomposition.encoding import DecompositionEncoder
 
@@ -19,14 +21,14 @@ def main():
     parser.add_argument("problem",help="Verification problem file")
 
     parser.add_argument("--task",
-                        choices=["dwcl","dump_vmt"],
+                        choices=["dwcl","reach","dump_vmt"],
                         default="dwcl",
                         help="Verify using dwcl or dump vmt file")
 
     parser.add_argument("--outvmt", help="Out vmt file")
     args = parser.parse_args()
 
-
+    logging.basicConfig(level=logging.DEBUG)
 
     env = get_env()
     with open(args.problem, "r") as json_stream:
@@ -38,6 +40,14 @@ def main():
         print("Verifying using dwcl...")
         (res, invars) = dwcl(dyn_sys, invariants, predicates, init, safe)
         print("%s %s: %s" % (problem_name, str(res), str(invars)))
+
+    if (args.task == "reach"):
+        (res, reach) = get_invar_lazy(dyn_sys,
+                                      invariants,
+                                      predicates,
+                                      init, safe)
+        print("%s %s: %s" % (problem_name, str(res), str(reach)))
+
     elif (args.task == "dump_vmt"):
         if (not args.outvmt):
             print("Missing out file")
