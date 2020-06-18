@@ -15,6 +15,8 @@ from barrier.decomposition.explicit import (
     get_invar_lazy
 )
 from barrier.decomposition.encoding import DecompositionEncoder
+from barrier.ts import TS
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -25,7 +27,9 @@ def main():
                         default="dwcl",
                         help="Verify using dwcl or dump vmt file")
 
-    parser.add_argument("--outvmt", help="Out vmt file")
+    parser.add_argument("--outvmt", help="Output vmt file")
+    parser.add_argument("--outpred", help="Output predicates file")
+
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG)
@@ -50,8 +54,12 @@ def main():
 
     elif (args.task == "dump_vmt"):
         if (not args.outvmt):
-            print("Missing out file")
+            print("Missing output name for vmt file")
             sys.exit(1)
+        if (not args.outpred):
+            print("Missing output name for predicates  file")
+            sys.exit(1)
+
 
         print("Encoding verification problem in the vmt file to %s..." % args.outvmt)
         encoder  = DecompositionEncoder(env,
@@ -60,11 +68,15 @@ def main():
                                         predicates,
                                         init,
                                         safe)
-        (ts, p) = encoder.get_ts()
 
+        (ts, p, predicates) = encoder.get_ts()
         with open(args.outvmt, "w") as outstream:
-            ts.to_vmt(p, outstream)
-            print("Printed to %s..." % args.outvmt)
+            ts.to_vmt(outstream, p)
+            print("Printed vmt to %s..." % args.outvmt)
+
+        with open(args.outpred, "w") as outstream:
+            TS.dump_predicates(outstream, predicates)
+            print("Printed predicates to %s..." % args.outpred)
 
 if __name__ == '__main__':
     main()

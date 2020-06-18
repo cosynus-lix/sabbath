@@ -18,7 +18,8 @@ class TS:
         self.trans = trans
         self.state_vars = set(state_vars)
 
-    def to_vmt(self, safety_property, outstream):
+
+    def to_vmt(self, outstream, safety_property):
         # compute next
         printer = SmtDagPrinter(outstream)
         cmds = []
@@ -32,19 +33,27 @@ class TS:
 
         # Declare all variables
         nvcount=0
+        visited = set()
         for formula in [self.init, self.trans]:
             deps = formula.get_free_variables()
             # Declare all variables
             for symbol in deps:
-                assert symbol.is_symbol()
-                cmds.append(SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[symbol]))
+                if not symbol in visited:
+                    visited.add(symbol)
+                    assert symbol.is_symbol()
+                    cmds.append(SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[symbol]))
 
-                if symbol in self.state_vars:
-                    nv_name = "nvdef_%d" % nvcount
-                    nvcount = nvcount + 1
-                    cmds.append("(define-fun %s () %s (! %s :next %s))" %
-                                (nv_name, symbol.symbol_type(),
-                                 symbol, self.next_f(symbol)))
+                    if symbol in self.state_vars:
+                        nv_name = "nvdef_%d" % nvcount
+                        nvcount = nvcount + 1
+
+                        next_s = self.next_f(symbol)
+                        cmds.append(SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[next_s]))
+                        visited.add(next_s)
+
+                        cmds.append("(define-fun %s () %s (! %s :next %s))" %
+                                    (nv_name, symbol.symbol_type(),
+                                     symbol, self.next_f(symbol)))
 
         # Assert formulas
         for cmd in cmds:
@@ -65,6 +74,7 @@ class TS:
         print_formula(outstream, printer, ".trans", "trans", self.trans)
         print_formula(outstream, printer, ".invar-property", "invar-property",
                       safety_property, "0")
+        outstream.flush()
         return
 
 
@@ -96,3 +106,13 @@ class TS:
         safe_f = get_formula(script, "invar-property")
 
         return (TS(state_vars, next_f, init_f, trans_f), safe_f)
+
+    @staticmethod
+    def dump_predicates(outstream, predicates):
+        """ Print the list of predicates
+        """
+        printer = SmtDagPrinter(outstream)
+        for p in predicates:
+            printer.printer(p)
+            outstream.write("\n")
+        outstream.flush()

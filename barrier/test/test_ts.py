@@ -26,7 +26,7 @@ class TestSystem(TestCase):
     def test_ts(self):
         def test_ts_impl(ts, safe):
             outstream = StringIO()
-            ts.to_vmt(safe, outstream)
+            ts.to_vmt(outstream, safe)
             outstream.seek(0)
             (ts_new, safe_new) = TS.from_vmt(outstream)
             self.assertTrue(is_valid(Iff(ts.init, ts_new.init)))
