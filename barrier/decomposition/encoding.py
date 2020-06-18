@@ -114,13 +114,14 @@ def rewrite_init(env, ts, prop):
                                 vars = set(new_vars),
                                 suffix = "_next")(formula=x)
 
+    new_prop = Or(reset, prop)
     new_init = reset
-    new_trans = And(Not(reset),
-                    And(Or(reset, next_f(ts.init)),
-                        Or(Not(reset), ts.trans)))
+    new_trans = And(Not(next_f(reset)),
+                    And(Or(Not(reset), next_f(ts.init)),
+                        Or(reset, ts.trans)))
 
     new_ts = TS(new_vars, next_f, new_init, new_trans)
-    return (new_ts, prop, [reset])
+    return (new_ts, new_prop, [reset])
 
 def rewrite_prop(env, ts, prop):
     new_prop = FormulaHelper.get_fresh_var_name(env.formula_manager, "new_prop")
@@ -224,9 +225,9 @@ class DecompositionEncoder:
             (ts, new_prop, new_preds) = rewrite_init(self.env, ts, new_prop)
             preds_for_ia += new_preds
 
-        if (self.options.rewrite_property):
-            (ts, new_prop, new_preds) = rewrite_prop(self.env, ts, new_prop)
-            preds_for_ia += new_preds
+        # if (self.options.rewrite_property):
+        #     (ts, new_prop, new_preds) = rewrite_prop(self.env, ts, new_prop)
+        #     preds_for_ia += new_preds
 
         return (ts, new_prop, preds_for_ia)
 
