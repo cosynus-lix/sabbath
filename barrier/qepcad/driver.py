@@ -1,6 +1,6 @@
 import os
 import subprocess
-import StringIO
+from io import StringIO
 import string
 import logging
 import re
@@ -56,7 +56,7 @@ finish.
         #
         #ordering the variables for qepcad as (free_var,not_free)
         ordered_var_list = list(free_var) + list(not_free)
-        formula_stream = StringIO.StringIO()
+        formula_stream = StringIO()
         res = QepcadPrinter(formula_stream)
         res.printer(formula)
         substitutions = {"VARS" : variables_qepcad_format(ordered_var_list),
@@ -79,7 +79,7 @@ finish.
 
         logger.debug("Calling: %s\nWith input: %s" % (" ".join(args), qepcad_input))
         p = subprocess.Popen(args, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        qepcad_output, err = p.communicate(input=qepcad_input)
+        qepcad_output, err = p.communicate(input=qepcad_input.encode())
 
         logger.debug("Qepcad computation ended with return code %d" % p.returncode)
 
@@ -89,7 +89,7 @@ finish.
 
 
         # Parse the qepcad output
-        pysmt_result = QepcadDriver.parse_qepcad_output(qepcad_output)
+        pysmt_result = QepcadDriver.parse_qepcad_output(qepcad_output.decode("utf-8"))
 
         logger.debug("Qepcad computation result: %s" % str(pysmt_result))
 

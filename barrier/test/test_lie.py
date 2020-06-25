@@ -15,7 +15,7 @@ import sys
 
 from pysmt.typing import BOOL, REAL, INT
 from pysmt.shortcuts import (
-    is_valid,
+    is_valid, get_model,
     Symbol, TRUE, FALSE, get_env,
     Real, Int,
     Not, And, Or, Implies, Iff, Equals
@@ -29,10 +29,36 @@ from barrier.lie import get_lie, Derivator, Pysmt2Sympy, Sympy2Pysmt
 class TestLie(TestCase):
 
     def test_conversion(self):
-        def convert(pysmt_formula):
+        def convert(pysmt_formula, side_conditions):
             sympyformula = smt2sym.walk(pysmt_formula)
             pysmt_formula_back = sym2smt.walk(sympyformula)
-            return pysmt_formula_back is pysmt_formula_back
+
+            print("Model %s:\n%s\n"  % (
+                str(Equals(pysmt_formula, Real(0))),
+                str(get_model(Equals(pysmt_formula, Real(0))))
+            ))
+            print("Model %s:\n%s\n"  % (
+                str(Equals(pysmt_formula_back, Real(0))),
+                str(get_model(Equals(pysmt_formula_back, Real(0))))
+            ))
+
+            if (pysmt_formula_back is pysmt_formula):
+                return True
+            else:
+                print("---")
+                print(pysmt_formula.serialize())
+                print(pysmt_formula_back.serialize())
+
+                if pysmt_formula in side_conditions:
+                    sc = side_conditions[pysmt_formula]
+                else:
+                    sc = TRUE()
+
+                f1 = And(sc, Equals(pysmt_formula, Real(0)))
+                f2 = And(sc, Equals(pysmt_formula_back, Real(0)))
+
+                return is_valid(Iff(f1,f2))
+
 
         smt2sym = Pysmt2Sympy()
         sym2smt = Sympy2Pysmt()
@@ -55,8 +81,12 @@ class TestLie(TestCase):
                  Pow((x1 * x2), Real(2)),
                  x1 / x2 + Real(Fraction(-2, -3))]
 
+        # Undef behavior when x2 = 0
+        expr = x1 / x2 + Real(Fraction(-2, -3))
+        sc = {expr : Not(Equals(Real(0),x2))}
+
         for s in exprs:
-            self.assertTrue(convert(s))
+            self.assertTrue(convert(s, sc))
 
 
     def test_lie(self):

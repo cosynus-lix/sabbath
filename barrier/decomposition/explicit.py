@@ -402,11 +402,13 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials,
 
 
 def dwc(dyn_sys, invar, polynomials, init, safe,
-        get_solver = _get_solver):
+        get_solver = _get_solver,
+        get_lzz_solver = _get_lzz_solver):
     return dwc_general(False, dyn_sys, invar, polynomials, init, safe,
-                       get_solver)
+                       get_solver, get_lzz_solver)
 
 def dwcl(dyn_sys, invar, polynomials, init, safe,
-         get_solver = _get_solver):
+         get_solver = _get_solver,
+         get_lzz_solver = _get_lzz_solver):
     return dwc_general(True, dyn_sys, invar, polynomials, init, safe,
-                       get_solver)
+                       get_solver, get_lzz_solver)

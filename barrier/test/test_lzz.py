@@ -4,6 +4,7 @@
 import logging
 import unittest
 import os
+from functools import partial
 from fractions import Fraction
 
 try:
@@ -243,24 +244,40 @@ class TestLzz(TestCase):
             "Collision Avoidance Maneuver (II)",
             "Collision Avoidance Maneuver (III)"]
 
-        solvers = ["msat","z3","mathematica"]
-        solvers = ["mathematica"]
+        all_solvers = [("msathsat-smtlib",partial(get_mathsat_smtlib,
+                                                  env=get_env())),
+                       ("z3", partial(Solver,
+                                      logic=QF_NRA,
+                                      name="z3")),
+                       ("mathematica", partial(get_mathematica,
+                                               env=get_env(),
+                                               budget_time=0))]
+        solvers = []
+        for (name, f) in all_solvers:
+            try:
+                f()
+                solvers.append((name,f))
+            except:
+                pass
 
-        for solver_name in solvers:
+
+        for (solver_name, solver_init) in solvers:
+            print("Running solver %s..." % solver_name)
+
             for lzz_file in os.listdir(input_path):
                 if not lzz_file.endswith(".lzz"):
                     continue
                 with open(os.path.join(input_path, lzz_file), "r") as f:
                     lzz_problem = importLzz(f, env)
 
-                    if (solver_name == "msat"):
-                        solver = get_mathsat_smtlib("")
+                    solver = solver_init()
+                    assert(not solver is None)
+
+                    if (solver_name == "msathsat-smtlib"):
                         to_ignore = long_tests + not_supported + long_tests_msat
                     elif (solver_name == "z3"):
-                        solver = Solver(logic=QF_NRA, name="z3")
                         to_ignore = long_tests + not_supported + long_tests_z3
                     elif (solver_name == "mathematica"):
-                        solver = get_mathematica(env)
                         to_ignore = long_tests + not_supported + long_tests_mathematica
 
                     if (not lzz_problem[0] in to_ignore):
