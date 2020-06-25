@@ -11,6 +11,8 @@ from pysmt.smtlib.annotations import Annotations
 from pysmt.smtlib.printers import SmtPrinter, SmtDagPrinter, quote
 from pysmt.smtlib.parser import SmtLibParser
 
+from pysmt.shortcuts import Symbol
+
 class TS:
     def __init__(self, state_vars, next_f, init, trans):
         self.init = init
@@ -46,8 +48,8 @@ class TS:
                     if symbol in self.state_vars:
                         nv_name = "nvdef_%d" % nvcount
                         nvcount = nvcount + 1
-
                         next_s = self.next_f(symbol)
+
                         cmds.append(SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[next_s]))
                         visited.add(next_s)
 
@@ -87,10 +89,12 @@ class TS:
         state_vars = []
         next_f_map = {}
         state_vars = script.annotations.all_annotated_formulae("next")
+
         for s in state_vars:
-            next_vars = script.annotations.annotations(s)["next"]
-            assert((not next_vars is None) and len(next_vars) == 1)
-            next_var = next(iter(next_vars))
+            next_vars_str_list = script.annotations.annotations(s)["next"]
+            assert((not next_vars_str_list is None) and len(next_vars_str_list) == 1)
+            next_var_str = next(iter(next_vars_str_list))
+            next_var = Symbol(next_var_str, s.symbol_type())
             next_f_map[s] = next_var
         next_f = lambda f : next_f_map[f]
 
