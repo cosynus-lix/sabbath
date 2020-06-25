@@ -11,7 +11,6 @@ except ImportError:
     import unittest
 
 import sys
-from itertools import izip
 
 from pysmt.typing import BOOL
 from pysmt.shortcuts import Symbol, TRUE, FALSE, get_env, GE, Real
@@ -30,14 +29,14 @@ class TestSystem(TestCase):
             Check that we store the data in the system
             """
             dyn = DynSystem(states, inputs, disturbances, odes, dist)
-            for (x1, x2) in izip(dyn.states(), states):
+            for (x1, x2) in zip(dyn.states(), states):
                 self.assertTrue(x1 is x2)
-            for (x1, x2) in izip(dyn.inputs(), inputs):
+            for (x1, x2) in zip(dyn.inputs(), inputs):
                 self.assertTrue(x1 is x2)
-            for (x1, x2) in izip(dyn.disturbances(), disturbances):
+            for (x1, x2) in zip(dyn.disturbances(), disturbances):
                 self.assertTrue(x1 is x2)
-            for (x1, x2) in izip(dyn.odes(), odes): self.assertTrue(x1 is x2)
-            for (x1, x2) in izip(dyn.dist_constraints(), dist):
+            for (x1, x2) in zip(dyn.odes(), odes): self.assertTrue(x1 is x2)
+            for (x1, x2) in zip(dyn.dist_constraints(), dist):
                 self.assertTrue(x1 is x2)
 
 
