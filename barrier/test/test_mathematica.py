@@ -14,15 +14,17 @@ from pysmt.logics import QF_NRA
 from pysmt.environment import Environment
 from pysmt.typing import BOOL, REAL, INT, FunctionType, BV8, BVType
 from pysmt.shortcuts import (
-  Symbol, is_sat, Not, Implies, GT, Plus, Int, Real,
-  Minus, Times, Xor, And, Or, TRUE, Iff, FALSE, Ite, Div,
-  Equals,LT,GT,LE,GE
+    Symbol, is_sat, Not, Implies, GT, Plus, Int, Real,
+    Minus, Times, Xor, And, Or, TRUE, Iff, FALSE, Ite, Div,
+    Equals,LT,GT,LE,GE
 )
+from pysmt.exceptions import SolverAPINotFound
 
 from barrier.test import TestCase
 from barrier.mathematica.mathematica import (
-  MathematicaSolver,
-  MathematicaConverter,
+    MathematicaSolver,
+    MathematicaConverter,
+    get_mathematica
 )
 
 class TestConverter(TestCase):
@@ -62,24 +64,28 @@ class TestConverter(TestCase):
 class TestMathematica(TestCase):
   def test_solve(self):
     env = Environment()
-    solver = MathematicaSolver(env, QF_NRA)
 
-    x,y,z = [Symbol(s,REAL) for s in ["x","y","z"]]
+    try:
+        solver = get_mathematica(env)
 
-    formula = And(x*x + y*y >= 3, x > 0)
-    solver.add_assertion(formula)
+        x,y,z = [Symbol(s,REAL) for s in ["x","y","z"]]
 
-    self.assertTrue(solver.solve())
+        formula = And(x*x + y*y >= 3, x > 0)
+        solver.add_assertion(formula)
 
-    solver.reset_assertions()
-    solver.add_assertion(formula)
-    solver.add_assertion(x < 0)
-    self.assertFalse(solver.solve())
+        self.assertTrue(solver.solve())
 
-    solver.reset_assertions()
-    solver.add_assertion(formula)
-    solver.push()
-    solver.add_assertion(x < 0)
-    self.assertFalse(solver.solve())
-    solver.pop()
-    self.assertTrue(solver.solve())
+        solver.reset_assertions()
+        solver.add_assertion(formula)
+        solver.add_assertion(x < 0)
+        self.assertFalse(solver.solve())
+
+        solver.reset_assertions()
+        solver.add_assertion(formula)
+        solver.push()
+        solver.add_assertion(x < 0)
+        self.assertFalse(solver.solve())
+        solver.pop()
+        self.assertTrue(solver.solve())
+    except SolverAPINotFound:
+        print("Mathematica not found - skipping test...")
