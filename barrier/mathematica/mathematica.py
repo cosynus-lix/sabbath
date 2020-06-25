@@ -6,8 +6,8 @@ try:
   import wolframclient
   from wolframclient.evaluation import WolframLanguageSession
   from wolframclient.language import wl, wlexpr
-except ImportError:
-  raise SolverAPINotFound
+except:
+  pass
 
 from pysmt.logics import QF_NRA
 from pysmt import typing as types
@@ -20,14 +20,13 @@ from pysmt.decorators import clear_pending_pop, catch_conversion_error
 from pysmt.exceptions import (PysmtException, ConvertExpressionError,
                               PysmtValueError, PysmtTypeError)
 from pysmt.oracles import get_logic
-
-
 from pysmt.shortcuts import get_env
 
 class OutOfTimeSolverError(PysmtException):
   def __init__(self, budget):
     PysmtException.__init__(self,
                             "The solver used already a maximum budget (%s)" % str(budget))
+
 
 class MathematicaOptions(SolverOptions):
   """Options for the Mathematica Solver.
@@ -86,6 +85,14 @@ class MathematicaSolver(Solver):
   @clear_pending_pop
   def add_assertion(self, formula, named=None):
     self.assertions_stack.append(formula)
+
+  def _test_connection(self):
+    try:
+      session = WolframLanguageSession()
+      session.terminate()
+    except:
+      return False
+    return True
 
   @clear_pending_pop
   def solve(self, assumptions=None):
@@ -309,12 +316,19 @@ class MathematicaConverter(Converter, DagWalker):
                                  "allowed!" % str(formula) )
 # EOC MathematicaConverter
 
+
 def get_mathematica(env=get_env(), budget_time=0):
-  name = "mathematica"
-  logics = [QF_NRA]
+  try:
+    import wolframclient
+  except:
+    raise SolverAPINotFound
 
-  if not env.factory.is_generic_solver(name):
-    env.factory.add_generic_solver(name, [], logics)
 
-  return MathematicaSolver(env, QF_NRA,
-                           solver_options={"budget_time":budget_time})
+  solver = MathematicaSolver(env, QF_NRA,
+                             solver_options={"budget_time":budget_time})
+  solver._test_connection(self)
+
+  return 
+
+
+
