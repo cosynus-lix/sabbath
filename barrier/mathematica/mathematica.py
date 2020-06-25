@@ -88,8 +88,8 @@ class MathematicaSolver(Solver):
 
   def _test_connection(self):
     try:
-      session = WolframLanguageSession()
-      session.terminate()
+      with WolframLanguageSession() as session:
+        session.terminate()
     except:
       return False
     return True
@@ -326,9 +326,10 @@ def get_mathematica(env=get_env(), budget_time=0):
 
   solver = MathematicaSolver(env, QF_NRA,
                              solver_options={"budget_time":budget_time})
-  solver._test_connection(self)
+  if (not solver._test_connection()):
+    raise SolverAPINotFound
 
-  return 
+  return solver 
 
 
 
