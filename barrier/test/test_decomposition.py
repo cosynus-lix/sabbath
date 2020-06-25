@@ -196,7 +196,6 @@ class TestDecomposition(TestCase):
             self.assertTrue(res == expected[0] and self._eq_wformula(invars,expected[1]))
 
     def test_invar_dwcl(self):
-        print("test invar dwcl")
         def rf(a,b):
             return Real(Fraction(a,b))
 
@@ -254,7 +253,7 @@ class TestDecomposition(TestCase):
             is_invar = lzz(solver, invars, dyn_sys, invars, invar)
             solver.exit()
             self.assertTrue(is_invar)
-        except pysmt.exceptions.SolverAPINotFound as e:
+        except SolverAPINotFound as e:
             print("Cannot load mathematica...")
             return 0
 
@@ -290,7 +289,6 @@ class TestDecomposition(TestCase):
         long_tests_dwcl = ["Dai Gan Xia Zhan JSC14 Ex. 1"]
 
         not_supported = ["Nonlinear Circuit Example 1+2 (Tunnel Diode Oscillator)"]
-        print("cavallo")
 
         for invar_file in os.listdir(input_path):
             with open(os.path.join(input_path, invar_file), "r") as json_stream:
@@ -316,9 +314,8 @@ class TestDecomposition(TestCase):
                     if (res == Result.SAFE):
                         solver = Solver(logic=QF_NRA, name="z3")
                         print("Sufficient %s: %s" % (problem_name, str(invars.serialize())))
-                        is_unsafe = solver.solve(safe)
 
-                        is_unsafe = solver.solve(And(Not(safe), invars))
+                        is_unsafe = solver.is_sat(And(Not(safe), invars))
                         solver.exit()
                         self.assertFalse(is_unsafe)
 
@@ -327,15 +324,6 @@ class TestDecomposition(TestCase):
                         assert (not init is None)
                         assert (not invariants is None)
                         solver = Solver(logic=QF_NRA, name="z3")
-                        # solver = get_mathematica(env)
-
-                        # print("INIT " + str(solver.converter.convert(init)))
-                        # print("INVAR " + str(solver.converter.convert(invariants)))
-                        # print("Candidate " + str(solver.converter.convert(invars)))
-                        # print("ODEs:")
-                        # for var,ode in dyn_sys.get_odes().items():
-                        #     print("\t" + str(var) + " " + str(solver.converter.convert(ode)))
-                        # print(dyn_sys)
 
                         is_invar = lzz(solver, invars, dyn_sys, init, invariants)
                         solver.exit()
@@ -346,8 +334,7 @@ class TestDecomposition(TestCase):
 
                         print("Checking unsafe %s:" % (problem_name))
 
-                        solver.add_assertion(And(init, Not(safe)))
-                        is_unsafe = solver.solve()
+                        is_unsafe = solver.is_sat(And(init, Not(safe)))
                         solver.exit()
                         self.assertTrue(is_unsafe)
 
