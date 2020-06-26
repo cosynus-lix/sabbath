@@ -10,8 +10,6 @@ try:
 except ImportError:
     from io import StringIO
 
-from future.utils import iteritems
-
 from functools import reduce
 
 import pysmt
@@ -37,11 +35,11 @@ class DynSystem(object):
         self._inputs = [i for i in inputs]
         self._disturbances = [d for d in disturbances]
         self._odes = {}
-        for var, ode_expr in iteritems(odes):
+        for var, ode_expr in odes.items():
             self._odes[var] = ode_expr
 
         self._dist_constraints = {}
-        for var, dist_const in iteritems(dist_constraints):
+        for var, dist_const in dist_constraints.items():
             self._dist_constraints[var] = dist_const
 
         if (check_malformed and not self.__check_syntax__()):
@@ -87,11 +85,11 @@ class DynSystem(object):
         """
 
         new_odes = {}
-        for var, expr in iteritems(self._odes):
+        for var, expr in self._odes.items():
             new_odes[rename(var)] = rename(expr)
 
         new_constraints = {}
-        for var, expr in iteritems(self._dist_constraints):
+        for var, expr in self._dist_constraints.items():
             new_constraints[rename(var)] = rename(expr)
 
         renamed_sys = DynSystem(list(map(rename, self._states)),
@@ -108,7 +106,7 @@ class DynSystem(object):
         """
 
         inverse_odes = {}
-        for var, ode_expr in iteritems(self._odes):
+        for var, ode_expr in self._odes.items():
             inverse_odes[var] = Minus(Real(0), ode_expr)
 
         inverse = DynSystem(self._states,
