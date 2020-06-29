@@ -1,4 +1,5 @@
 from six.moves import xrange
+import logging
 
 from pysmt.exceptions import SolverAPINotFound
 
@@ -27,6 +28,16 @@ class OutOfTimeSolverError(PysmtException):
     PysmtException.__init__(self,
                             "The solver used already a maximum budget (%s)" % str(budget))
 
+
+class MathematicaSession():
+  _session = None
+
+  @staticmethod
+  def get_session():
+    if MathematicaSession._session is None:
+      logging.debug("Creating the session")
+      MathematicaSession._session = WolframLanguageSession()
+    return MathematicaSession._session
 
 class MathematicaOptions(SolverOptions):
   """Options for the Mathematica Solver.
@@ -77,6 +88,8 @@ class MathematicaSolver(Solver):
     self.assertions_stack = []
     self.reset_assertions()
 
+    self.session = MathematicaSession.get_session()
+
   @clear_pending_pop
   def reset_assertions(self):
     true_formula = self.mgr.Bool(True)
@@ -85,14 +98,6 @@ class MathematicaSolver(Solver):
   @clear_pending_pop
   def add_assertion(self, formula, named=None):
     self.assertions_stack.append(formula)
-
-  def _test_connection(self):
-    try:
-      with WolframLanguageSession() as session:
-        session.terminate()
-    except:
-      return False
-    return True
 
   @clear_pending_pop
   def solve(self, assumptions=None):
@@ -118,27 +123,25 @@ class MathematicaSolver(Solver):
 
     reduce_cmd = wl.Reduce(mathematica_exists_formula, wlexpr('Reals'))
 
-    with WolframLanguageSession() as session:
-      budget_time = self.options.budget_time
-      if (self.options.budget_time > 0):
+    budget_time = self.options.budget_time
+    if (self.options.budget_time > 0):
+      remaining_time = (
+        self.options.budget_time -
+        self.used_time)
 
-        remaining_time = (
-          self.options.budget_time -
-          self.used_time)
+      if (remaining_time <= 0):
+        raise OutOfTimeSolverError(budget_time)
 
-        if (remaining_time <= 0):
-          raise OutOfTimeSolverError(budget_time)
+      timed_eval_cmd = wl.TimeConstrained(reduce_cmd,
+                                          remaining_time)
+      exist_res = self.session.evaluate(timed_eval_cmd)
 
-        timed_eval_cmd = wl.TimeConstrained(reduce_cmd,
-                                            remaining_time)
-        exist_res = session.evaluate(timed_eval_cmd)
-
-        if (type(exist_res) != bool):
-          if (exist_res.name == '$Aborted'):
-            raise OutOfTimeSolverError(self.options.budget_time)
-        self.used_time = session.evaluate(wl.TimeUsed())
-      else:
-        exist_res = session.evaluate(reduce_cmd)
+      if (type(exist_res) != bool):
+        if (exist_res.name == '$Aborted'):
+          raise OutOfTimeSolverError(self.options.budget_time)
+      self.used_time = self.session.evaluate(wl.TimeUsed())
+    else:
+      exist_res = self.session.evaluate(reduce_cmd)
 
     # Invalidate cached model
     self.latest_model = None
@@ -150,6 +153,8 @@ class MathematicaSolver(Solver):
     return self.latest_model.get_value(item)
 
   def get_model(self):
+    # We should call FindInstance to find a model (instead o resolve)
+    # The main issue is to parse algebraic numbers
     raise NotImplementedError
 
   @clear_pending_pop
@@ -326,10 +331,7 @@ def get_mathematica(env=get_env(), budget_time=0):
 
   solver = MathematicaSolver(env, QF_NRA,
                              solver_options={"budget_time":budget_time})
-  if (not solver._test_connection()):
-    raise SolverAPINotFound
-
-  return solver 
+  return solver
 
 
 

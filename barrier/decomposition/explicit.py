@@ -63,6 +63,8 @@ def abstract(solver, polynomials, sigma):
 
     return abs_state
 
+
+
 def _get_neighbors(polynomials, abs_state):
 
     """ Get the neighbors of abs_state """
@@ -162,6 +164,36 @@ def get_invar_lazy_set(dyn_sys, invar,
         solver.pop()
         return sat
 
+    def get_all_abstract(solver, polynomials):
+        """ Compute the set of abstract state for the formula asserted in
+        solver and according to polynomials.
+        """
+        def _get_all_abstract_rec(solver, polynomials, index, preds_trail, abs_states):
+            if (index < len(polynomials)):
+                a = polynomials[index]
+                for (sign, first) in [(LT,True), (LT,False), (Equals,True)]:
+                    predicate = sign(a, Real(0)) if first else sign(Real(0), a)
+
+                    solver.push()
+                    solver.add_assertion(predicate)
+
+                    if (solver.solve()):
+                        new_list = list(preds_trail)
+                        new_list.append(predicate)
+
+                        abs_states = _get_all_abstract_rec(solver, polynomials,
+                                                           index + 1,
+                                                           new_list,
+                                                           abs_states)
+                    solver.pop()
+            else:
+                abs_states.append(frozenset(preds_trail))
+            return abs_states
+
+        abs_states = _get_all_abstract_rec(solver, polynomials, 0, [], [])
+        return abs_states
+
+
     logger = _get_logger()
 
     # remove duplicates, keep order
@@ -195,15 +227,24 @@ def get_invar_lazy_set(dyn_sys, invar,
 
     to_visit = list()
     while (init_solver.solve()):
-        model = init_solver.get_model()
-        sigma = {v: model[v] for v in dyn_sys.states()}
-        init_abs_state = abstract(get_solver(), polynomials,
-                                  sigma)
 
-        init_solver.add_assertion(Not(And(init_abs_state)))
+        try:
+            model = init_solver.get_model()
+            sigma = {v: model[v] for v in dyn_sys.states()}
+            init_abs_state = abstract(get_solver(), polynomials,
+                                      sigma)
+            init_solver.add_assertion(Not(And(init_abs_state)))
+            if not init_abs_state in abs_visited:
+                to_visit.append(init_abs_state)
+        except:
+            # Different search for mathematica --- missing get_model
+            logger.info("Enumerating all initial abstract states...")
+            all_init_sates = get_all_abstract(init_solver, polynomials)
+            logger.info("get_invar_lazy: found %d initial states" % len(all_init_sates))
 
-        if not init_abs_state in abs_visited:
-            to_visit.append(init_abs_state)
+            for init_abs_state in all_init_sates:
+                init_solver.add_assertion(Not(And(init_abs_state)))
+                to_visit.append(init_abs_state)
 
         while 0 < len(to_visit):
             abs_state = to_visit.pop()
@@ -219,6 +260,7 @@ def get_invar_lazy_set(dyn_sys, invar,
                 return (Result.UNKNOWN, set())
 
             abs_visited.add(abs_state)
+            init_solver.add_assertion(Not(And(abs_state)))
 
             # Visit all the neighbors of abs_state
             for neigh in _get_neighbors(polynomials, abs_state):
