@@ -228,23 +228,25 @@ def get_invar_lazy_set(dyn_sys, invar,
     to_visit = list()
     while (init_solver.solve()):
 
-        try:
-            model = init_solver.get_model()
-            sigma = {v: model[v] for v in dyn_sys.states()}
-            init_abs_state = abstract(get_solver(), polynomials,
-                                      sigma)
-            init_solver.add_assertion(Not(And(init_abs_state)))
-            if not init_abs_state in abs_visited:
-                to_visit.append(init_abs_state)
-        except:
-            # Different search for mathematica --- missing get_model
-            logger.info("Enumerating all initial abstract states...")
-            all_init_sates = get_all_abstract(init_solver, polynomials)
-            logger.info("get_invar_lazy: found %d initial states" % len(all_init_sates))
+        # [SM] Commented out
+        # try:
+        #     model = init_solver.get_model()
+        #     sigma = {v: model[v] for v in dyn_sys.states()}
+        #     init_abs_state = abstract(get_solver(), polynomials,
+        #                               sigma)
+        #     init_solver.add_assertion(Not(And(init_abs_state)))
+        #     if not init_abs_state in abs_visited:
+        #         to_visit.append(init_abs_state)
+        # except:
+        # Enum all the initial states
+        # We have issue getting an algebraic model from mathematica and mathsat, apparently.
+        logger.info("Enumerating all initial abstract states...")
+        all_init_sates = get_all_abstract(init_solver, polynomials)
+        logger.info("get_invar_lazy: found %d initial states" % len(all_init_sates))
 
-            for init_abs_state in all_init_sates:
-                init_solver.add_assertion(Not(And(init_abs_state)))
-                to_visit.append(init_abs_state)
+        for init_abs_state in all_init_sates:
+            init_solver.add_assertion(Not(And(init_abs_state)))
+            to_visit.append(init_abs_state)
 
         while 0 < len(to_visit):
             abs_state = to_visit.pop()
