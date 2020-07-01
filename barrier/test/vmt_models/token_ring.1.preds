@@ -1,0 +1,17 @@
+;; used 16 predicates:
+_PC.0
+_PC.1
+_PC.2
+_PC.3
+(= t1_pc (to_real 1))
+(= t1_pc (to_real 0))
+(= m_st (to_real 0))
+(= m_pc (to_real 0))
+(<= (to_real 2) m_st)
+(<= (to_real 2) E_M)
+(<= (to_real 2) t1_st)
+(<= local token)
+(<= token local)
+(<= (to_real 1) (+ token (* (to_real (- 1)) local)))
+(<= (+ token (* (to_real (- 1)) local)) (to_real 1))
+(<= (to_real 2) E_1)
