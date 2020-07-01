@@ -21,6 +21,7 @@ from pysmt.typing import REAL
 
 from barrier.test import TestCase
 from barrier.ts import TS, ImplicitAbstractionEncoder
+from barrier.msatic3 import MSatic3
 
 class TestSystem(TestCase):
 
@@ -88,3 +89,8 @@ class TestSystem(TestCase):
             with open(outfile, "w") as f:
                 ts_abs.to_vmt(f, safe_abs)
                 f.close()
+
+            print("Verifying %s..." % base)
+            ic3 = MSatic3()
+            res = ic3.solve(outfile)
+            self.assertTrue(res == MSatic3.Result.SAFE) 
