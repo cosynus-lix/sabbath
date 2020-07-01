@@ -45,11 +45,13 @@ def main():
 
     logging.basicConfig(level=logging.DEBUG)
 
+    print("Parsing problem...")
     env = get_env()
     with open(args.problem, "r") as json_stream:
         problem_list = importInvar(json_stream, env)
     assert(len(problem_list) == 1)
     (problem_name, init, safe, dyn_sys, invariants, predicates) = problem_list[0]
+    print("parsed problem...")
 
 
     if (args.task != "dump_vmt"):
