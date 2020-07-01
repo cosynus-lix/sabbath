@@ -1,0 +1,18 @@
+;; used 17 predicates:
+_PC.3
+_PC.2
+_PC.1
+_PC.0
+(<= i__4$main (to_real 0))
+(<= j__2$main (to_real 0))
+(<= (to_real 0) j__2$main)
+(<= (to_real 2) i__4$main)
+(<= j__2$main (to_real 1))
+(<= (to_real 1) j__2$main)
+(<= i__4$main (to_real 2))
+(<= (to_real 1) i__4$main)
+(<= (to_real 0) i__4$main)
+(<= i__4$main (to_real 1))
+(<= a1 a0)
+(<= a2 a0)
+(<= a2 a1)

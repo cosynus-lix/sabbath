@@ -60,26 +60,31 @@ class TestSystem(TestCase):
 
 
     def test_impl_abs(self):
-        benchname = "token_ring.1"
+        env = get_env()
         current_path = os.path.dirname(os.path.abspath(__file__))
         input_path = os.path.join(current_path, "vmt_models")
-        filename = os.path.join(input_path, "%s.smt2" % benchname)
+        for predfile in os.listdir(input_path):
+            if not predfile.endswith("preds"):
+                continue
 
-        env = get_env()
+            base = os.path.splitext(os.path.basename(predfile))[0]
+            smtfile = os.path.join(input_path, "%s.smt2" % base)
+            if not os.path.isfile(smtfile):
+                print(smtfile)
+                continue
 
-        with open(filename, "r") as f:
-            (ts, safe) = TS.from_vmt(f, env)
+            with open(smtfile, "r") as f:
+                (ts, safe) = TS.from_vmt(f, env)
 
-        predfile = os.path.join(input_path, "%s.preds" % benchname)
-        with open(predfile, "r") as f:
-            predicates = ts.read_predicates(f)
+            with open(os.path.join(input_path, predfile), "r") as f:
+                predicates = ts.read_predicates(f)
 
-        enc = ImplicitAbstractionEncoder(ts, safe, predicates)
 
-        ts_abs = enc.get_ts_abstract()
-        safe_abs = enc.get_prop_abstract()
+            enc = ImplicitAbstractionEncoder(ts, safe, predicates)
+            ts_abs = enc.get_ts_abstract()
+            safe_abs = enc.get_prop_abstract()
 
-        with open("/tmp/mytest.smt2", "w") as f:
-            ts_abs.to_vmt(f, safe_abs)
-            f.close()
-
+            outfile = os.path.join(input_path, "%s_abs.smt2" % base)
+            with open(outfile, "w") as f:
+                ts_abs.to_vmt(f, safe_abs)
+                f.close()
