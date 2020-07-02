@@ -94,3 +94,4 @@ class TestSystem(TestCase):
             ic3 = MSatic3()
             res = ic3.solve(outfile)
             self.assertTrue(res == MSatic3.Result.SAFE) 
+            os.remove(outfile)
