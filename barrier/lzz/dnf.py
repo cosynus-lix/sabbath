@@ -22,8 +22,6 @@ class BddDNFSimplifier(BddSimplifier):
 
     def abstract_and_simplify(self, formula):
         abs_formula = self.walk(formula)
-
-
         bdd_formula = self.convert(abs_formula)
 
         try:

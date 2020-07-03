@@ -14,19 +14,32 @@ from pysmt.environment import get_env
 from pysmt.smtlib.annotations import Annotations
 from pysmt.smtlib.printers import SmtPrinter, SmtDagPrinter, quote
 from pysmt.smtlib.parser import SmtLibParser, get_formula
-from pysmt.shortcuts import Symbol, substitute, TRUE, Iff, And
+from pysmt.shortcuts import (
+    TRUE, Iff, And, Or, Not,
+    Symbol, substitute,
+)
 
-from barrier.formula_utils import FormulaHelper
+from barrier.formula_utils import FormulaHelper, PredicateExtractor
 
 class TS:
     """
     Transition system representation using first-order-logic formulas.
     """
-    def __init__(self, state_vars, next_f, init, trans):
+    def __init__(self, env, state_vars, next_f, init, trans):
+        self.env = env
         self.init = init
         self.next_f = next_f
         self.trans = trans
         self.state_vars = set(state_vars)
+
+    def copy_ts(self):
+        next_f_map = {}
+        for v in self.state_vars:
+            next_f_map[v] = self.next_f(v)
+
+        next_f = lambda x : partial(substitute,
+                                    subs = next_f_map)(formula = x)
+        return TS(self.env, self.state_vars, next_f, self.init, self.trans)
 
     def to_vmt(self, outstream, safety_property):
         """
@@ -153,7 +166,7 @@ class TS:
         # May be more --- now ignore them
         safe_f = get_formula(script, "invar-property")
 
-        return (TS(state_vars, next_f, init_f, trans_f), safe_f)
+        return (TS(env, state_vars, next_f, init_f, trans_f), safe_f)
 
     @staticmethod
     def get_next_f(vars_list, env):
@@ -162,6 +175,62 @@ class TS:
                                     vars = vars_list,
                                     suffix = "_next")(formula=x)
         return next_f
+
+
+    @staticmethod
+    def extend_next_f(env, state_vars, next_f, new_vars):
+        next_f_map = {}
+        for v in state_vars:
+            next_f_map[v] = next_f(v)
+
+        for new_var in new_vars:
+            FormulaHelper.get_new_var(new_var, env.formula_manager,
+                                      next_f_map, "", "_next")
+        next_f = lambda x : partial(substitute,
+                                    subs = next_f_map)(formula = x)
+        return next_f
+
+    def rewrite(self, prop, rewrite_init=False, rewrite_prop=False):
+        new_vars = []
+        if rewrite_init:
+            reset = FormulaHelper.get_fresh_var_name(self.env.formula_manager, "reset")
+            new_vars.append(reset)
+
+        if rewrite_prop:
+            prop_var = FormulaHelper.get_fresh_var_name(self.env.formula_manager,
+                                                        "new_prop")
+            new_vars.append(prop_var)
+
+        self.next_f = TS.extend_next_f(self.env,
+                                       self.state_vars,
+                                       self.next_f,
+                                       new_vars)
+        for new_var in new_vars:
+            self.state_vars.add(prop_var)
+            self.state_vars.add(reset)
+
+        if rewrite_init:
+            new_prop = Or(reset, prop)
+            new_init = reset
+            new_trans = And(Not(self.next_f(reset)),
+                            And(Or(Not(reset), self.next_f(self.init)),
+                                Or(reset, self.trans)))
+            prop = new_prop
+            self.init = new_init
+            self.trans = new_trans
+
+        if rewrite_prop:
+            new_prop = prop_var
+            new_init = And(self.init, Iff(prop_var, prop))
+            new_trans = And([self.trans,
+                             Iff(prop_var, prop),
+                             Iff(self.next_f(prop_var), self.next_f(prop))])
+
+            prop = new_prop
+            self.init = new_init
+            self.trans = new_trans
+
+        return (prop, new_vars)
 
 
     @staticmethod
@@ -174,21 +243,44 @@ class TS:
             outstream.write("\n")
         outstream.flush()
 
+# EOC TS
+
+
 class ImplicitAbstractionEncoder():
     """
     Encode the implicit predicate abstraction as a transition system.
     """
     def __init__(self, ts_concrete, prop, predicates, env = get_env()):
         self.env = env
-        self.ts_concrete = ts_concrete
+        self.ts_concrete = ts_concrete.copy_ts()
         self.prop = prop
-        self.predicates = predicates
+        self.predicates = set(predicates)
         self._ts_abstract = None
         self._prop_abstract = None
 
         (self._ts_abstract, self._prop_abstract) = self._build_ts_abstract(self.ts_concrete,
                                                                            self.prop,
                                                                            self.predicates)
+
+    @staticmethod
+    def _make_sound(env, ts, prop, predicates,
+                    rewrite_init=True, rewrite_property=True):
+        if (not rewrite_init):
+            for p in PredicateExtractor.extract_predicates(ts.init, env):
+                if not p in predicates:
+                    predicates.add(p)
+
+        if (not rewrite_property):
+            for p in PredicateExtractor.extract_predicates(prop, env):
+                if  not p in predicates:
+                    predicates.add(p)
+
+        if (rewrite_property or rewrite_init):
+            (prop, new_preds) = ts.rewrite(prop, rewrite_init, rewrite_property)
+            predicates += new_preds
+
+        return (prop, predicates)
+
 
     def _build_ts_abstract(self, ts_concrete, prop, predicates):
         """
@@ -202,49 +294,59 @@ class ImplicitAbstractionEncoder():
         P_abs := EQ(V, V_abs) \land P(V_abs)
         """
 
-        def get_eq(abs_f, predicates):
+        def get_eq(abs_f_map, predicates):
             """ EQ(V,V_abs) := \bigwedge_{p \in predicates}{p(V) <-> p(V_abs)}
             """
             iffs = []
             for p in predicates:
-                iffs.append(Iff(p, abs_f(p)))
+                iffs.append(Iff(p, p.substitute(abs_f_map)))
             return And(iffs)
 
+        (prop, predicates) = (
+            ImplicitAbstractionEncoder._make_sound(self.env,
+                                                   ts_concrete,
+                                                   prop,
+                                                   predicates,
+                                                   rewrite_init=False,
+                                                   rewrite_property = False)
+        )
         vars_concrete = list(ts_concrete.state_vars)
 
         # define abs
-        abs_f = lambda x : partial(FormulaHelper.rename_formula,
-                                   env = self.env,
-                                   vars = vars_concrete + [ts_concrete.next_f(v) for v in vars_concrete],
-                                   suffix = "_abs")(formula=x)
+        abs_map = {}
+        for var in vars_concrete:
+            for symb in [var, ts_concrete.next_f(var)]:
+                abs_symb = FormulaHelper.get_fresh_var_name(self.env.formula_manager,
+                                                            "%s_abs" % symb.symbol_name(),
+                                                            symb.symbol_type())
+                abs_map[symb] = abs_symb
+        abs_concrete_map = {v : abs_map[v] for v in vars_concrete}
 
         next_map = {}
         for v in vars_concrete:
             next_map[v] = ts_concrete.next_f(v)
-            next_map[abs_f(v)] = abs_f(ts_concrete.next_f(v))
+            next_map[abs_map[v]] = abs_map[ts_concrete.next_f(v)]
         next_f = lambda x : partial(substitute,
                                     subs = next_map)(formula = x)
 
-
-        vars_abstract = [abs_f(v) for v in vars_concrete]
+        vars_abstract = [abs_map[v] for v in vars_concrete]
         state_vars = vars_concrete + vars_abstract
 
-        eq_pred = get_eq(abs_f, predicates)
+        eq_pred = get_eq(abs_map, predicates)
 
         # Init(V) \land EQ(V,V_abs)
         init_abs = And(eq_pred, ts_concrete.init)
 
 
         # From T(V,V') to T(V_abs,V')
-        trans_renamed = substitute(ts_concrete.trans,
-                                   {v : abs_f(v) for v in vars_concrete})
+        trans_renamed = substitute(ts_concrete.trans, abs_concrete_map)
         # EQ(V,V_abs) \land Trans(V_abs,V') \land EQ(V',V_abs')
         trans_abs = And([eq_pred, next_f(eq_pred), trans_renamed])
 
-        ts_abstract = TS(state_vars, next_f, init_abs, trans_abs)
+        ts_abstract = TS(self.env, state_vars, next_f, init_abs, trans_abs)
 
         # From P(V) to P(V_abs)
-        prop_renamed = substitute(prop, {v : abs_f(v) for v in vars_concrete})
+        prop_renamed = substitute(prop, abs_concrete_map)
         # EQ(V, V_abs) \land P(V_abs)
         prop_abstract = And(eq_pred, prop_renamed)
 
@@ -263,3 +365,5 @@ class ImplicitAbstractionEncoder():
 
     def get_prop_abstract(self):
         return self._prop_abstract
+
+# EOC ImplicitAbstractionEncoder
