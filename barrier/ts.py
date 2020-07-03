@@ -250,39 +250,45 @@ class ImplicitAbstractionEncoder():
     """
     Encode the implicit predicate abstraction as a transition system.
     """
-    def __init__(self, ts_concrete, prop, predicates, env = get_env()):
+    def __init__(self, ts_concrete, prop, predicates, env = get_env(),
+                 rewrite_init=False, rewrite_prop=False):
         self.env = env
         self.ts_concrete = ts_concrete.copy_ts()
         self.prop = prop
         self.predicates = set(predicates)
+
+        self.rewrite_init = rewrite_init
+        self.rewrite_prop = rewrite_prop
+
         self._ts_abstract = None
         self._prop_abstract = None
 
         (self._ts_abstract, self._prop_abstract) = self._build_ts_abstract(self.ts_concrete,
                                                                            self.prop,
-                                                                           self.predicates)
+                                                                           self.predicates,
+                                                                           self.rewrite_init,
+                                                                           self.rewrite_prop)
 
     @staticmethod
     def _make_sound(env, ts, prop, predicates,
                     rewrite_init=True, rewrite_property=True):
         if (not rewrite_init):
-            for p in PredicateExtractor.extract_predicates(ts.init, env):
-                if not p in predicates:
-                    predicates.add(p)
+            init_preds = PredicateExtractor.extract_predicates(ts.init, env)
+            predicates.update(init_preds)
 
         if (not rewrite_property):
-            for p in PredicateExtractor.extract_predicates(prop, env):
-                if  not p in predicates:
-                    predicates.add(p)
+            prop_preds = PredicateExtractor.extract_predicates(prop, env)
+            predicates.update(prop_preds)
 
         if (rewrite_property or rewrite_init):
             (prop, new_preds) = ts.rewrite(prop, rewrite_init, rewrite_property)
-            predicates += new_preds
+            predicates.update(new_preds)
 
         return (prop, predicates)
 
 
-    def _build_ts_abstract(self, ts_concrete, prop, predicates):
+    def _build_ts_abstract(self, ts_concrete, prop, predicates,
+                           rewrite_init, rewrite_prop):
         """
         TS := (V, Init(V), Trans(V,V'))
         P(V)
@@ -307,8 +313,8 @@ class ImplicitAbstractionEncoder():
                                                    ts_concrete,
                                                    prop,
                                                    predicates,
-                                                   rewrite_init=False,
-                                                   rewrite_property = False)
+                                                   rewrite_init=rewrite_init,
+                                                   rewrite_property = rewrite_prop)
         )
         vars_concrete = list(ts_concrete.state_vars)
 
@@ -365,5 +371,8 @@ class ImplicitAbstractionEncoder():
 
     def get_prop_abstract(self):
         return self._prop_abstract
+
+    def get_predicates(self):
+        return self.predicates
 
 # EOC ImplicitAbstractionEncoder

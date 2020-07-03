@@ -94,7 +94,7 @@ def main():
                                         init,
                                         safe)
 
-        (ts, p, predicates) = encoder.get_ts()
+        (ts, p, predicates) = encoder.get_ts_ia()
         with open(args.outvmt, "w") as outstream:
             ts.to_vmt(outstream, p)
             print("Printed vmt to %s..." % args.outvmt)

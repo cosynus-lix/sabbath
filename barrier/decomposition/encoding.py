@@ -19,7 +19,7 @@ from pysmt.typing import BOOL, REAL
 from barrier.lzz.lzz import get_inf_dnf, get_ivinf_dnf
 from barrier.formula_utils import FormulaHelper
 
-from barrier.ts import TS
+from barrier.ts import TS, ImplicitAbstractionEncoder
 
 def _get_preds_list(poly):
     zero = Real(0)
@@ -35,8 +35,6 @@ def _get_preds_ia_list(poly):
         [GE(p, zero) for p in poly] +
         [LE(p, zero) for p in poly]
     )
-
-
 
 def _get_lzz_in(dyn_sys, preds_list, next_f, lzz_f):
     current_impl = lambda p : Implies(p, lzz_f(p))
@@ -104,44 +102,6 @@ def get_preds(formula):
     return []
 
 
-def rewrite_init(env, ts, prop):
-    reset = FormulaHelper.get_fresh_var_name(env.formula_manager, "reset")
-
-    new_vars = set(ts.state_vars)
-    new_vars.add(reset)
-    next_f = lambda x : partial(FormulaHelper.rename_formula,
-                                env = env,
-                                vars = set(new_vars),
-                                suffix = "_next")(formula=x)
-
-    new_prop = Or(reset, prop)
-    new_init = reset
-    new_trans = And(Not(next_f(reset)),
-                    And(Or(Not(reset), next_f(ts.init)),
-                        Or(reset, ts.trans)))
-
-    new_ts = TS(new_vars, next_f, new_init, new_trans)
-    return (new_ts, new_prop, [reset])
-
-def rewrite_prop(env, ts, prop):
-    new_prop = FormulaHelper.get_fresh_var_name(env.formula_manager, "new_prop")
-
-    new_vars = set(ts.state_vars)
-    new_vars.add(new_prop)
-
-    next_f = lambda x : partial(FormulaHelper.rename_formula,
-                                env = env,
-                                vars = set(new_vars),
-                                suffix = "_next")(formula=x)
-
-    new_init = And(ts.init, Iff(new_prop, prop))
-    new_trans = And([ts.trans,
-                     Iff(new_prop, prop),
-                     Iff(next_f(new_prop), next_f(prop))])
-
-    new_ts = TS(new_vars, next_f, new_init, new_trans)
-    return (new_ts, new_prop, [new_prop])
-
 
 class DecompositionOptions:
     def __init__(self, rewrite_init = True,
@@ -197,7 +157,7 @@ class DecompositionEncoder:
         self.pred_vars_f = lambda x : self.pred_map[x]
 
 
-    def get_ts(self):
+    def get_ts_ia(self):
         """
         Output:
         - TS a symbolic transition system,
@@ -212,22 +172,18 @@ class DecompositionEncoder:
         ts_vars = self.vars
         ts_next = self.next_f
 
-        ts = TS(self.vars, self.next_f, new_init, new_trans)
+        ts = TS(self.env, self.vars, self.next_f, new_init, new_trans)
 
-        if (not (self.options.rewrite_init and
-                 self.options.rewrite_property)):
-            # we need to add the predicate from init and property
-            # to the decomposition if we want to use IA later
-            #
-            raise NotImplementedException()
+        enc = ImplicitAbstractionEncoder(ts,
+                                         new_prop,
+                                         preds_for_ia,
+                                         self.env,
+                                         self.options.rewrite_init,
+                                         self.options.rewrite_property)
 
-        if (self.options.rewrite_init):
-            (ts, new_prop, new_preds) = rewrite_init(self.env, ts, new_prop)
-            preds_for_ia += new_preds
-
-        if (self.options.rewrite_property):
-            (ts, new_prop, new_preds) = rewrite_prop(self.env, ts, new_prop)
-            preds_for_ia += new_preds
+        ts = enc.get_ts_abstract()
+        new_prop = enc.get_prop_abstract()
+        preds_for_ia = enc.get_predicates()
 
         return (ts, new_prop, preds_for_ia)
 
@@ -249,7 +205,8 @@ class DecompositionEncoder:
         new_init = Exists(to_quantify, new_init)
         new_prop = Exists(to_quantify, new_prop)
 
-        return (TS([self.pred_vars_f(p) for p in self.preds],
+        return (TS(self.env,
+                   [self.pred_vars_f(p) for p in self.preds],
                    self.next_f,
                    new_init, new_trans),
                 new_prop)

@@ -4,7 +4,8 @@
 import logging
 import unittest
 import os
-
+import sys
+import tempfile
 from fractions import Fraction
 
 try:
@@ -12,7 +13,7 @@ try:
 except ImportError:
     import unittest
 
-import sys
+
 
 from functools import partial
 
@@ -36,6 +37,7 @@ from barrier.lzz.lzz import lzz
 from barrier.formula_utils import FormulaHelper
 
 from barrier.ts import TS
+from barrier.msatic3 import MSatic3
 
 from barrier.decomposition.encoding import (
     DecompositionEncoder, _get_neigh_encoding
@@ -82,6 +84,32 @@ class TestDecompositionEncoding(TestCase):
         self.assertTrue(is_valid(Iff(res, expected)))
 
 
+    def _prove_ts(self, ts, prop):
+        res = None
+
+        try:
+            (_, tmp_file) = tempfile.mkstemp(suffix=None,
+                                             prefix=None,
+                                             dir=None,
+                                             text=True)
+            with open(tmp_file,"w") as outstream:
+                ts.to_vmt(outstream, prop)
+
+            try:
+                print("Verifying %s..." % tmp_file)
+                ic3 = MSatic3()
+                res = ic3.solve(tmp_file)
+
+                return res
+            except SolverAPINotFound:
+                print("MSatic3 not found...")
+                logging.debug("MSatic3 not found...")
+        finally:
+            pass
+            # if os.path.isfile(tmp_file):
+            #     os.remove(tmp_file)
+        return res
+
     def test_enc(self):
         x, y = [Symbol(var, REAL) for var in ["x", "y"]]
         dyn_sys = DynSystem([x, y], [], [], {x : -y, y : -x}, {}, False)
@@ -96,7 +124,7 @@ class TestDecompositionEncoding(TestCase):
                                         init,
                                         safe)
         (ts, p) = encoder.get_quantified_ts()
-        (ts, p, predicates) = encoder.get_ts()
+        (ts, p, predicates) = encoder.get_ts_ia()
 
-        # TODO: add test about encoding correctness
-        self.assertTrue(True)
+        res = self._prove_ts(ts, p)
+        self.assertTrue(res == MSatic3.Result.SAFE)
