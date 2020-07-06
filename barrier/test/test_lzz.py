@@ -17,6 +17,7 @@ import sys
 from multiprocessing import Pool
 from multiprocessing.context import TimeoutError
 
+from pysmt.exceptions import SolverAPINotFound
 from pysmt.typing import BOOL, REAL, INT
 from pysmt.shortcuts import (
     is_valid,
@@ -257,9 +258,9 @@ class TestLzz(TestCase):
             try:
                 f()
                 solvers.append((name,f))
-            except:
+            except SolverAPINotFound:
+                logging.debug("Skipping not found solver %s..." % name)
                 pass
-
 
         for (solver_name, solver_init) in solvers:
             print("Running solver %s..." % solver_name)
@@ -300,4 +301,23 @@ class TestLzz(TestCase):
                 assert(len(problem_list) == 1)
                 for p in problem_list:
                     (problem_name, ant, cons, dyn_sys, invar, predicates) = p
+
+    def test_import_invar_input(self):
+        input_path = self.get_from_test_path("invar_inputs")
+        test_case = os.path.join(input_path, "Constraint-based_Example_7__Human_Blood_Glucose_Metabolism_.invar")
+
+        env = get_env()
+
+        with open(test_case, "r") as f:
+            problem_list = importInvar(f, env)
+            assert(len(problem_list) == 1)
+
+            (problem_name, ant, cons, dyn_sys, invar, predicates) = problem_list[0]
+
+            u_var = Symbol("_u", REAL)
+            found_u = False
+            for i in dyn_sys.inputs():
+                if i == u_var:
+                    found_u = True
+            self.assertTrue(found_u)
 
