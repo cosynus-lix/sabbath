@@ -33,7 +33,6 @@ from barrier.system import DynSystem
 from barrier.utils import get_range_from_int
 from barrier.lzz.serialization import importInvar
 
-from barrier.lzz.lzz import lzz
 from barrier.formula_utils import FormulaHelper
 
 from barrier.ts import TS
@@ -105,9 +104,8 @@ class TestDecompositionEncoding(TestCase):
                 print("MSatic3 not found...")
                 logging.debug("MSatic3 not found...")
         finally:
-            pass
-            # if os.path.isfile(tmp_file):
-            #     os.remove(tmp_file)
+            if os.path.isfile(tmp_file):
+                os.remove(tmp_file)
         return res
 
     def test_enc(self):
@@ -128,3 +126,28 @@ class TestDecompositionEncoding(TestCase):
 
         res = self._prove_ts(ts, p)
         self.assertTrue(res == MSatic3.Result.SAFE)
+
+    def test_invar_in_init(self):
+        env = get_env()
+
+        current_path = os.path.dirname(os.path.abspath(__file__))
+        input_path = os.path.join(current_path, "invar_inputs")
+        problem_file = os.path.join(input_path, "Constraint-based_Example_7__Human_Blood_Glucose_Metabolism_.invar")
+        with open(problem_file, "r") as json_stream:
+            problem_list = importInvar(json_stream, env)
+
+        (problem_name, init, safe, dyn_sys, invariants, predicates) = problem_list[0]
+
+        encoder  = DecompositionEncoder(env,
+                                        dyn_sys,
+                                        invariants,
+                                        predicates,
+                                        init,
+                                        safe)
+        (ts, p, predicates) = encoder.get_ts_ia()
+
+        all_and_next = set(ts.state_vars)
+        all_and_next.update([ts.next_f(v) for v in ts.state_vars])
+
+        self.assertTrue(len(ts.init.get_free_variables().difference(all_and_next)) == 0)
+        self.assertTrue(len(p.get_free_variables().difference(all_and_next)) == 0)

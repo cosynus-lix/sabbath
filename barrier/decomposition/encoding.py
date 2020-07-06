@@ -97,12 +97,6 @@ def _get_neigh_encoding(poly, get_next_formula):
               _iter(poly, partial(_change_eq, get_next = get_next_formula)))
 
 
-def get_preds(formula):
-    print(get_atoms(formula))
-    return []
-
-
-
 class DecompositionOptions:
     def __init__(self, rewrite_init = True,
                  rewrite_property = True):
@@ -129,7 +123,12 @@ class DecompositionEncoder:
         self.preds = _get_preds_list(poly)
         self.init = init
         self.safe = safe
-        self.vars = list(dyn_sys._states)
+
+        self.vars = []
+        for var in dyn_sys.states():
+            self.vars.append(var)
+        for var in dyn_sys.inputs():
+            self.vars.append(var)
 
         self.next_f = lambda x : partial(FormulaHelper.rename_formula,
                                          env = env,
