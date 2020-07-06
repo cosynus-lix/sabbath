@@ -34,7 +34,6 @@ class MathematicaSession():
 
   @staticmethod
   def get_session():
-    print("Getting the session")
     if MathematicaSession._session is None:
       logging.debug("Creating a session for mathematica...")
       try:

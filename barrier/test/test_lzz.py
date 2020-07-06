@@ -47,11 +47,6 @@ def run_lzz(lzz_problem, env, solver = None):
         solver = Solver(logic=QF_NRA, name="z3")
 
     (name, candidate, dyn_sys, invar) = lzz_problem
-
-    # print("LZZ %s..." % name)
-    # print(dyn_sys)
-    # print("Invar: " + invar.serialize())
-    # print("Candidate: " + candidate.serialize())
     is_invar = lzz(solver, candidate, dyn_sys, candidate, invar)
 
     return is_invar
@@ -303,7 +298,7 @@ class TestLzz(TestCase):
                     (problem_name, ant, cons, dyn_sys, invar, predicates) = p
 
     def test_import_invar_input(self):
-        input_path = self.get_from_test_path("invar_inputs")
+        input_path = self.get_from_path("invar_inputs")
         test_case = os.path.join(input_path, "Constraint-based_Example_7__Human_Blood_Glucose_Metabolism_.invar")
 
         env = get_env()
