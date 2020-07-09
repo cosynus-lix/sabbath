@@ -7,7 +7,7 @@ from functools import reduce
 import logging
 
 from pysmt.shortcuts import (
-    Real, Symbol,
+    Real, Symbol, Minus,
     Plus, Times, Pow, Div
 )
 from pysmt.walkers import DagWalker
@@ -31,7 +31,12 @@ from sympy import (
 from sympy import groebner
 from sympy.polys.polytools import reduced
 
-from barrier.system import DynSystem
+
+def get_inverse_odes(_odes):
+    inverse_odes = {}
+    for var, ode_expr in _odes.items():
+        inverse_odes[var] = Minus(Real(0), ode_expr)
+    return inverse_odes
 
 
 def get_lie(expr, odes):
@@ -65,6 +70,11 @@ class Derivator(object):
         self.vector_field = vector_field
         self.pysmt2sympy = Pysmt2Sympy() if pysmt2sympy is None else pysmt2sympy
         self.sympy2pysmt = Sympy2Pysmt() if sympy2pysmt is None else sympy2pysmt
+
+    def get_inverse(self):
+        return Derivator(get_inverse_odes(self.vector_field),
+                         self.pysmt2sympy,
+                         self.sympy2pysmt)
 
     def _get_sympy_expr(self, pysmt_expr):
         return self.pysmt2sympy.walk(pysmt_expr)

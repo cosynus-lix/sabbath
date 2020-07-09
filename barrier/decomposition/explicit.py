@@ -18,6 +18,7 @@ from enum import Enum
 from barrier.system import DynSystem
 from barrier.lzz.lzz import (lzz, lzz_fast)
 from barrier.system import DynSystem
+from barrier.lie import Derivator
 
 from pysmt.logics import QF_NRA
 from pysmt.shortcuts import (
@@ -244,11 +245,22 @@ def get_invar_lazy_set(dyn_sys, invar,
         all_init_sates = get_all_abstract(init_solver, polynomials)
         logger.info("get_invar_lazy: found %d initial states" % len(all_init_sates))
 
+
         for init_abs_state in all_init_sates:
             init_solver.add_assertion(Not(And(init_abs_state)))
             to_visit.append(init_abs_state)
 
+            # s = get_solver()
+            # s.add_assertion(init)
+            # print(init.serialize())
+            # for l in init_abs_state:
+            #     print((And(l)).serialize())
+            #     s.add_assertion(And(l))
+            # assert(s.solve())
+
+
         while 0 < len(to_visit):
+            print("next state")
             abs_state = to_visit.pop()
 
             if abs_state in abs_visited:
@@ -269,6 +281,8 @@ def get_invar_lazy_set(dyn_sys, invar,
                 if neigh in abs_visited:
                     continue
 
+                print("neighbors")
+
                 # Check if neigh has some intersection with invariant
                 invar_solver.push()
                 invar_solver.add_assertion(And(abs_state))
@@ -278,9 +292,13 @@ def get_invar_lazy_set(dyn_sys, invar,
                 invar_solver.pop()
 
                 lzz_solver = get_solver()
-                is_invar = lzz(lzz_solver, And(abs_state), dyn_sys,
+
+                print("before lzz " + And(abs_state).serialize())
+                is_invar = lzz(lzz_solver, And(abs_state),
+                               Derivator(dyn_sys.get_odes()),
                                And(abs_state),
                                Or(And(abs_state), And(neigh)))
+                print("after lzz")
 
                 if (not is_invar):
                     logger.info("New trans from %s to %s" %
@@ -351,7 +369,7 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials,
             for pred in preds:
                 if solver.is_valid(Implies(And(invar, init), pred)):
                     lzz_solver = get_lzz_solver()
-                    is_invar = lzz_fast(lzz_solver, pred, dyn_sys,
+                    is_invar = lzz_fast(lzz_solver, pred, Derivator(dyn_sys.get_odes()),
                                         pred, invar)
                     lzz_solver.exit()
                     logger.debug("LZZ end...")
@@ -378,14 +396,14 @@ def dwc_general(dwcl, dyn_sys, invar, polynomials,
             eq_0 = Equals(a,rt0)
 
             lzz_solver = get_lzz_solver()
-            is_invar = lzz(lzz_solver, eq_0, dyn_sys, eq_0, invar)
+            is_invar = lzz(lzz_solver, eq_0, Derivator(dyn_sys.get_odes()), eq_0, invar)
             lzz_solver.exit()
 
             if is_invar:
                 inv_dyn_sys = dyn_sys.get_inverse()
 
                 lzz_solver = get_lzz_solver()
-                is_invar = lzz(lzz_solver, eq_0, inv_dyn_sys, eq_0, invar)
+                is_invar = lzz(lzz_solver, eq_0, Derivator(inv_dyn_sys.get_odes()), eq_0, invar)
                 lzz_solver.exit()
 
                 if (is_invar):

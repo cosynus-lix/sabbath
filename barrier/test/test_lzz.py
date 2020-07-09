@@ -35,8 +35,10 @@ from barrier.lzz.lzz import (
     is_p_invar, lzz, get_inf_dnf, get_ivinf_dnf
 )
 
+from barrier.lie import Derivator
 from barrier.lzz.serialization import importLzz, importInvar
 from barrier.lzz.dnf import DNFConverter
+
 
 from barrier.mathematica.mathematica import get_mathematica
 from barrier.utils import get_mathsat_smtlib
@@ -47,7 +49,7 @@ def run_lzz(lzz_problem, env, solver = None):
         solver = Solver(logic=QF_NRA, name="z3")
 
     (name, candidate, dyn_sys, invar) = lzz_problem
-    is_invar = lzz(solver, candidate, dyn_sys, candidate, invar)
+    is_invar = lzz(solver, candidate, Derivator(dyn_sys.get_odes()), candidate, invar)
 
     return is_invar
 
@@ -101,8 +103,9 @@ class TestLzz(TestCase):
                        And(Equals(y + r05, r0),
                            x * x > r0))]
 
+        derivator = Derivator(dyn_sys.get_odes())
         for pred, res in zip(preds, expected):
-            inf = get_inf_dnf(dyn_sys, pred)
+            inf = get_inf_dnf(derivator, pred)
             self.assertTrue(is_valid(Iff(res, inf)))
 
     def test_ivinf_pred(self):
@@ -121,8 +124,9 @@ class TestLzz(TestCase):
                        And(Equals(y + r05, r0),
                            -1 * (x * x) > r0))]
 
+        derivator = Derivator(dyn_sys.get_odes())
         for pred, res in zip(preds, expected):
-            inf = get_ivinf_dnf(dyn_sys, pred)
+            inf = get_ivinf_dnf(derivator, pred)
             self.assertTrue(is_valid(Iff(res, inf)))
 
     def test_lzz(self):
@@ -138,7 +142,7 @@ class TestLzz(TestCase):
                        GT(y, Real(Fraction(-1,2))))
 
         solver = Solver(logic=QF_NRA, name="z3")
-        is_invar = lzz(solver, candidate, dyn_sys, init, TRUE())
+        is_invar = lzz(solver, candidate, Derivator(dyn_sys.get_odes()), init, TRUE())
 
         self.assertTrue(is_invar)
 
@@ -152,7 +156,7 @@ class TestLzz(TestCase):
         candidate = inv
 
         solver = Solver(logic=QF_NRA, name="z3")
-        is_invar = lzz(solver, candidate, dyn_sys, init, TRUE())
+        is_invar = lzz(solver, candidate, Derivator(dyn_sys.get_odes()), init, TRUE())
 
         self.assertTrue(is_invar)
 

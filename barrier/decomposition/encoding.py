@@ -7,6 +7,7 @@ import copy
 from pysmt.shortcuts import (
     TRUE, FALSE,
     Real,
+    Minus,
     Not, And, Or, Implies, Iff, Equals,
     Equals, GE, GT, LT, LE,
     Exists,
@@ -17,7 +18,9 @@ from pysmt.shortcuts import (
 from pysmt.typing import BOOL, REAL
 
 from barrier.lzz.lzz import get_inf_dnf, get_ivinf_dnf
+from barrier.lie import Derivator
 from barrier.formula_utils import FormulaHelper
+from barrier.formula_utils import PredicateExtractor
 
 from barrier.ts import TS, ImplicitAbstractionEncoder
 
@@ -36,12 +39,12 @@ def _get_preds_ia_list(poly):
         [LE(p, zero) for p in poly]
     )
 
-def _get_lzz_in(dyn_sys, preds_list, next_f, lzz_f):
+def _get_lzz_in(derivator, preds_list, next_f, lzz_f):
     current_impl = lambda p : Implies(p, lzz_f(p))
     next_impl = lambda p : Implies(next_f(p),
-                                   get_inf_dnf(dyn_sys, lzz_f(p)))
+                                   get_inf_dnf(derivator, lzz_f(p)))
     and_not_inf = lambda p : And(p,
-                                 Not(get_inf_dnf(dyn_sys, lzz_f(p))))
+                                 Not(get_inf_dnf(derivator, lzz_f(p))))
 
     list(map(next_impl, preds_list))
 
@@ -50,8 +53,8 @@ def _get_lzz_in(dyn_sys, preds_list, next_f, lzz_f):
                 Or(list(map(and_not_inf, preds_list)))])
 
 
-def _get_lzz_out(dyn_sys, preds_list, next_f, lzz_f):
-    current_impl = lambda p : Implies(p, get_ivinf_dnf(dyn_sys, lzz_f(p)))
+def _get_lzz_out(derivator, preds_list, next_f, lzz_f):
+    current_impl = lambda p : Implies(p, get_ivinf_dnf(derivator, lzz_f(p)))
     next_impl = lambda p : Implies(next_f(p), lzz_f(p))
     and_not_inf = lambda p : And(p, Not(lzz_f(p)))
 
@@ -120,7 +123,27 @@ class DecompositionEncoder:
         self.dyn_sys = dyn_sys
         self.invar = invar
         self.poly = poly
+
+
         self.preds = _get_preds_list(poly)
+        # # DEBUG
+        # init_preds = PredicateExtractor.extract_predicates(init, env)
+        # safe_preds = PredicateExtractor.extract_predicates(safe, env)
+        # new_poly = []
+        # for l in [init_preds, safe_preds]:
+        #     for pred in l:
+        #         print(pred.serialize())
+        #         poly = Minus(pred.args()[0], pred.args()[1])
+        #         print(poly)
+        #         new_poly.append(poly)
+
+        # self.preds = _get_preds_list(new_poly)
+        # print("Preds: ")
+        # for p in self.preds:
+        #     print(p)
+        # print("end preds")
+
+
         self.init = init
         self.safe = safe
 
@@ -212,11 +235,12 @@ class DecompositionEncoder:
 
     def _get_trans_enc(self):
         sys = self.dyn_sys.get_renamed(self.lzz_f)
+        derivator = Derivator(sys.get_odes())
 
-        lzz_in = _get_lzz_in(sys, self.preds,
+        lzz_in = _get_lzz_in(derivator, self.preds,
                              self.next_f, self.lzz_f)
 
-        lzz_out = _get_lzz_out(sys, self.preds,
+        lzz_out = _get_lzz_out(derivator, self.preds,
                                self.next_f, self.lzz_f)
 
         return And(And(_get_neigh_encoding(self.poly, self.next_f),

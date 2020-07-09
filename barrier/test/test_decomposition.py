@@ -26,6 +26,7 @@ from pysmt.shortcuts import (
 from pysmt.logics import QF_NRA
 
 from barrier.test import TestCase
+from barrier.lie import Derivator
 from barrier.system import DynSystem
 from barrier.utils import get_range_from_int
 
@@ -240,7 +241,7 @@ class TestDecomposition(TestCase):
 
             print("Checking invar...")
             solver = get_solver()
-            is_invar = lzz(solver, invars, dyn_sys, invars, invar)
+            is_invar = lzz(solver, invars, Derivator(dyn_sys.get_odes()), invars, invar)
             solver.exit()
             self.assertTrue(is_invar)
 
@@ -250,7 +251,7 @@ class TestDecomposition(TestCase):
             env = get_env()
             solver = get_solver()
             print("Checking invar...")
-            is_invar = lzz(solver, invars, dyn_sys, invars, invar)
+            is_invar = lzz(solver, invars, Derivator(dyn_sys.get_odes()), invars, invar)
             solver.exit()
             self.assertTrue(is_invar)
         except SolverAPINotFound as e:
@@ -325,7 +326,7 @@ class TestDecomposition(TestCase):
                         assert (not invariants is None)
                         solver = Solver(logic=QF_NRA, name="z3")
 
-                        is_invar = lzz(solver, invars, dyn_sys, init, invariants)
+                        is_invar = lzz(solver, invars, Derivator(dyn_sys.get_odes()), init, invariants)
                         solver.exit()
                         self.assertTrue(is_invar)
 
