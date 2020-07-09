@@ -125,7 +125,7 @@ class TestLie(TestCase):
         expr = - x * y + y * y
         vector_field = {x : -Fraction(2,2) * y, y : x * x}
 
-        der = Derivator()
-        rank = der.get_lie_rank(expr, vector_field)
+        der = Derivator(vector_field)
+        rank = der.get_lie_rank(expr)
 
         self.assertTrue(rank == 2)
