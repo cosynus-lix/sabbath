@@ -69,7 +69,7 @@ def get_generic_set(poly, dyn_sys, op, sign_mult, rank = None):
 
             prev_lie_eq_0 = And(prev_lie_eq_0,
                                 Equals(lie_at_i, Real(0)))
-            lie_at_i = get_lie(lie_at_i, dyn_sys)
+            lie_at_i = get_lie(lie_at_i, dyn_sys.get_odes())
             lie_term_at_i = get_lie_op_term(lie_at_i, op, sign_mult, i)
             trans_f_p_i = And(prev_lie_eq_0, lie_term_at_i)
 
@@ -165,7 +165,7 @@ def get_lie_eq_0(dyn_sys, predicate, rank):
             lie_at_i = predicate
             all_eq_0 = Equals(lie_at_i, Real(0))
         else:
-            lie_at_i = get_lie(lie_at_i, dyn_sys)
+            lie_at_i = get_lie(lie_at_i, dyn_sys.get_odes())
             all_eq_0 = And(all_eq_0, Equals(lie_at_i, Real(0)))
     return all_eq_0
 

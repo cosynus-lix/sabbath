@@ -1,6 +1,9 @@
 # Barrier python module
 
 import os
+import logging
+import sys
+
 from functools import wraps
 
 try:
@@ -26,3 +29,13 @@ class TestCase(unittest.TestCase):
         input_path = os.path.join(current_path, path)
         self.assertTrue((not must_exists) or os.path.exists(input_path))
         return input_path
+
+
+    def log_to_stdout(self):
+        root = logging.getLogger()
+        root.setLevel(logging.DEBUG)
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        root.addHandler(handler)

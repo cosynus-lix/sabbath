@@ -34,23 +34,26 @@ from sympy.polys.polytools import reduced
 from barrier.system import DynSystem
 
 
-def get_lie(expr, dyn_sys):
-    """ Get the lie derivative of the expression with respect to the
-    dynamical system dyn_system.
+def get_lie(expr, odes):
+    """ Get the lie derivative of the expression with respect to a
+    set of variables and system of odes.
 
     Returns an expression representing the lie derivative.
     """
 
     der = Derivator()
-    lie_der = der.get_lie_der(dyn_sys.states(), expr, dyn_sys.get_odes())
+    lie_der = der.get_lie_der(expr, odes)
 
     return lie_der
 
 def get_lie_rank(self, expr, dyn_sys):
     """ Get the rank of expr and the vector field of dyn_sys
     """
+
+    print("Get rank for " + str(expr)) 
+
     der = Derivator()
-    rank = der.get_lie_rank(dyn_sys.states(), expr, dyn_sys.get_odes())
+    rank = der.get_lie_rank(expr, dyn_sys.get_odes())
 
     # logger = logging.getLogger(__name__)
     # logger.debug("get_lie_rank(%s): %d" % (str(expr), rank))
@@ -88,44 +91,42 @@ class Derivator(object):
 
         return pysmt_lie
 
-    def _get_lie_der(self, vars_list, expr, vector_field):
+    def _get_lie_der(self, expr, vector_field):
         """
         Actual computation of the Lie derivative in SyPy
         """
         lie_der = 0
 
-        for var in vars_list:
+        for var in vector_field.keys():
             lie_var = Mul_sympy(diff(expr, var), vector_field[var])
             lie_der = Add_sympy(lie_der, lie_var)
 
         return lie_der
 
-    def _get_sympy_problem(self, vars_list, expr, vector_field):
+    def _get_sympy_problem(self, expr, vector_field):
         _vector_field = {}
-        _vars_list = []
-        for var in vars_list:
+        for var, vector_field_expr in vector_field.items():
             _var = self._get_sympy_expr(var)
-            _vars_list.append(_var)
-            _vector_field[_var] = self._get_sympy_expr(vector_field[var])
+            _vector_field[_var] = self._get_sympy_expr(vector_field_expr)
         _expr = self._get_sympy_expr(expr)
 
-        return (_vars_list, _expr, _vector_field)
+        return (_expr, _vector_field)
 
-    def get_lie_der(self, vars_list, expr, vector_field):
+    def get_lie_der(self, expr, vector_field):
         """
         Takes as input a set of (pysmt) variables, an (pysmt) expression of a
         predicate, and dynamical_system.
         """
 
-        (_vars_list, _expr, _vector_field) = self._get_sympy_problem(vars_list, expr, vector_field)
+        (_expr, _vector_field) = self._get_sympy_problem(expr, vector_field)
 
         # Compute the Lie derivative in SymPy
-        _lie_der = self._get_lie_der(_vars_list, _expr, _vector_field)
+        _lie_der = self._get_lie_der(_expr, _vector_field)
         lie_der = self._get_pysmt_expr(_lie_der)
 
         return lie_der
 
-    def get_lie_rank(self, vars_list, expr, vector_field):
+    def get_lie_rank(self, expr, vector_field):
         """
         Compute the rank of the expression p and the vector field f.
 
@@ -140,7 +141,7 @@ class Derivator(object):
         Note that such N exists, due to the ascending chain condition of ideals.
         """
 
-        def _get_lie_rank(vars_list, expr, vector_field):
+        def _get_lie_rank(expr, vector_field):
             """
             Implement the algorithm directly in sympy.x
             """
@@ -150,12 +151,13 @@ class Derivator(object):
 
             fix_point = False
 
+            vars_list = [v for v in vector_field.keys()]
             while (not fix_point):
                 n = n + 1
 
                 bases = groebner(lies, vars_list, order='lex')
 
-                lie_n = self._get_lie_der(vars_list, lie_n, vector_field)
+                lie_n = self._get_lie_der(lie_n, vector_field)
 
                 _, f = reduced(lie_n, bases, wrt=vars_list)
 
@@ -169,9 +171,9 @@ class Derivator(object):
 
             return n
 
-        (_vars_list, _expr, _vector_field) = self._get_sympy_problem(vars_list, expr, vector_field)
+        (_expr, _vector_field) = self._get_sympy_problem(expr, vector_field)
 
-        rank = _get_lie_rank(_vars_list, _expr, _vector_field)
+        rank = _get_lie_rank(_expr, _vector_field)
 
         return rank
 

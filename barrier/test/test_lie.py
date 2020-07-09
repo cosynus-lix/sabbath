@@ -113,17 +113,8 @@ class TestLie(TestCase):
         ]
 
         for (sys, expr, expected_lie) in exprs:
-            lie = get_lie(expr, sys)
+            lie = get_lie(expr, sys.get_odes())
             eq = Equals(lie, expected_lie)
-
-            # print("\nAAA")
-            # print(sys)
-            # print("Lie 0: " + str(expr))
-            # print("Lie 1: " + str(lie))
-            # print("Lie 2: " + str(get_lie(lie, sys)))
-            # print("Lie 3: " + str(get_lie(get_lie(lie, sys), sys)))
-
-
             same = is_valid(eq)
             self.assertTrue(same)
 
@@ -135,6 +126,6 @@ class TestLie(TestCase):
         vector_field = {x : -Fraction(2,2) * y, y : x * x}
 
         der = Derivator()
-        rank = der.get_lie_rank(vars_list, expr, vector_field)
+        rank = der.get_lie_rank(expr, vector_field)
 
         self.assertTrue(rank == 2)

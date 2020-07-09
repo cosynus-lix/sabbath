@@ -59,7 +59,7 @@ def is_barrier(dyn_sys, init, safe, barrier):
     in_safe = Implies(LE(barrier, Real(0)), safe)
 
     # 3. barrier = 0 -> lie_derivative < 0
-    lie_der = get_lie(barrier, dyn_sys)
+    lie_der = get_lie(barrier, dyn_sys.get_odes())
     consecution = Implies(Equals(barrier, Real(0)),
                           LT(lie_der, Real(0)))
 
@@ -119,7 +119,7 @@ def barrier_generator(dyn_sys,init, safe,template):
     f_cond2 = Implies(LE(template,Real(0)),safe)
 
     #3rd condition
-    lie_der = get_lie(template,dyn_sys)
+    lie_der = get_lie(template, dyn_sys.get_odes())
     f_cond3 = Implies( Equals(template,Real(0)), LT(lie_der,Real(0)) )
 
     #getting the not-free variables of the formula
