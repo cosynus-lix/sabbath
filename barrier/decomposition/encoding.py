@@ -143,7 +143,6 @@ class DecompositionEncoder:
         #     print(p)
         # print("end preds")
 
-
         self.init = init
         self.safe = safe
 

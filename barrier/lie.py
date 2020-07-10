@@ -71,6 +71,9 @@ class Derivator(object):
         self.pysmt2sympy = Pysmt2Sympy() if pysmt2sympy is None else pysmt2sympy
         self.sympy2pysmt = Sympy2Pysmt() if sympy2pysmt is None else sympy2pysmt
 
+        # memoization for the rank computation
+        self._rank_memo = {}
+
     def get_inverse(self):
         return Derivator(get_inverse_odes(self.vector_field),
                          self.pysmt2sympy,
@@ -162,9 +165,9 @@ class Derivator(object):
                 n = n + 1
 
                 bases = groebner(lies, vars_list, order='lex')
-
                 lie_n = Derivator._get_lie_der_sympy(lie_n, vector_field_sympy)
 
+                # Reduced is the heavy computation function here.
                 _, f = reduced(lie_n, bases, wrt=vars_list)
 
                 fix_point = True
@@ -177,10 +180,14 @@ class Derivator(object):
 
             return n
 
-        (_expr, _vector_field) = self._get_sympy_problem(expr)
-        rank = _get_lie_rank_sympy(_expr, _vector_field)
-
-        return rank
+        logging.debug("Getting rank for " + expr.serialize())
+        if (expr in self._rank_memo):
+            return self._rank_memo[expr]
+        else:
+            (_expr, _vector_field) = self._get_sympy_problem(expr)
+            rank = _get_lie_rank_sympy(_expr, _vector_field)
+            self._rank_memo[expr] = rank
+            return rank
 
 # EOC Derivator
 

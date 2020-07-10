@@ -200,8 +200,12 @@ def get_inf_dnf(derivator, formula):
     return inf_dnf
 
 
-# DEBUG
-IVINF_VIA_MINUS_F = True
+# We can compute IVINF(f,pred) as INF(-f, pred).
+#
+# The main drawback is that we will not reuse the memoization of the
+# rank for a polynomial, since the vector field changes.
+#
+IVINF_VIA_MINUS_F = False
 def get_ivinf_dnf(derivator, formula):
     if IVINF_VIA_MINUS_F:
         inverse_derivator = derivator.get_inverse()
