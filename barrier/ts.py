@@ -354,7 +354,8 @@ class ImplicitAbstractionEncoder():
         # From P(V) to P(V_abs)
         prop_renamed = substitute(prop, abs_concrete_map)
         # EQ(V, V_abs) \land P(V_abs)
-        prop_abstract = And(eq_pred, prop_renamed)
+        # Assume prop goes always with trans or init
+        prop_abstract = prop_renamed
 
         # print("ABS ENCODING")
         # print(init_abs.serialize())
