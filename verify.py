@@ -19,7 +19,10 @@ from barrier.decomposition.explicit import (
     dwcl,
     get_invar_lazy
 )
-from barrier.decomposition.encoding import DecompositionEncoder
+from barrier.decomposition.encoding import (
+    DecompositionOptions,
+    DecompositionEncoder
+)
 from barrier.ts import TS
 from barrier.utils import get_mathsat_smtlib
 from barrier.mathematica.mathematica import get_mathematica
@@ -53,6 +56,10 @@ def main():
     (problem_name, init, safe, dyn_sys, invariants, predicates) = problem_list[0]
     print("parsed problem...")
 
+    # print(dyn_sys)
+    # print(invariants.serialize())
+    # print(init.serialize())
+    # print(safe.serialize())
 
     if (args.task != "dump_vmt"):
 
@@ -87,12 +94,14 @@ def main():
 
 
         print("Encoding verification problem in the vmt file to %s..." % args.outvmt)
+        opt = DecompositionOptions(False, False)
         encoder  = DecompositionEncoder(env,
                                         dyn_sys,
                                         invariants,
                                         predicates,
                                         init,
-                                        safe)
+                                        safe,
+                                        opt)
 
         (ts, p, predicates) = encoder.get_ts_ia()
         with open(args.outvmt, "w") as outstream:
