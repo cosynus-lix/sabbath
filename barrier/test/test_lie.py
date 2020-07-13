@@ -129,3 +129,27 @@ class TestLie(TestCase):
         rank = der.get_lie_rank(expr)
 
         self.assertTrue(rank == 2)
+
+
+        vars_list = [x,y]
+        expr = x+y*y
+        vector_field = {x : -2 * y, y : x * x}
+
+        der = Derivator(vector_field)
+        rank = der.get_lie_rank(expr)
+
+        self.assertTrue(rank == 2)
+
+
+    def test_rank2(self):
+        x, y = [Symbol(var, REAL) for var in ["x","y"]]
+
+        vars_list = [x,y]
+        expr = 2 - y
+        vector_field = { x : x + y - x*x*y - y*y*y,
+                         y : x - x*x*x + y - x*y*y}
+        der = Derivator(vector_field)
+        rank = der.get_lie_rank(expr)
+
+        self.assertTrue(rank == 2)
+

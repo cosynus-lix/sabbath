@@ -269,7 +269,6 @@ def _get_invar_lazy_set(derivator, invar,
 
 
         while 0 < len(to_visit):
-            print("next state")
             abs_state = to_visit.pop()
 
             if abs_state in abs_visited:
@@ -290,8 +289,6 @@ def _get_invar_lazy_set(derivator, invar,
                 if neigh in abs_visited:
                     continue
 
-                print("neighbors")
-
                 # Check if neigh has some intersection with invariant
                 invar_solver.push()
                 invar_solver.add_assertion(And(abs_state))
@@ -302,12 +299,10 @@ def _get_invar_lazy_set(derivator, invar,
 
                 lzz_solver = get_solver()
 
-                print("before lzz " + And(abs_state).serialize())
                 is_invar = lzz(lzz_solver, And(abs_state),
                                derivator,
                                And(abs_state),
                                Or(And(abs_state), And(neigh)))
-                print("after lzz")
 
                 if (not is_invar):
                     logger.info("New trans from %s to %s" %

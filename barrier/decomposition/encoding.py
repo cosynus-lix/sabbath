@@ -1,8 +1,8 @@
 """ Implements the (linear) encoding of the semi-algebraic decomposition.
 """
 
+import logging
 from functools import partial
-import copy
 
 from pysmt.shortcuts import (
     TRUE, FALSE,
@@ -101,8 +101,8 @@ def _get_neigh_encoding(poly, get_next_formula):
 
 
 class DecompositionOptions:
-    def __init__(self, rewrite_init = True,
-                 rewrite_property = True):
+    def __init__(self, rewrite_init = False,
+                 rewrite_property = False):
         self.rewrite_init = rewrite_init
         self.rewrite_property = rewrite_property
 
@@ -123,7 +123,6 @@ class DecompositionEncoder:
         self.dyn_sys = dyn_sys
         self.invar = invar
         self.poly = poly
-
 
         self.preds = _get_preds_list(poly)
         # # DEBUG
@@ -233,6 +232,8 @@ class DecompositionEncoder:
                 new_prop)
 
     def _get_trans_enc(self):
+        logging.debug("Encoding transition using lzz...")
+
         sys = self.dyn_sys.get_renamed(self.lzz_f)
         derivator = Derivator(sys.get_odes())
 
@@ -242,6 +243,10 @@ class DecompositionEncoder:
         lzz_out = _get_lzz_out(derivator, self.preds,
                                self.next_f, self.lzz_f)
 
-        return And(And(_get_neigh_encoding(self.poly, self.next_f),
-                       And(self.invar, self.next_f(self.invar))),
-                   Or(lzz_in, lzz_out))
+        res = And(And(_get_neigh_encoding(self.poly, self.next_f),
+                      And(self.invar, self.next_f(self.invar))),
+                  Or(lzz_in, lzz_out))
+
+        logging.debug("Encoded transition using lzz...")
+
+        return res

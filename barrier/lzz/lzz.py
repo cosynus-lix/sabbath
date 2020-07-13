@@ -219,7 +219,7 @@ def get_ivinf_dnf(derivator, formula):
 def lzz(solver, candidate, derivator, init, invar):
     """ Implement the LZZ procedure.
 
-    Check if the candidate an invariant for derivatoo, starting from
+    Check if the candidate an invariant for derivator, starting from
     init and subject to the invariant invar.
     """
     logger = logging.getLogger(__name__)

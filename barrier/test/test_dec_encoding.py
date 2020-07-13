@@ -151,3 +151,46 @@ class TestDecompositionEncoding(TestCase):
 
         self.assertTrue(len(ts.init.get_free_variables().difference(all_and_next)) == 0)
         self.assertTrue(len(p.get_free_variables().difference(all_and_next)) == 0)
+
+    def test_wiggins(self):
+        input_path = self.get_from_path("invar_inputs")
+        test_case = os.path.join(input_path, "Wiggins_Example_18_7_3_n.invar")
+
+        print("Reading input...")
+        env = get_env()
+        with open(test_case, "r") as f:
+            problem_list = importInvar(f, env)
+            assert(len(problem_list) == 1)
+
+        (problem_name, ant, cons, dyn_sys, invar, predicates) = problem_list[0]
+
+        x = Symbol("_x", REAL)
+        y = Symbol("_y", REAL)
+        p1 = x + 1
+        p2 = y + 1
+        p3 = (
+            (Real(Fraction(-1,3)) - x) * (Real(Fraction(-1,3)) - x) +
+            (Real(Fraction(-1,3)) - y) * (Real(Fraction(-1,3)) - y) +
+            Real(Fraction(-1,16))
+        )
+        p4 = x
+        p5 = y
+        predicates = [p1,p2,p3,p4,p5]
+
+        print("Creating decomposition...")
+        encoder  = DecompositionEncoder(env,
+                                        dyn_sys,
+                                        invar,
+                                        predicates,
+                                        ant,
+                                        cons)
+        (ts, p, predicates) = encoder.get_ts_ia()
+
+        print("Printing vmt...")
+        with open("/tmp/wiggings.vmt", "w") as outstream:
+            ts.to_vmt(outstream, p)
+
+        print("Proving ts...")
+        res = self._prove_ts(ts, p)
+        self.assertTrue(res == MSatic3.Result.SAFE)
+

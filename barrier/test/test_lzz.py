@@ -95,13 +95,25 @@ class TestLzz(TestCase):
         rm05 = Fraction(-1,2)
         preds = [x >= -1, y > rm05]
 
-        expected = [Or(Or(x + 1 > r0,
-                          And(Equals(x + 1, r0), -2*y > r0)),
-                        And(Equals(x + 1, r0),
-                            Equals(-2*y, r0))),
-                    Or(y + r05 > r0,
-                       And(Equals(y + r05, r0),
-                           x * x > r0))]
+        expected = [
+            Or([r0 < x + 1,
+                And([Equals(x + 1, r0), Equals(-2*y, r0),r0 < -2*x*x]),
+                And([Equals(x + 1, r0), -2*y > r0]),
+                And([Equals(x + 1, r0), Equals(-2*y, r0), Equals(-2*x*x, r0)])
+            ]),
+            Or([
+                And([Equals(x * y * -4, r0),
+                     Equals(y + r05, r0),
+                     r0 < -4*x*x*x + + 8*y*y,
+                     Equals(r0, x * x)]),
+                0.0 < (y + r05),
+                And([r0 < x * y * -4,
+                     Equals(y + r05, r0),
+                     Equals(x * x, r0)]),
+                And([Equals(y + r05, r0),
+                     r0 < x * x])
+            ])
+        ]
 
         derivator = Derivator(dyn_sys.get_odes())
         for pred, res in zip(preds, expected):
@@ -116,17 +128,34 @@ class TestLzz(TestCase):
         rm05 = Fraction(-1,2)
         preds = [x >= -1, y > rm05]
 
-        expected = [Or(Or(x + 1 > r0,
-                          And(Equals(x + 1, r0), 2*y > r0)),
-                        And(Equals(x + 1, r0),
-                            Equals(-2*y, r0))),
-                    Or(y + r05 > r0,
-                       And(Equals(y + r05, r0),
-                           -1 * (x * x) > r0))]
+        expected = [
+            Or([And([0.0 < (x * x * -2), Equals(x + 1, r0), Equals(y * -2,r0)]),
+                r0 < x + 1,
+                And([r0 < (r0 - (y * -2)), Equals(x + 1 , r0)]),
+                And([Equals(x + 1,r0),
+                     Equals(-2 * y,r0),
+                     Equals(-2 * x * x,r0)])
+            ]),
+            Or([And([Equals(x * y * - 4,r0),
+                     (r0 < (r0 - ((x * x * x * - 4) + (y * y * 8.0)))),
+                     Equals((x * x),r0),
+                     Equals(y + r05,r0)
+                ]),
+                And([r0 < (r0 - (x * x)),
+                     Equals((y + r05),r0)
+                ]),
+                And([r0 < (x * y * - 4),
+                     Equals(x * x,r0),
+                     Equals(y + r05,r0)
+                ]),
+                r0 < y + r05
+            ])
+        ]
 
         derivator = Derivator(dyn_sys.get_odes())
         for pred, res in zip(preds, expected):
             inf = get_ivinf_dnf(derivator, pred)
+
             self.assertTrue(is_valid(Iff(res, inf)))
 
     def test_lzz(self):
@@ -149,14 +178,17 @@ class TestLzz(TestCase):
     def test_lzz_2(self):
         s, v, a, vseg = [Symbol(var, REAL) for var in ["s", "v", "a", "v_seg"]]
         # der(s) = v, der(v) = a
-        dyn_sys = DynSystem([s, v], [], [], {s : v, v : a}, {}, False)
-
+        dyn_sys = DynSystem([s, v, a, vseg], [], [],
+                            {s : v,
+                             v : a,
+                             a : Real(0),
+                             vseg : Real(0)}, {}, False)
         init = v < vseg
         inv = v < vseg
         candidate = inv
 
         solver = Solver(logic=QF_NRA, name="z3")
-        is_invar = lzz(solver, candidate, Derivator(dyn_sys.get_odes()), init, TRUE())
+        is_invar = lzz(solver, candidate, Derivator(dyn_sys.get_odes()), init, v < vseg)
 
         self.assertTrue(is_invar)
 
@@ -210,15 +242,18 @@ class TestLzz(TestCase):
         env = get_env()
 
         # Ignore longer checks
-        long_tests = ["3D Lotka Volterra (III)",
-                      "3D Lotka Volterra (I)",
-                      "Coupled Spring-Mass System (II)",
-                      "3D Lotka Volterra (II)",
-                      "Longitudinal Motion of an Aircraft",
-                      "Van der Pol Fourth Quadrant",
-                      "Dumortier Llibre Artes Ex. 10_15_ii",
-                      "Constraint-based Example 8 (Phytoplankton Growth)",
-                      "Collision Avoidance Maneuver (I)"]
+        long_tests = [
+            "3D Lotka Volterra (III)",
+            "3D Lotka Volterra (I)",
+            "Coupled Spring-Mass System (II)",
+            "3D Lotka Volterra (II)",
+            "Longitudinal Motion of an Aircraft",
+            "Van der Pol Fourth Quadrant",
+            "Dumortier Llibre Artes Ex. 10_15_ii",
+            "Constraint-based Example 8 (Phytoplankton Growth)",
+            "Collision Avoidance Maneuver (I)",
+            "Bhatia Szego Ex_2_4 page 68" # because of rank computation
+        ]
 
 
         long_tests_smt = ["Dumortier Llibre Artes Ex. 1_9b",

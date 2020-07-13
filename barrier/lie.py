@@ -159,33 +159,44 @@ class Derivator(object):
             lies = [expr_sympy]
 
             fix_point = False
-
             vars_list = [v for v in vector_field_sympy.keys()]
             while (not fix_point):
                 n = n + 1
 
+                # see https://mattpap.github.io/masters-thesis/html/src/groebner.html#algebraic-relations-in-invariant-theory
                 bases = groebner(lies, vars_list, order='lex')
                 lie_n = Derivator._get_lie_der_sympy(lie_n, vector_field_sympy)
 
                 # Reduced is the heavy computation function here.
-                _, f = reduced(lie_n, bases, wrt=vars_list)
+                coeff, remainder = reduced(lie_n, bases, wrt=vars_list)
 
                 fix_point = True
-                for var in vars_list:
-                    if (f.has(var)):
-                        # Cannot write lie_n with the bases!
-                        fix_point = False
-                        lies.append(lie_n)
-                        break
+                if (remainder.expand() != 0):
+                    lies.append(lie_n)
+                    fix_point = False
+
+            # DEBUG CODE -- verify that lie_n can be expressed using a
+            # basis of the previous lie derivatives
+            #
+            # This is a correctness check for the rank computation
+            #
+            # all_sum = remainder
+            # for b, c in zip(bases, coeff):
+            #     all_sum += b * c
+            # assert(all_sum.expand() == lie_n.expand())
 
             return n
 
-        logging.debug("Getting rank for " + expr.serialize())
         if (expr in self._rank_memo):
+            logging.debug("Rank in cache... " + expr.serialize())
             return self._rank_memo[expr]
         else:
+            logging.debug("Computing rank... " + expr.serialize())
+
             (_expr, _vector_field) = self._get_sympy_problem(expr)
             rank = _get_lie_rank_sympy(_expr, _vector_field)
+            logging.debug("Computed rank %d" % rank)
+
             self._rank_memo[expr] = rank
             return rank
 
