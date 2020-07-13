@@ -39,7 +39,8 @@ from barrier.ts import TS
 from barrier.msatic3 import MSatic3
 
 from barrier.decomposition.encoding import (
-    DecompositionEncoder, _get_neigh_encoding
+    DecompositionEncoder, DecompositionOptions,
+    _get_neigh_encoding
 )
 
 
@@ -166,6 +167,7 @@ class TestDecompositionEncoding(TestCase):
 
         x = Symbol("_x", REAL)
         y = Symbol("_y", REAL)
+
         p1 = x + 1
         p2 = y + 1
         p3 = (
@@ -175,15 +177,18 @@ class TestDecompositionEncoding(TestCase):
         )
         p4 = x
         p5 = y
-        predicates = [p1,p2,p3,p4,p5]
+        predicates = [p1,p2,p4,p5]
 
         print("Creating decomposition...")
+        # Use rewriting of init and prop
+        options = DecompositionOptions(True, True)
         encoder  = DecompositionEncoder(env,
                                         dyn_sys,
                                         invar,
                                         predicates,
                                         ant,
-                                        cons)
+                                        cons,
+                                        options)
         (ts, p, predicates) = encoder.get_ts_ia()
 
         print("Printing vmt...")

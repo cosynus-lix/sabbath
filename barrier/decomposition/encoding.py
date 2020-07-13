@@ -19,8 +19,14 @@ from pysmt.typing import BOOL, REAL
 
 from barrier.lzz.lzz import get_inf_dnf, get_ivinf_dnf
 from barrier.lie import Derivator
-from barrier.formula_utils import FormulaHelper
-from barrier.formula_utils import PredicateExtractor
+from barrier.formula_utils import (
+    FormulaHelper,
+    PredicateExtractor
+)
+
+from barrier.decomposition.utils import (
+    get_poly_from_pred, get_unique_poly_list
+)
 
 from barrier.ts import TS, ImplicitAbstractionEncoder
 
@@ -117,30 +123,40 @@ class DecompositionEncoder:
         - a set of initial states I(X)
         - a safety property P(X)
         """
-
         self.env = env
         self.options = options
         self.dyn_sys = dyn_sys
         self.invar = invar
         self.poly = poly
 
-        self.preds = _get_preds_list(poly)
-        # # DEBUG
-        # init_preds = PredicateExtractor.extract_predicates(init, env)
-        # safe_preds = PredicateExtractor.extract_predicates(safe, env)
-        # new_poly = []
-        # for l in [init_preds, safe_preds]:
-        #     for pred in l:
-        #         print(pred.serialize())
-        #         poly = Minus(pred.args()[0], pred.args()[1])
-        #         print(poly)
-        #         new_poly.append(poly)
+        # The implicit abstraction encoding takes care of adding the
+        # predicates for the init and the safety property or adding a reset
+        # state/rewriting the property.
+        #
+        # However, in the case we need to add new predicates then the transition
+        # relation using the decomposition changes.
+        #
+        # So, here we already add the predicates of init and safe if needed.
+        #
+        def add_poly_from_formula(poly_list, formula, env):
+            new_preds = 0
+            for pred in PredicateExtractor.extract_predicates(formula,
+                                                              env):
+                poly_list.append(get_poly_from_pred(pred)[0])
+                new_preds += 1
+            logging.debug("Adding %d polynomials from %s" % (new_preds, formula))
 
-        # self.preds = _get_preds_list(new_poly)
-        # print("Preds: ")
-        # for p in self.preds:
-        #     print(p)
-        # print("end preds")
+        if (not options.rewrite_init):
+            add_poly_from_formula(self.poly, And(init, invar), env)
+        if (not options.rewrite_property):
+            add_poly_from_formula(self.poly, safe, env)
+
+        # TODO: normalize the list of polynomials (e.g., x and -x creates the
+        # same decomposition)
+        self.poly = get_unique_poly_list(self.poly)
+        logging.debug("Total of polynomials %d" % len(self.poly))
+
+        self.preds = _get_preds_list(self.poly)
 
         self.init = init
         self.safe = safe

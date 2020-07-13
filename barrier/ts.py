@@ -191,6 +191,23 @@ class TS:
         return next_f
 
     def rewrite(self, prop, rewrite_init=False, rewrite_prop=False):
+        """
+        Rewrite the initial states and properties to ensure soundeness or
+        add the predicates from init and prop.
+
+        Rewriting of init:
+
+        init = reset
+        new_prop = reset or prop
+        new_trans = not(reset') and (reset -> init') and (!reset -> trans)
+                  = not(reset') and (not reset or init') and (reset or trans)
+
+        Rewriting of prop:
+        new_prop = prop_var
+        new_init = init and (prop_var <-> prop)
+        new_trans = trans and (prop_var <-> prop) and (prop_var' <-> prop')
+
+        """
         new_vars = []
         if rewrite_init:
             reset = FormulaHelper.get_fresh_var_name(self.env.formula_manager, "reset")

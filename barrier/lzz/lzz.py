@@ -21,7 +21,6 @@ from pysmt.shortcuts import (
     Real,
 )
 
-
 def get_polynomial_ge(predicate):
     """
     Returns the polynomial p such that p >= 0 is equivalent
