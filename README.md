@@ -20,4 +20,3 @@ $ pip install ply
 $ ~/.local/bin/pysmt-install --check
 $ ~/.local/bin/pysmt-install --z3
 ```
-
