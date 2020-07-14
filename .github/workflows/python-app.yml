@@ -23,7 +23,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update -y
-        sudo apt install -y build-essential
+        sudo apt install -y build-essential swig libgmp-dev cmake
         python -m pip install --upgrade pip
         pip install flake8 nose pysmt sympy ply
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
