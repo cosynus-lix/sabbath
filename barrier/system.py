@@ -16,10 +16,7 @@ import pysmt
 from pysmt.shortcuts import *
 from pysmt.typing import REAL
 
-from pysmt.shortcuts import *
-from pysmt.shortcuts import *
-
-
+from barrier.lie import get_inverse_odes, Derivator
 
 class MalformedSystem(Exception):
     pass
@@ -104,11 +101,7 @@ class DynSystem(object):
         """ Invert the ODE der(x) = f(x) to der(x) = -f(x)
         Create a new dynamical system.
         """
-
-        inverse_odes = {}
-        for var, ode_expr in self._odes.items():
-            inverse_odes[var] = Minus(Real(0), ode_expr)
-
+        inverse_odes = get_inverse_odes(self._odes)
         inverse = DynSystem(self._states,
                             self._inputs,
                             self._disturbances,
@@ -116,6 +109,22 @@ class DynSystem(object):
                             self._dist_constraints,
                             False)
         return inverse
+
+    def get_derivator(self):
+        """ Return the derivator object for the
+        dynamical system.
+        """
+        derivator_vars = self._states
+        assert(len(self._disturbances) == 0)
+
+        vector_field = {}
+        for var, ode in self._odes.items():
+            vector_field[var] = ode
+
+        derivator = Derivator(vector_field)
+
+        return derivator
+
 
     def states(self):
         for x in self._states: yield x

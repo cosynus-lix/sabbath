@@ -1,0 +1,13 @@
+;; used 12 predicates:
+_PC.0
+_PC.1
+_PC.2
+(= comp_m1_st (to_real 0))
+(= d1_val (to_real 1))
+(= d0_val (to_real 1))
+(= b1_val (to_real 1))
+(= b0_val (to_real 1))
+(<= z_val (to_real 0))
+(<= (to_real 0) z_val)
+(<= z_val_t (to_real 0))
+(<= (to_real 0) z_val_t)

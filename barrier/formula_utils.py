@@ -8,6 +8,9 @@ from pysmt.shortcuts import Symbol, substitute
 
 import pysmt.typing as types
 from pysmt.exceptions import UndefinedSymbolError
+from pysmt.walkers import DagWalker
+from pysmt.walkers import handles
+import pysmt.operators as op
 
 
 class FormulaHelper:
@@ -118,4 +121,69 @@ class FormulaHelper:
         return FormulaHelper.rename_formula(self.env.formula_manager,
                                             vars, "_next", formula,
                                             type=None)
+
+# EOC FormulaHelper
+
+class PredicateExtractor(DagWalker):
+    @staticmethod
+    def extract_predicates(formula,env):
+        pe = PredicateExtractor(env)
+        pe.add_predicates_from(formula)
+        return pe.get_predicates()
+
+    def __init__(self, env=None):
+        DagWalker.__init__(self, env=env)
+        self.manager = self.env.formula_manager
+        self._predicates = set()
+
+    def add_predicates_from(self, formula):
+        self.walk(formula)
+
+    def get_predicates(self):
+        return self._predicates
+
+    @handles(op.AND, op.OR, op.IFF, op.NOT, op.IMPLIES)
+    def walk_prop_op(self, formula, args, **kwargs):
+        return True
+
+    def walk_symbol(self, formula, args, **kwargs):
+        if (formula.symbol_type() == types.BOOL):
+            self._predicates.add(formula)
+        return True
+
+    @handles(op.EQUALS, op.LE, op.LT, op.FORALL, op.EXISTS)
+    def walk_predicates(self, formula, args, **kwargs):
+        self._predicates.add(formula)
+        return True
+
+    @handles(op.PLUS, op.TIMES, op.POW, op.MINUS, op.DIV, op.TOREAL)
+    def walk_operators(self, formula, args, **kwargs):
+        return True
+
+    def walk_ite(self, formula, args, **kwargs):
+        raise NotImplementedError
+
+    @handles(op.BV_AND,op.BV_NOT,op.BV_NEG,op.BV_OR)
+    @handles(op.BV_XOR,op.BV_ADD,op.BV_MUL,op.BV_UDIV)
+    @handles(op.BV_UREM,op.BV_ULT,op.BV_ULE,op.BV_EXTRACT)
+    @handles(op.BV_ROR,op.BV_ROL,op.BV_SEXT,op.BV_ZEXT)
+    @handles(op.BV_CONCAT,op.BV_LSHL,op.BV_LSHR,op.BV_SUB)
+    @handles(op.BV_SLT,op.BV_SLE,op.BV_COMP,op.BV_SDIV)
+    @handles(op.BV_SREM,op.BV_ASHR,op.STR_LENGTH,op.STR_CONCAT)
+    @handles(op.STR_CHARAT,op.STR_INDEXOF,op.STR_REPLACE,op.STR_TO_INT)
+    @handles(op.INT_TO_STR,op.BV_TONATURAL,op.ARRAY_SELECT,op.ARRAY_STORE)
+    @handles(op.ARRAY_VALUE,op.STR_SUBSTR,op.STR_CONTAINS,op.STR_PREFIXOF)
+    @handles(op.STR_SUFFIXOF)
+    def walk_not_supported(self, formula, args, **kwargs):
+        raise NotImplementedError
+
+    def walk_function(self, formula, args, **kwargs):
+        raise NotImplementedError
+
+    @handles(op.REAL_CONSTANT, op.INT_CONSTANT, op.BOOL_CONSTANT)
+    @handles(op.BV_CONSTANT, op.STR_CONSTANT, op.ALGEBRAIC_CONSTANT)
+    def walk_identity(self, formula, args, **kwargs):
+        return formula
+
+# EOC PredicateExtractor
 

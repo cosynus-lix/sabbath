@@ -3,26 +3,28 @@
 import logging
 import unittest
 import os
+import sys
+from io import StringIO
 
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
 
-import sys
-
-from io import StringIO
 
 from pysmt.typing import BOOL
 from pysmt.shortcuts import Symbol, TRUE, FALSE, get_env, GE, Real
 from pysmt.shortcuts import Not, And, Or, Implies, Iff, ExactlyOne
 from pysmt.shortcuts import is_valid
 from pysmt.typing import REAL
+from pysmt.exceptions import SolverAPINotFound
 
 from barrier.test import TestCase
-from barrier.ts import TS
+from barrier.ts import TS, ImplicitAbstractionEncoder
+from barrier.msatic3 import MSatic3
 
 class TestSystem(TestCase):
+
     def test_ts(self):
         def test_ts_impl(ts, safe):
             outstream = StringIO()
@@ -38,13 +40,15 @@ class TestSystem(TestCase):
                 (ts, safe) = TS.from_vmt(f)
                 test_ts_impl(ts, safe)
 
+        env = get_env()
 
         x,y,z = Symbol("x"), Symbol("y"), Symbol("z")
         next_x,next_y,next_z = Symbol("x_next"), Symbol("y_next"), Symbol("z_next")
 
         next_f = lambda l : {x : next_x, y : next_y, z : next_z }[l]
 
-        ts = TS([x,y,z], next_f,
+        ts = TS(env,
+                [x,y,z], next_f,
                 And(x,y),
                 And(And(Iff(next_x, x), Implies(x, next_y)),
                     Iff(z, Not(next_x))))
@@ -54,4 +58,46 @@ class TestSystem(TestCase):
         current_path = os.path.dirname(os.path.abspath(__file__))
         input_path = os.path.join(current_path, "vmt_models")
         for f in os.listdir(input_path):
-            test_ts_file(os.path.join(input_path, f))
+            if f.endswith("smt2") or f.endswith("vmt"):
+                test_ts_file(os.path.join(input_path, f))
+
+
+    def test_impl_abs(self):
+        env = get_env()
+        current_path = os.path.dirname(os.path.abspath(__file__))
+        input_path = os.path.join(current_path, "vmt_models")
+        for predfile in os.listdir(input_path):
+            if not predfile.endswith("preds"):
+                continue
+
+            base = os.path.splitext(os.path.basename(predfile))[0]
+            smtfile = os.path.join(input_path, "%s.smt2" % base)
+            if not os.path.isfile(smtfile):
+                continue
+
+            with open(smtfile, "r") as f:
+                print("Reading %s" % smtfile)
+                (ts, safe) = TS.from_vmt(f, env)
+
+            with open(os.path.join(input_path, predfile), "r") as f:
+                predicates = ts.read_predicates(f)
+
+            enc = ImplicitAbstractionEncoder(ts, safe, predicates, env)
+            ts_abs = enc.get_ts_abstract()
+            safe_abs = enc.get_prop_abstract()
+
+            outfile = os.path.join(input_path, "%s_abs.smt2" % base)
+            with open(outfile, "w") as f:
+                ts_abs.to_vmt(f, safe_abs)
+                f.close()
+
+            print("Verifying %s..." % base)
+            try:
+                ic3 = MSatic3()
+                res = ic3.solve(outfile)
+                self.assertTrue(res == MSatic3.Result.SAFE)
+            except SolverAPINotFound:
+                print("MSatic3 not found...")
+                logging.debug("MSatic3 not found...")
+
+            os.remove(outfile)

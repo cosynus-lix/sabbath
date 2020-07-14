@@ -35,8 +35,13 @@ class MathematicaSession():
   @staticmethod
   def get_session():
     if MathematicaSession._session is None:
-      logging.debug("Creating the session")
-      MathematicaSession._session = WolframLanguageSession()
+      logging.debug("Creating a session for mathematica...")
+      try:
+        MathematicaSession._session = WolframLanguageSession()
+        MathematicaSession._session.ensure_started()
+      except wolframclient.exception.WolframKernelException:
+        raise SolverAPINotFound
+
     return MathematicaSession._session
 
 class MathematicaOptions(SolverOptions):
@@ -327,7 +332,6 @@ def get_mathematica(env=get_env(), budget_time=0):
     import wolframclient
   except:
     raise SolverAPINotFound
-
 
   solver = MathematicaSolver(env, QF_NRA,
                              solver_options={"budget_time":budget_time})

@@ -17,6 +17,7 @@ import sys
 from multiprocessing import Pool
 from multiprocessing.context import TimeoutError
 
+from pysmt.exceptions import SolverAPINotFound
 from pysmt.typing import BOOL, REAL, INT
 from pysmt.shortcuts import (
     is_valid,
@@ -28,14 +29,17 @@ from pysmt.shortcuts import (
 )
 from pysmt.logics import QF_NRA
 
+import barrier.test
 from barrier.test import TestCase
 from barrier.system import DynSystem
 from barrier.lzz.lzz import (
     is_p_invar, lzz, get_inf_dnf, get_ivinf_dnf
 )
 
+from barrier.lie import Derivator
 from barrier.lzz.serialization import importLzz, importInvar
 from barrier.lzz.dnf import DNFConverter
+
 
 from barrier.mathematica.mathematica import get_mathematica
 from barrier.utils import get_mathsat_smtlib
@@ -46,12 +50,7 @@ def run_lzz(lzz_problem, env, solver = None):
         solver = Solver(logic=QF_NRA, name="z3")
 
     (name, candidate, dyn_sys, invar) = lzz_problem
-
-    # print("LZZ %s..." % name)
-    # print(dyn_sys)
-    # print("Invar: " + invar.serialize())
-    # print("Candidate: " + candidate.serialize())
-    is_invar = lzz(solver, candidate, dyn_sys, candidate, invar)
+    is_invar = lzz(solver, candidate, dyn_sys.get_derivator(), candidate, invar)
 
     return is_invar
 
@@ -97,16 +96,29 @@ class TestLzz(TestCase):
         rm05 = Fraction(-1,2)
         preds = [x >= -1, y > rm05]
 
-        expected = [Or(Or(x + 1 > r0,
-                          And(Equals(x + 1, r0), -2*y > r0)),
-                        And(Equals(x + 1, r0),
-                            Equals(-2*y, r0))),
-                    Or(y + r05 > r0,
-                       And(Equals(y + r05, r0),
-                           x * x > r0))]
+        expected = [
+            Or([r0 < x + 1,
+                And([Equals(x + 1, r0), Equals(-2*y, r0),r0 < -2*x*x]),
+                And([Equals(x + 1, r0), -2*y > r0]),
+                And([Equals(x + 1, r0), Equals(-2*y, r0), Equals(-2*x*x, r0)])
+            ]),
+            Or([
+                And([Equals(x * y * -4, r0),
+                     Equals(y + r05, r0),
+                     r0 < -4*x*x*x + + 8*y*y,
+                     Equals(r0, x * x)]),
+                0.0 < (y + r05),
+                And([r0 < x * y * -4,
+                     Equals(y + r05, r0),
+                     Equals(x * x, r0)]),
+                And([Equals(y + r05, r0),
+                     r0 < x * x])
+            ])
+        ]
 
+        derivator = dyn_sys.get_derivator()
         for pred, res in zip(preds, expected):
-            inf = get_inf_dnf(dyn_sys, pred)
+            inf = get_inf_dnf(derivator, pred)
             self.assertTrue(is_valid(Iff(res, inf)))
 
     def test_ivinf_pred(self):
@@ -117,16 +129,34 @@ class TestLzz(TestCase):
         rm05 = Fraction(-1,2)
         preds = [x >= -1, y > rm05]
 
-        expected = [Or(Or(x + 1 > r0,
-                          And(Equals(x + 1, r0), 2*y > r0)),
-                        And(Equals(x + 1, r0),
-                            Equals(-2*y, r0))),
-                    Or(y + r05 > r0,
-                       And(Equals(y + r05, r0),
-                           -1 * (x * x) > r0))]
+        expected = [
+            Or([And([0.0 < (x * x * -2), Equals(x + 1, r0), Equals(y * -2,r0)]),
+                r0 < x + 1,
+                And([r0 < (r0 - (y * -2)), Equals(x + 1 , r0)]),
+                And([Equals(x + 1,r0),
+                     Equals(-2 * y,r0),
+                     Equals(-2 * x * x,r0)])
+            ]),
+            Or([And([Equals(x * y * - 4,r0),
+                     (r0 < (r0 - ((x * x * x * - 4) + (y * y * 8.0)))),
+                     Equals((x * x),r0),
+                     Equals(y + r05,r0)
+                ]),
+                And([r0 < (r0 - (x * x)),
+                     Equals((y + r05),r0)
+                ]),
+                And([r0 < (x * y * - 4),
+                     Equals(x * x,r0),
+                     Equals(y + r05,r0)
+                ]),
+                r0 < y + r05
+            ])
+        ]
 
+        derivator = dyn_sys.get_derivator()
         for pred, res in zip(preds, expected):
-            inf = get_ivinf_dnf(dyn_sys, pred)
+            inf = get_ivinf_dnf(derivator, pred)
+
             self.assertTrue(is_valid(Iff(res, inf)))
 
     def test_lzz(self):
@@ -142,21 +172,24 @@ class TestLzz(TestCase):
                        GT(y, Real(Fraction(-1,2))))
 
         solver = Solver(logic=QF_NRA, name="z3")
-        is_invar = lzz(solver, candidate, dyn_sys, init, TRUE())
+        is_invar = lzz(solver, candidate, dyn_sys.get_derivator(), init, TRUE())
 
         self.assertTrue(is_invar)
 
     def test_lzz_2(self):
         s, v, a, vseg = [Symbol(var, REAL) for var in ["s", "v", "a", "v_seg"]]
         # der(s) = v, der(v) = a
-        dyn_sys = DynSystem([s, v], [], [], {s : v, v : a}, {}, False)
-
+        dyn_sys = DynSystem([s, v, a, vseg], [], [],
+                            {s : v,
+                             v : a,
+                             a : Real(0),
+                             vseg : Real(0)}, {}, False)
         init = v < vseg
         inv = v < vseg
         candidate = inv
 
         solver = Solver(logic=QF_NRA, name="z3")
-        is_invar = lzz(solver, candidate, dyn_sys, init, TRUE())
+        is_invar = lzz(solver, candidate, dyn_sys.get_derivator(), init, v < vseg)
 
         self.assertTrue(is_invar)
 
@@ -176,8 +209,6 @@ class TestLzz(TestCase):
 
 
     def test_battery(self):
-        import barrier.test
-
         def run_with_timeout(lzz_problem,time_out,env):
             is_invar = None
             try:
@@ -210,15 +241,18 @@ class TestLzz(TestCase):
         env = get_env()
 
         # Ignore longer checks
-        long_tests = ["3D Lotka Volterra (III)",
-                      "3D Lotka Volterra (I)",
-                      "Coupled Spring-Mass System (II)",
-                      "3D Lotka Volterra (II)",
-                      "Longitudinal Motion of an Aircraft",
-                      "Van der Pol Fourth Quadrant",
-                      "Dumortier Llibre Artes Ex. 10_15_ii",
-                      "Constraint-based Example 8 (Phytoplankton Growth)",
-                      "Collision Avoidance Maneuver (I)"]
+        long_tests = [
+            "3D Lotka Volterra (III)",
+            "3D Lotka Volterra (I)",
+            "Coupled Spring-Mass System (II)",
+            "3D Lotka Volterra (II)",
+            "Longitudinal Motion of an Aircraft",
+            "Van der Pol Fourth Quadrant",
+            "Dumortier Llibre Artes Ex. 10_15_ii",
+            "Constraint-based Example 8 (Phytoplankton Growth)",
+            "Collision Avoidance Maneuver (I)",
+            "Bhatia Szego Ex_2_4 page 68" # because of rank computation
+        ]
 
 
         long_tests_smt = ["Dumortier Llibre Artes Ex. 1_9b",
@@ -257,9 +291,9 @@ class TestLzz(TestCase):
             try:
                 f()
                 solvers.append((name,f))
-            except:
+            except SolverAPINotFound:
+                logging.debug("Skipping not found solver %s..." % name)
                 pass
-
 
         for (solver_name, solver_init) in solvers:
             print("Running solver %s..." % solver_name)
@@ -281,6 +315,8 @@ class TestLzz(TestCase):
                         to_ignore = long_tests + not_supported + long_tests_mathematica
 
                     if (not lzz_problem[0] in to_ignore):
+                        print("BLABLA")
+                        print(lzz_problem)
                         print("Running LZZ problem from %s (%s)..." % (lzz_file, lzz_problem[0]))
                         is_invar = run_lzz(lzz_problem, env, solver)
                         self.assertTrue(is_invar)
@@ -300,4 +336,24 @@ class TestLzz(TestCase):
                 assert(len(problem_list) == 1)
                 for p in problem_list:
                     (problem_name, ant, cons, dyn_sys, invar, predicates) = p
+
+    def test_import_invar_input(self):
+        input_path = self.get_from_path("invar_inputs")
+        test_case = os.path.join(input_path, "Constraint-based_Example_7__Human_Blood_Glucose_Metabolism_.invar")
+
+        env = get_env()
+
+        with open(test_case, "r") as f:
+            problem_list = importInvar(f, env)
+            assert(len(problem_list) == 1)
+
+            (problem_name, ant, cons, dyn_sys, invar, predicates) = problem_list[0]
+
+            u_var = Symbol("_u", REAL)
+            found_u = False
+            for i in dyn_sys.inputs():
+                if i == u_var:
+                    found_u = True
+            self.assertTrue(found_u)
+
 

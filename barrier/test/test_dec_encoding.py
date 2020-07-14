@@ -4,7 +4,8 @@
 import logging
 import unittest
 import os
-
+import sys
+import tempfile
 from fractions import Fraction
 
 try:
@@ -12,7 +13,7 @@ try:
 except ImportError:
     import unittest
 
-import sys
+
 
 from functools import partial
 
@@ -32,13 +33,14 @@ from barrier.system import DynSystem
 from barrier.utils import get_range_from_int
 from barrier.lzz.serialization import importInvar
 
-from barrier.lzz.lzz import lzz
 from barrier.formula_utils import FormulaHelper
 
 from barrier.ts import TS
+from barrier.msatic3 import MSatic3
 
 from barrier.decomposition.encoding import (
-    DecompositionEncoder, _get_neigh_encoding
+    DecompositionEncoder, DecompositionOptions,
+    _get_neigh_encoding
 )
 
 
@@ -82,6 +84,31 @@ class TestDecompositionEncoding(TestCase):
         self.assertTrue(is_valid(Iff(res, expected)))
 
 
+    def _prove_ts(self, ts, prop):
+        res = None
+
+        try:
+            (_, tmp_file) = tempfile.mkstemp(suffix=None,
+                                             prefix=None,
+                                             dir=None,
+                                             text=True)
+            with open(tmp_file,"w") as outstream:
+                ts.to_vmt(outstream, prop)
+
+            try:
+                print("Verifying %s..." % tmp_file)
+                ic3 = MSatic3()
+                res = ic3.solve(tmp_file)
+
+                return res
+            except SolverAPINotFound:
+                print("MSatic3 not found...")
+                logging.debug("MSatic3 not found...")
+        finally:
+            if os.path.isfile(tmp_file):
+                os.remove(tmp_file)
+        return res
+
     def test_enc(self):
         x, y = [Symbol(var, REAL) for var in ["x", "y"]]
         dyn_sys = DynSystem([x, y], [], [], {x : -y, y : -x}, {}, False)
@@ -96,7 +123,79 @@ class TestDecompositionEncoding(TestCase):
                                         init,
                                         safe)
         (ts, p) = encoder.get_quantified_ts()
-        (ts, p, predicates) = encoder.get_ts()
+        (ts, p, predicates) = encoder.get_ts_ia()
 
-        # TODO: add test about encoding correctness
-        self.assertTrue(True)
+        res = self._prove_ts(ts, p)
+        self.assertTrue(res == MSatic3.Result.SAFE)
+
+    def test_invar_in_init(self):
+        env = get_env()
+
+        current_path = os.path.dirname(os.path.abspath(__file__))
+        input_path = os.path.join(current_path, "invar_inputs")
+        problem_file = os.path.join(input_path, "Constraint-based_Example_7__Human_Blood_Glucose_Metabolism_.invar")
+        with open(problem_file, "r") as json_stream:
+            problem_list = importInvar(json_stream, env)
+
+        (problem_name, init, safe, dyn_sys, invariants, predicates) = problem_list[0]
+
+        encoder  = DecompositionEncoder(env,
+                                        dyn_sys,
+                                        invariants,
+                                        predicates,
+                                        init,
+                                        safe)
+        (ts, p, predicates) = encoder.get_ts_ia()
+
+        all_and_next = set(ts.state_vars)
+        all_and_next.update([ts.next_f(v) for v in ts.state_vars])
+
+        self.assertTrue(len(ts.init.get_free_variables().difference(all_and_next)) == 0)
+        self.assertTrue(len(p.get_free_variables().difference(all_and_next)) == 0)
+
+    def test_wiggins(self):
+        input_path = self.get_from_path("invar_inputs")
+        test_case = os.path.join(input_path, "Wiggins_Example_18_7_3_n.invar")
+
+        print("Reading input...")
+        env = get_env()
+        with open(test_case, "r") as f:
+            problem_list = importInvar(f, env)
+            assert(len(problem_list) == 1)
+
+        (problem_name, ant, cons, dyn_sys, invar, predicates) = problem_list[0]
+
+        x = Symbol("_x", REAL)
+        y = Symbol("_y", REAL)
+
+        p1 = x + 1
+        p2 = y + 1
+        p3 = (
+            (Real(Fraction(-1,3)) - x) * (Real(Fraction(-1,3)) - x) +
+            (Real(Fraction(-1,3)) - y) * (Real(Fraction(-1,3)) - y) +
+            Real(Fraction(-1,16))
+        )
+        p4 = x
+        p5 = y
+        predicates = [p1,p2,p4,p5]
+
+        print("Creating decomposition...")
+        # Use rewriting of init and prop
+        options = DecompositionOptions(True, True)
+        encoder  = DecompositionEncoder(env,
+                                        dyn_sys,
+                                        invar,
+                                        predicates,
+                                        ant,
+                                        cons,
+                                        options)
+        (ts, p, predicates) = encoder.get_ts_ia()
+
+        print("Printing vmt...")
+        with open("/tmp/wiggings.vmt", "w") as outstream:
+            ts.to_vmt(outstream, p)
+
+        print("Proving ts...")
+        res = self._prove_ts(ts, p)
+        self.assertTrue(res == MSatic3.Result.SAFE)
+

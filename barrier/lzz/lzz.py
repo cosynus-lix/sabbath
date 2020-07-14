@@ -9,7 +9,7 @@ import logging
 from functools import partial
 
 from barrier.system import DynSystem
-from barrier.lie import get_lie, get_lie_rank
+from barrier.lie import Derivator
 from barrier.lzz.dnf import ApplyPredicate, DNFConverter
 
 import pysmt.operators as pysmt_op
@@ -20,7 +20,6 @@ from pysmt.shortcuts import (
     Minus,
     Real,
 )
-
 
 def get_polynomial_ge(predicate):
     """
@@ -40,7 +39,7 @@ def get_polynomial_ge(predicate):
 
     return polynomial
 
-def get_generic_set(poly, dyn_sys, op, sign_mult, rank = None):
+def get_generic_set(poly, derivator, op, sign_mult, rank = None):
     """
     TODO: document, factor the computation of trans_f, \psi+ and \phi+
     """
@@ -52,7 +51,7 @@ def get_generic_set(poly, dyn_sys, op, sign_mult, rank = None):
         return op(lie, Real(0))
 
     if rank is None:
-        rank = get_lie_rank(dyn_sys.states(), poly, dyn_sys)
+        rank = derivator.get_lie_rank(poly)
     assert rank >= 0
 
     trans_f_p = FALSE()
@@ -69,7 +68,7 @@ def get_generic_set(poly, dyn_sys, op, sign_mult, rank = None):
 
             prev_lie_eq_0 = And(prev_lie_eq_0,
                                 Equals(lie_at_i, Real(0)))
-            lie_at_i = get_lie(lie_at_i, dyn_sys)
+            lie_at_i = derivator.get_lie_der(lie_at_i)
             lie_term_at_i = get_lie_op_term(lie_at_i, op, sign_mult, i)
             trans_f_p_i = And(prev_lie_eq_0, lie_term_at_i)
 
@@ -96,7 +95,7 @@ def get_trans_f_p(poly, dyn_sys):
     at x will exit p >= 0 immediately.
     """
 
-    return get_generic_set(poly, dyn_sys, LT, False)
+    return get_generic_set(poly, dyn_sys.get_derivator(), LT, False)
 
 
 def is_p_invar(solver, predicate, dyn_sys, init, invar):
@@ -158,64 +157,68 @@ def change_sign(predicate):
         predicate = Minus(predicate, Real(0))
     return predicate.simplify()
 
-def get_lie_eq_0(dyn_sys, predicate, rank):
+def get_lie_eq_0(derivator, predicate, rank):
     all_eq_0 = TRUE()
     for i in range(rank+1):
         if i == 0:
             lie_at_i = predicate
             all_eq_0 = Equals(lie_at_i, Real(0))
         else:
-            lie_at_i = get_lie(lie_at_i, dyn_sys)
+            lie_at_i = derivator.get_lie_der(lie_at_i)
             all_eq_0 = And(all_eq_0, Equals(lie_at_i, Real(0)))
     return all_eq_0
 
-def get_inf_lt_pred(dyn_sys, predicate):
+def get_inf_lt_pred(derivator, predicate):
     predicate = change_sign(predicate)
-    return get_generic_set(predicate, dyn_sys, GT, False)
+    return get_generic_set(predicate, derivator, GT, False)
 
-def get_inf_le_pred(dyn_sys, predicate):
+def get_inf_le_pred(derivator, predicate):
     predicate = change_sign(predicate)
-    rank = get_lie_rank(dyn_sys.states(), predicate, dyn_sys)
-    first_disjunct = get_generic_set(predicate, dyn_sys, GT, False, rank)
-    all_eq_0 = get_lie_eq_0(dyn_sys, predicate, rank)
+    rank = derivator.get_lie_rank(predicate)
+    first_disjunct = get_generic_set(predicate, derivator, GT, False, rank)
+    all_eq_0 = get_lie_eq_0(derivator, predicate, rank)
     res = Or(first_disjunct, all_eq_0)
     return res
 
-def get_ivinf_lt_pred(dyn_sys, predicate):
+def get_ivinf_lt_pred(derivator, predicate):
     predicate = change_sign(predicate)
-    return get_generic_set(predicate, dyn_sys, GT, True)
+    return get_generic_set(predicate, derivator, GT, True)
 
-def get_ivinf_le_pred(dyn_sys, predicate):
+def get_ivinf_le_pred(derivator, predicate):
     predicate = change_sign(predicate)
-    rank = get_lie_rank(dyn_sys.states(), predicate, dyn_sys)
-    first_disjunct = get_generic_set(predicate, dyn_sys, GT, True, rank)
-    all_eq_0 = get_lie_eq_0(dyn_sys, predicate, rank)
+    rank = derivator.get_lie_rank(predicate)
+    first_disjunct = get_generic_set(predicate, derivator, GT, True, rank)
+    all_eq_0 = get_lie_eq_0(derivator, predicate, rank)
     res = Or(first_disjunct, all_eq_0)
     return res
 
-def get_inf_dnf(dyn_sys, formula):
-    app = ApplyPredicate({pysmt_op.LT : partial(get_inf_lt_pred, dyn_sys),
-                          pysmt_op.LE : partial(get_inf_le_pred, dyn_sys)})
+def get_inf_dnf(derivator, formula):
+    app = ApplyPredicate({pysmt_op.LT : partial(get_inf_lt_pred, derivator),
+                          pysmt_op.LE : partial(get_inf_le_pred, derivator)})
     inf_dnf = app.walk(formula)
     return inf_dnf
 
 
-# DEBUG
-IVINF_VIA_MINUS_F = True
-def get_ivinf_dnf(dyn_sys, formula):
+# We can compute IVINF(f,pred) as INF(-f, pred).
+#
+# The main drawback is that we will not reuse the memoization of the
+# rank for a polynomial, since the vector field changes.
+#
+IVINF_VIA_MINUS_F = False
+def get_ivinf_dnf(derivator, formula):
     if IVINF_VIA_MINUS_F:
-        dyn_sys_inv = dyn_sys.get_inverse()
-        return get_inf_dnf(dyn_sys_inv, formula)
+        inverse_derivator = derivator.get_inverse()
+        return get_inf_dnf(inverse_derivator, formula)
     else:
-        app = ApplyPredicate({pysmt_op.LT : partial(get_ivinf_lt_pred, dyn_sys),
-                              pysmt_op.LE : partial(get_ivinf_le_pred, dyn_sys)})
+        app = ApplyPredicate({pysmt_op.LT : partial(get_ivinf_lt_pred, derivator),
+                              pysmt_op.LE : partial(get_ivinf_le_pred, derivator)})
         ivinf_dnf = app.walk(formula)
         return ivinf_dnf
 
-def lzz(solver, candidate, dyn_sys, init, invar):
+def lzz(solver, candidate, derivator, init, invar):
     """ Implement the LZZ procedure.
 
-    Check if the candidate an invariant for dyn_sys, starting from
+    Check if the candidate an invariant for derivator, starting from
     init and subject to the invariant invar.
     """
     logger = logging.getLogger(__name__)
@@ -234,13 +237,13 @@ def lzz(solver, candidate, dyn_sys, init, invar):
         invar_dnf = c.get_dnf(invar)
 
         c2 = Implies(And(candidate, invar,
-                         get_inf_dnf(dyn_sys, invar_dnf)),
-                     get_inf_dnf(dyn_sys, candidate_dnf))
+                         get_inf_dnf(derivator, invar_dnf)),
+                     get_inf_dnf(derivator, candidate_dnf))
 
         if solver.is_valid(c2):
             c3 = Implies(And(Not(candidate), invar,
-                             get_ivinf_dnf(dyn_sys, invar_dnf)),
-                         Not(get_ivinf_dnf(dyn_sys, candidate_dnf)))
+                             get_ivinf_dnf(derivator, invar_dnf)),
+                         Not(get_ivinf_dnf(derivator, candidate_dnf)))
 
             if solver.is_valid(c3):
                 return True
@@ -256,7 +259,7 @@ def lzz(solver, candidate, dyn_sys, init, invar):
         return False
 
 
-def lzz_fast(solver, candidate, dyn_sys, init, invar):
+def lzz_fast(solver, candidate, derivator, init, invar):
     """ Implement the "fast" LZZ procedure, as in Pegasus.
 
     The "fast" LZZ drops the possibly expensive conjuncts from
@@ -280,11 +283,11 @@ def lzz_fast(solver, candidate, dyn_sys, init, invar):
         invar_dnf = c.get_dnf(invar)
 
         c2 = Implies(And(candidate, invar),
-                     get_inf_dnf(dyn_sys, candidate_dnf))
+                     get_inf_dnf(derivator, candidate_dnf))
 
         if solver.is_valid(c2):
             c3 = Implies(And(Not(candidate), invar),
-                         Not(get_ivinf_dnf(dyn_sys, candidate_dnf)))
+                         Not(get_ivinf_dnf(derivator, candidate_dnf)))
 
             if solver.is_valid(c3):
               return True

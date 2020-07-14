@@ -1,6 +1,9 @@
 # Barrier python module
 
 import os
+import logging
+import sys
+
 from functools import wraps
 
 try:
@@ -20,3 +23,19 @@ class TestCase(unittest.TestCase):
     def setUp(self):
         self.env = reset_env()
         self.env.enable_infix_notation = True
+
+    def get_from_path(self, path, must_exists=True):
+        current_path = os.path.dirname(os.path.abspath(__file__))
+        input_path = os.path.join(current_path, path)
+        self.assertTrue((not must_exists) or os.path.exists(input_path))
+        return input_path
+
+
+    def log_to_stdout(self):
+        root = logging.getLogger()
+        root.setLevel(logging.DEBUG)
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        root.addHandler(handler)

@@ -1,0 +1,18 @@
+;; used 17 predicates:
+_PC.0
+_PC.1
+_PC.2
+_PC.3
+(= q_free (to_real 1))
+(= p_dw_pc (to_real 1))
+(= c_dr_pc (to_real 0))
+(= q_free (to_real 0))
+(= p_dw_pc (to_real 0))
+(<= p_last_write q_buf_0)
+(<= q_buf_0 p_last_write)
+(<= (to_real 2) c_dr_st)
+(<= p_num_write c_num_read)
+(<= c_num_read p_num_write)
+(<= (+ p_num_write (* (to_real (- 1)) c_num_read)) (to_real 1))
+(<= (to_real 1) (+ p_num_write (* (to_real (- 1)) c_num_read)))
+(<= (to_real 2) p_dw_st)

@@ -1,12 +1,13 @@
 """ Implements the (linear) encoding of the semi-algebraic decomposition.
 """
 
+import logging
 from functools import partial
-import copy
 
 from pysmt.shortcuts import (
     TRUE, FALSE,
     Real,
+    Minus,
     Not, And, Or, Implies, Iff, Equals,
     Equals, GE, GT, LT, LE,
     Exists,
@@ -17,9 +18,17 @@ from pysmt.shortcuts import (
 from pysmt.typing import BOOL, REAL
 
 from barrier.lzz.lzz import get_inf_dnf, get_ivinf_dnf
-from barrier.formula_utils import FormulaHelper
+from barrier.lie import Derivator
+from barrier.formula_utils import (
+    FormulaHelper,
+    PredicateExtractor
+)
 
-from barrier.ts import TS
+from barrier.decomposition.utils import (
+    get_poly_from_pred, get_unique_poly_list
+)
+
+from barrier.ts import TS, ImplicitAbstractionEncoder
 
 def _get_preds_list(poly):
     zero = Real(0)
@@ -36,14 +45,12 @@ def _get_preds_ia_list(poly):
         [LE(p, zero) for p in poly]
     )
 
-
-
-def _get_lzz_in(dyn_sys, preds_list, next_f, lzz_f):
+def _get_lzz_in(derivator, preds_list, next_f, lzz_f):
     current_impl = lambda p : Implies(p, lzz_f(p))
     next_impl = lambda p : Implies(next_f(p),
-                                   get_inf_dnf(dyn_sys, lzz_f(p)))
+                                   get_inf_dnf(derivator, lzz_f(p)))
     and_not_inf = lambda p : And(p,
-                                 Not(get_inf_dnf(dyn_sys, lzz_f(p))))
+                                 Not(get_inf_dnf(derivator, lzz_f(p))))
 
     list(map(next_impl, preds_list))
 
@@ -52,8 +59,8 @@ def _get_lzz_in(dyn_sys, preds_list, next_f, lzz_f):
                 Or(list(map(and_not_inf, preds_list)))])
 
 
-def _get_lzz_out(dyn_sys, preds_list, next_f, lzz_f):
-    current_impl = lambda p : Implies(p, get_ivinf_dnf(dyn_sys, lzz_f(p)))
+def _get_lzz_out(derivator, preds_list, next_f, lzz_f):
+    current_impl = lambda p : Implies(p, get_ivinf_dnf(derivator, lzz_f(p)))
     next_impl = lambda p : Implies(next_f(p), lzz_f(p))
     and_not_inf = lambda p : And(p, Not(lzz_f(p)))
 
@@ -99,53 +106,9 @@ def _get_neigh_encoding(poly, get_next_formula):
               _iter(poly, partial(_change_eq, get_next = get_next_formula)))
 
 
-def get_preds(formula):
-    print(get_atoms(formula))
-    return []
-
-
-def rewrite_init(env, ts, prop):
-    reset = FormulaHelper.get_fresh_var_name(env.formula_manager, "reset")
-
-    new_vars = set(ts.state_vars)
-    new_vars.add(reset)
-    next_f = lambda x : partial(FormulaHelper.rename_formula,
-                                env = env,
-                                vars = set(new_vars),
-                                suffix = "_next")(formula=x)
-
-    new_prop = Or(reset, prop)
-    new_init = reset
-    new_trans = And(Not(next_f(reset)),
-                    And(Or(Not(reset), next_f(ts.init)),
-                        Or(reset, ts.trans)))
-
-    new_ts = TS(new_vars, next_f, new_init, new_trans)
-    return (new_ts, new_prop, [reset])
-
-def rewrite_prop(env, ts, prop):
-    new_prop = FormulaHelper.get_fresh_var_name(env.formula_manager, "new_prop")
-
-    new_vars = set(ts.state_vars)
-    new_vars.add(new_prop)
-
-    next_f = lambda x : partial(FormulaHelper.rename_formula,
-                                env = env,
-                                vars = set(new_vars),
-                                suffix = "_next")(formula=x)
-
-    new_init = And(ts.init, Iff(new_prop, prop))
-    new_trans = And([ts.trans,
-                     Iff(new_prop, prop),
-                     Iff(next_f(new_prop), next_f(prop))])
-
-    new_ts = TS(new_vars, next_f, new_init, new_trans)
-    return (new_ts, new_prop, [new_prop])
-
-
 class DecompositionOptions:
-    def __init__(self, rewrite_init = True,
-                 rewrite_property = True):
+    def __init__(self, rewrite_init = False,
+                 rewrite_property = False):
         self.rewrite_init = rewrite_init
         self.rewrite_property = rewrite_property
 
@@ -160,16 +123,49 @@ class DecompositionEncoder:
         - a set of initial states I(X)
         - a safety property P(X)
         """
-
         self.env = env
         self.options = options
         self.dyn_sys = dyn_sys
         self.invar = invar
         self.poly = poly
-        self.preds = _get_preds_list(poly)
+
+        # The implicit abstraction encoding takes care of adding the
+        # predicates for the init and the safety property or adding a reset
+        # state/rewriting the property.
+        #
+        # However, in the case we need to add new predicates then the transition
+        # relation using the decomposition changes.
+        #
+        # So, here we already add the predicates of init and safe if needed.
+        #
+        def add_poly_from_formula(poly_list, formula, env):
+            new_preds = 0
+            for pred in PredicateExtractor.extract_predicates(formula,
+                                                              env):
+                poly_list.append(get_poly_from_pred(pred)[0])
+                new_preds += 1
+            logging.debug("Adding %d polynomials from %s" % (new_preds, formula))
+
+        if (not options.rewrite_init):
+            add_poly_from_formula(self.poly, And(init, invar), env)
+        if (not options.rewrite_property):
+            add_poly_from_formula(self.poly, safe, env)
+
+        # TODO: normalize the list of polynomials (e.g., x and -x creates the
+        # same decomposition)
+        self.poly = get_unique_poly_list(self.poly)
+        logging.debug("Total of polynomials %d" % len(self.poly))
+
+        self.preds = _get_preds_list(self.poly)
+
         self.init = init
         self.safe = safe
-        self.vars = list(dyn_sys._states)
+
+        self.vars = []
+        for var in dyn_sys.states():
+            self.vars.append(var)
+        for var in dyn_sys.inputs():
+            self.vars.append(var)
 
         self.next_f = lambda x : partial(FormulaHelper.rename_formula,
                                          env = env,
@@ -197,7 +193,7 @@ class DecompositionEncoder:
         self.pred_vars_f = lambda x : self.pred_map[x]
 
 
-    def get_ts(self):
+    def get_ts_ia(self):
         """
         Output:
         - TS a symbolic transition system,
@@ -212,22 +208,18 @@ class DecompositionEncoder:
         ts_vars = self.vars
         ts_next = self.next_f
 
-        ts = TS(self.vars, self.next_f, new_init, new_trans)
+        ts = TS(self.env, self.vars, self.next_f, new_init, new_trans)
 
-        if (not (self.options.rewrite_init and
-                 self.options.rewrite_property)):
-            # we need to add the predicate from init and property
-            # to the decomposition if we want to use IA later
-            #
-            raise NotImplementedException()
+        enc = ImplicitAbstractionEncoder(ts,
+                                         new_prop,
+                                         preds_for_ia,
+                                         self.env,
+                                         self.options.rewrite_init,
+                                         self.options.rewrite_property)
 
-        if (self.options.rewrite_init):
-            (ts, new_prop, new_preds) = rewrite_init(self.env, ts, new_prop)
-            preds_for_ia += new_preds
-
-        if (self.options.rewrite_property):
-            (ts, new_prop, new_preds) = rewrite_prop(self.env, ts, new_prop)
-            preds_for_ia += new_preds
+        ts = enc.get_ts_abstract()
+        new_prop = enc.get_prop_abstract()
+        preds_for_ia = enc.get_predicates()
 
         return (ts, new_prop, preds_for_ia)
 
@@ -249,20 +241,37 @@ class DecompositionEncoder:
         new_init = Exists(to_quantify, new_init)
         new_prop = Exists(to_quantify, new_prop)
 
-        return (TS([self.pred_vars_f(p) for p in self.preds],
+        return (TS(self.env,
+                   [self.pred_vars_f(p) for p in self.preds],
                    self.next_f,
                    new_init, new_trans),
                 new_prop)
 
     def _get_trans_enc(self):
-        sys = self.dyn_sys.get_renamed(self.lzz_f)
+        logging.debug("Encoding transition using lzz...")
 
-        lzz_in = _get_lzz_in(sys, self.preds,
+        sys = self.dyn_sys.get_renamed(self.lzz_f)
+        derivator = sys.get_derivator()
+
+        lzz_in = _get_lzz_in(derivator, self.preds,
                              self.next_f, self.lzz_f)
 
-        lzz_out = _get_lzz_out(sys, self.preds,
+        lzz_out = _get_lzz_out(derivator, self.preds,
                                self.next_f, self.lzz_f)
 
-        return And(And(_get_neigh_encoding(self.poly, self.next_f),
-                       And(self.invar, self.next_f(self.invar))),
-                   Or(lzz_in, lzz_out))
+        # frame condition for the time-independent parameters
+        fc_list = [Equals(var, self.next_f(var)) for var in sys.inputs()]
+        if (len(fc_list) == 0):
+            fc = TRUE()
+        else:
+            fc = And(fc_list)
+
+        res = And([_get_neigh_encoding(self.poly, self.next_f),
+                   self.invar,
+                   self.next_f(self.invar),
+                   fc,
+                   Or(lzz_in, lzz_out)])
+
+        logging.debug("Encoded transition using lzz...")
+
+        return res

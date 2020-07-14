@@ -1,0 +1,28 @@
+;; used 27 predicates:
+_PC.0
+_PC.1
+_PC.2
+_PC.3
+_PC.4
+(<= (to_real 0) InterfaceType__162$main)
+(= s (to_real 1))
+(= s (to_real 4))
+(<= (to_real 3221225558) __INLINE_TEMP__19$main)
+(<= (to_real 3221225473) ntStatus__59$main)
+(<= ntStatus__59$main (to_real 0))
+(<= (to_real 4) s)
+(<= __INLINE_TEMP__19$main (to_real 0))
+(<= (to_real 3221225473) __INLINE_TEMP__19$main)
+(<= s (to_real 2))
+(<= (to_real 2) s)
+(<= lowerDriverReturn __INLINE_TEMP__19$main)
+(<= (+ __INLINE_TEMP__19$main (+ (* (to_real (- 1)) ntStatus__59$main) (* (to_real (- 1)) lowerDriverReturn))) (to_real 0))
+(<= ntStatus__59$main lowerDriverReturn)
+(<= (to_real 0) ntStatus__59$main)
+(<= lowerDriverReturn ntStatus__59$main)
+(<= __INLINE_TEMP__19$main ntStatus__59$main)
+(<= ntStatus__114$main (to_real 0))
+(<= (to_real 3221225626) ntStatus__114$main)
+(<= ntStatus__114$main lowerDriverReturn)
+(<= (to_real 259) lowerDriverReturn)
+(<= (to_real 3221225473) ntStatus__114$main)

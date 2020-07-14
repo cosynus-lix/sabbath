@@ -30,6 +30,7 @@ from io import StringIO
 
 from pysmt.smtlib.parser import SmtLibParser
 import pysmt.smtlib.commands as smtcmd
+from pysmt.shortcuts import Real
 
 from barrier.system import DynSystem
 
@@ -60,8 +61,7 @@ def readVar(parser, var_decl, all_vars):
         elif cmd.name == smtcmd.DEFINE_FUN:
             (var, formals, typename, body) = cmd.args
 
-def importLzz(json_stream, env):
-    problem_json = json.load(json_stream)
+def parse_dyn_sys(env, problem_json, is_lzz = False):
     parser = SmtLibParser(env)
 
     # Read all the variables
@@ -76,10 +76,30 @@ def importLzz(json_stream, env):
     for var_decl in problem_json["contVars"]:
         readVar(parser, var_decl, cont_vars)
 
-    # Invariant candidate
-    candidate = fromStringFormula(parser, vars_decl_str, problem_json["candidate"])
+    if (not is_lzz):
+        # Antecedent
+        antecedent = fromStringFormula(parser, vars_decl_str, problem_json["antecedent"])
+        # Consequent
+        consequent = fromStringFormula(parser, vars_decl_str, problem_json["consequent"])
+
+        predicates = []
+        for pred_json in problem_json["predicates"]:
+            pred_eq_0 = fromStringFormula(parser, vars_decl_str, pred_json)
+            pred = pred_eq_0.args()[0]
+            predicates.append(pred)
+    else:
+        # Invariant candidate
+        candidate = fromStringFormula(parser, vars_decl_str, problem_json["candidate"])
+
     # Invariant of the dynamical system
     invar = fromStringFormula(parser, vars_decl_str, problem_json["constraints"])
+
+    # Discrete variables (e.g., parameters) that are not in the
+    # continuous variables become (discrete) inputs.
+    input_vars = []
+    for var in all_vars:
+        if not var in cont_vars:
+            input_vars.append(var)
 
     # Systems of ODEs
     odes = {}
@@ -88,51 +108,27 @@ def importLzz(json_stream, env):
         ode = ode_eq_0.args()[0]
         odes[var] = ode
 
-    dyn_sys = DynSystem(cont_vars, [], [], odes, {}, False)
+    dyn_sys = DynSystem(cont_vars, input_vars, [], odes, {}, False)
 
+    if (not is_lzz):
+        return (dyn_sys, invar, antecedent, consequent, predicates)
+    else:
+        return (dyn_sys, invar, candidate)
+
+def importLzz(json_stream, env):
+    problem_json = json.load(json_stream)
+    (dyn_sys, invar, candidate) = parse_dyn_sys(env, problem_json, True)
     return (problem_json["name"], candidate, dyn_sys, invar)
 
 def importInvar(json_stream, env):
     problem_json_list = json.load(json_stream)
+
     results = []
-
     for problem_json in problem_json_list:
-        parser = SmtLibParser(env)
+        res = parse_dyn_sys(env, problem_json)
+        (dyn_sys, invar, antecedent, consequent, predicates) = res
 
-        # Read all the variables
-        all_vars = []
-        vars_decl_str = None
-        for var_decl in problem_json["varsDecl"]:
-            readVar(parser, var_decl, all_vars)
-            vars_decl_str = var_decl if vars_decl_str is None else "%s\n%s" % (vars_decl_str, var_decl)
-
-        # Read the continuous variables
-        cont_vars = []
-        for var_decl in problem_json["contVars"]:
-            readVar(parser, var_decl, cont_vars)
-
-        # Antecedent
-        antecedent = fromStringFormula(parser, vars_decl_str, problem_json["antecedent"])
-        # Consequent
-        consequent = fromStringFormula(parser, vars_decl_str, problem_json["consequent"])
-        # Invariant of the dynamical system
-        invar = fromStringFormula(parser, vars_decl_str, problem_json["constraints"])
-
-        predicates = []
-        for pred_json in problem_json["predicates"]:
-            pred_eq_0 = fromStringFormula(parser, vars_decl_str, pred_json)
-            pred = pred_eq_0.args()[0]
-            predicates.append(pred)
-
-        # Systems of ODEs
-        odes = {}
-        for var, ode_str in zip(cont_vars, problem_json["vectorField"]):
-            ode_eq_0 = fromStringFormula(parser, vars_decl_str, ode_str)
-            ode = ode_eq_0.args()[0]
-            odes[var] = ode
-
-        dyn_sys = DynSystem(cont_vars, [], [], odes, {}, False)
-
-        results.append((problem_json["name"], antecedent, consequent, dyn_sys, invar, predicates))
+        results.append((problem_json["name"], antecedent, consequent,
+                        dyn_sys, invar, predicates))
 
     return results
