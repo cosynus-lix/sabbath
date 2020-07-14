@@ -286,6 +286,7 @@ class TestLzz(TestCase):
                        ("mathematica", partial(get_mathematica,
                                                env=get_env(),
                                                budget_time=0))]
+
         solvers = []
         for (name, f) in all_solvers:
             try:
@@ -315,8 +316,6 @@ class TestLzz(TestCase):
                         to_ignore = long_tests + not_supported + long_tests_mathematica
 
                     if (not lzz_problem[0] in to_ignore):
-                        print("BLABLA")
-                        print(lzz_problem)
                         print("Running LZZ problem from %s (%s)..." % (lzz_file, lzz_problem[0]))
                         is_invar = run_lzz(lzz_problem, env, solver)
                         self.assertTrue(is_invar)
