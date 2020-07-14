@@ -27,6 +27,7 @@ from pysmt.shortcuts import (
     GE, GT, LT, LE
 )
 from pysmt.logics import QF_NRA
+from pysmt.exceptions import SolverAPINotFound
 
 from barrier.test import TestCase
 from barrier.system import DynSystem
