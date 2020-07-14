@@ -8,7 +8,8 @@ import logging
 
 from pysmt.shortcuts import (
     Real, Symbol, Minus,
-    Plus, Times, Pow, Div
+    Plus, Times, Pow, Div,
+    get_free_variables
 )
 from pysmt.walkers import DagWalker
 from pysmt.typing import REAL
@@ -29,6 +30,7 @@ from sympy import (
 )
 
 from sympy import groebner
+from sympy.polys.domains import RR,ZZ
 from sympy.polys.polytools import reduced
 
 
@@ -37,27 +39,6 @@ def get_inverse_odes(_odes):
     for var, ode_expr in _odes.items():
         inverse_odes[var] = Minus(Real(0), ode_expr)
     return inverse_odes
-
-
-def get_lie(expr, odes):
-    """ Get the lie derivative of the expression with respect to a
-    set of variables and system of odes.
-
-    Returns an expression representing the lie derivative.
-    """
-
-    der = Derivator(odes)
-    lie_der = der.get_lie_der(expr)
-
-    return lie_der
-
-def get_lie_rank(self, expr, dyn_sys):
-    """ Get the rank of expr and the vector field of dyn_sys
-    """
-    der = Derivator(dyn_sys.get_odes())
-    rank = der.get_lie_rank(expr)
-
-    return rank
 
 class Derivator(object):
     """
@@ -68,16 +49,25 @@ class Derivator(object):
 
     def __init__(self, vector_field, pysmt2sympy= None, sympy2pysmt = None):
         self.vector_field = vector_field
+
+        self.cont_vars = set([v for v in vector_field.keys()])
+        # parameters of the vector field that do not have a derivative
+        self.vector_field_params = (
+            reduce(lambda params,expr: self._add_param(params,expr),
+                   self.vector_field.values(), set())
+        )
+
         self.pysmt2sympy = Pysmt2Sympy() if pysmt2sympy is None else pysmt2sympy
         self.sympy2pysmt = Sympy2Pysmt() if sympy2pysmt is None else sympy2pysmt
 
         # memoization for the rank computation
         self._rank_memo = {}
 
-    def get_inverse(self):
-        return Derivator(get_inverse_odes(self.vector_field),
-                         self.pysmt2sympy,
-                         self.sympy2pysmt)
+    def _add_param(self, params, expr):
+        for fv in get_free_variables(expr):
+            if not fv in self.cont_vars:
+                params.add(fv)
+        return params
 
     def _get_sympy_expr(self, pysmt_expr):
         return self.pysmt2sympy.walk(pysmt_expr)
@@ -95,7 +85,7 @@ class Derivator(object):
         sympy_expr = self._get_sympy_expr(pysmt_expr)
         sympy_ode = self._get_sympy_expr(dyn_sys.get_ode(x))
 
-        sympy_lie = diff(sympy_expr, sympy_x) * sympy_ode
+        sympy_lie = sympy_diff(sympy_expr, sympy_x) * sympy_ode
         pysmt_lie = self._get_pysmt_expr(sympy_lie)
 
         return pysmt_lie
@@ -108,19 +98,32 @@ class Derivator(object):
         lie_der = 0
 
         for var, rhs_ode in vector_field_sympy.items():
-            diff_expr = diff(expr_sympy, var)
+            diff_expr = sympy_diff(expr_sympy, var)
             lie_var = Mul_sympy(diff_expr, rhs_ode)
             lie_der = Add_sympy(lie_der, lie_var)
         return lie_der
 
     def _get_sympy_problem(self, expr):
         _vector_field = {}
+        _params = [str(self._get_sympy_expr(var)) for var in self.vector_field_params]
+        _domain = 'ZZ[%s]' % (",".join(_params))
+        _cont_vars = tuple([self._get_sympy_expr(var) for var in self.vector_field.keys()])
         for var, vector_field_expr in self.vector_field.items():
             _var = self._get_sympy_expr(var)
-            _vector_field[_var] = self._get_sympy_expr(vector_field_expr)
-        _expr = self._get_sympy_expr(expr)
+            _sympy_der = self._get_sympy_expr(vector_field_expr)
+            # print("here")
+            # print(_sympy_der)
+            # print(_cont_vars)
+            # print(_params)
+            _vector_field[_var] = _sympy_der #.as_poly(_cont_vars) # , domain=_domain
+        _expr = self._get_sympy_expr(expr)   #.as_poly(_cont_vars) #, domain=_domain
 
-        return (_expr, _vector_field)
+        return (_expr, _vector_field, _domain)
+
+    def get_inverse(self):
+        return Derivator(get_inverse_odes(self.vector_field),
+                         self.pysmt2sympy,
+                         self.sympy2pysmt)
 
     def get_lie_der(self, expr):
         """
@@ -128,7 +131,7 @@ class Derivator(object):
         predicate, and dynamical_system.
         """
 
-        (_expr, _vector_field) = self._get_sympy_problem(expr)
+        (_expr, _vector_field, _domain) = self._get_sympy_problem(expr)
         # Compute the Lie derivative in SymPy
         _lie_der = Derivator._get_lie_der_sympy(_expr, _vector_field)
         lie_der = self._get_pysmt_expr(_lie_der)
@@ -150,7 +153,7 @@ class Derivator(object):
         Note that such N exists, due to the ascending chain condition of ideals.
         """
 
-        def _get_lie_rank_sympy(expr_sympy, vector_field_sympy):
+        def _get_lie_rank_sympy(expr_sympy, vector_field_sympy, domain):
             """
             Implement the algorithm directly in sympy.x
             """
@@ -164,8 +167,21 @@ class Derivator(object):
                 n = n + 1
 
                 # see https://mattpap.github.io/masters-thesis/html/src/groebner.html#algebraic-relations-in-invariant-theory
-                bases = groebner(lies, vars_list, order='lex')
                 lie_n = Derivator._get_lie_der_sympy(lie_n, vector_field_sympy)
+
+                if (0 == len(lie_n.free_symbols.intersection(vars_list))):
+                    # lie derivative has only constants
+                    fix_point = True
+                    break
+
+                bases = groebner(lies, vars_list, order='lex')
+                #bases = groebner(lies, vars_list, order='lex')
+
+
+                # print(lies)
+                # print(vars_list)
+                # print(bases)
+                # print(lie_n)
 
                 # Reduced is the heavy computation function here.
                 coeff, remainder = reduced(lie_n, bases, wrt=vars_list)
@@ -180,9 +196,13 @@ class Derivator(object):
             #
             # This is a correctness check for the rank computation
             #
+            # logging.debug(coeff)
+            # logging.debug(remainder)
+            # logging.debug(bases)
             # all_sum = remainder
             # for b, c in zip(bases, coeff):
             #     all_sum += b * c
+            # logging.debug(all_sum)
             # assert(all_sum.expand() == lie_n.expand())
 
             return n
@@ -191,10 +211,15 @@ class Derivator(object):
             logging.debug("Rank in cache... " + expr.serialize())
             return self._rank_memo[expr]
         else:
-            logging.debug("Computing rank... " + expr.serialize())
+            logging.debug("Computing rank... ")
+            # logging.debug("Rank expr: " + expr.serialize())
+            # logging.debug("On vector field: " + str(self.vector_field))
 
-            (_expr, _vector_field) = self._get_sympy_problem(expr)
-            rank = _get_lie_rank_sympy(_expr, _vector_field)
+            self._add_param(self.vector_field_params, expr)
+
+            _params = [self._get_sympy_expr(v) for v in self.vector_field_params]
+            (_expr, _vector_field, _domain) = self._get_sympy_problem(expr)
+            rank = _get_lie_rank_sympy(_expr, _vector_field, _domain)
             logging.debug("Computed rank %d" % rank)
 
             self._rank_memo[expr] = rank

@@ -185,5 +185,5 @@ class PredicateExtractor(DagWalker):
     def walk_identity(self, formula, args, **kwargs):
         return formula
 
-
 # EOC PredicateExtractor
+

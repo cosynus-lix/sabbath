@@ -150,7 +150,7 @@ def get_invar_lazy_set(dyn_sys, invar,
                        polynomials,
                        init, safe,
                        get_solver = _get_solver):
-    return _get_invar_lazy_set(Derivator(dyn_sys.get_odes()), invar,
+    return _get_invar_lazy_set(dyn_sys.get_derivator(), invar,
                                polynomials,
                                init, safe,
                                get_solver = _get_solver)
@@ -325,7 +325,7 @@ def _set_to_formula(abs_state_set):
 def get_invar_lazy(dyn_sys, invar, polynomials,
                    init, safe,
                    get_solver = _get_solver):
-    return _get_invar_lazy(Derivator(dyn_sys.get_odes()),
+    return _get_invar_lazy(dyn_sys.get_derivator(),
                            invar, polynomials,
                            init, safe,
                            get_solver)
@@ -477,7 +477,7 @@ def dwc_general(dwcl, derivator,
 def dwc(dyn_sys, invar, polynomials, init, safe,
         get_solver = _get_solver,
         get_lzz_solver = _get_lzz_solver):
-    derivator = Derivator(dyn_sys.get_odes())
+    derivator = dyn_sys.get_derivator()
     return dwc_general(False, derivator, invar, polynomials, init, safe,
                        get_solver, get_lzz_solver)
 

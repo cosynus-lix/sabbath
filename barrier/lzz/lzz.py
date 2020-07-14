@@ -9,7 +9,7 @@ import logging
 from functools import partial
 
 from barrier.system import DynSystem
-from barrier.lie import Derivator, get_lie, get_lie_rank
+from barrier.lie import Derivator
 from barrier.lzz.dnf import ApplyPredicate, DNFConverter
 
 import pysmt.operators as pysmt_op
@@ -95,7 +95,7 @@ def get_trans_f_p(poly, dyn_sys):
     at x will exit p >= 0 immediately.
     """
 
-    return get_generic_set(poly, Derivator(dyn_sys.get_odes()), LT, False)
+    return get_generic_set(poly, dyn_sys.get_derivator(), LT, False)
 
 
 def is_p_invar(solver, predicate, dyn_sys, init, invar):

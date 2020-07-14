@@ -251,7 +251,7 @@ class DecompositionEncoder:
         logging.debug("Encoding transition using lzz...")
 
         sys = self.dyn_sys.get_renamed(self.lzz_f)
-        derivator = Derivator(sys.get_odes())
+        derivator = sys.get_derivator()
 
         lzz_in = _get_lzz_in(derivator, self.preds,
                              self.next_f, self.lzz_f)
@@ -259,9 +259,18 @@ class DecompositionEncoder:
         lzz_out = _get_lzz_out(derivator, self.preds,
                                self.next_f, self.lzz_f)
 
-        res = And(And(_get_neigh_encoding(self.poly, self.next_f),
-                      And(self.invar, self.next_f(self.invar))),
-                  Or(lzz_in, lzz_out))
+        # frame condition for the time-independent parameters
+        fc_list = [Equals(var, self.next_f(var)) for var in sys.inputs()]
+        if (len(fc_list) == 0):
+            fc = TRUE()
+        else:
+            fc = And(fc_list)
+
+        res = And([_get_neigh_encoding(self.poly, self.next_f),
+                   self.invar,
+                   self.next_f(self.invar),
+                   fc,
+                   Or(lzz_in, lzz_out)])
 
         logging.debug("Encoded transition using lzz...")
 

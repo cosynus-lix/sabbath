@@ -241,7 +241,7 @@ class TestDecomposition(TestCase):
 
             print("Checking invar...")
             solver = get_solver()
-            is_invar = lzz(solver, invars, Derivator(dyn_sys.get_odes()), invars, invar)
+            is_invar = lzz(solver, invars, dyn_sys.get_derivator(), invars, invar)
             solver.exit()
             self.assertTrue(is_invar)
 
@@ -251,7 +251,7 @@ class TestDecomposition(TestCase):
             env = get_env()
             solver = get_solver()
             print("Checking invar...")
-            is_invar = lzz(solver, invars, Derivator(dyn_sys.get_odes()), invars, invar)
+            is_invar = lzz(solver, invars, dyn_sys.get_derivator(), invars, invar)
             solver.exit()
             self.assertTrue(is_invar)
         except SolverAPINotFound as e:
@@ -326,7 +326,7 @@ class TestDecomposition(TestCase):
                         assert (not invariants is None)
                         solver = Solver(logic=QF_NRA, name="z3")
 
-                        is_invar = lzz(solver, invars, Derivator(dyn_sys.get_odes()), init, invariants)
+                        is_invar = lzz(solver, invars, dyn_sys.get_derivator(), init, invariants)
                         solver.exit()
                         self.assertTrue(is_invar)
 
@@ -369,16 +369,9 @@ class TestDecomposition(TestCase):
 
 
         try:
-            get_solver_mathematica = partial(get_mathematica,
-                                             env=env,
-                                             budget_time=0)
-            get_solver = partial(Solver,
-                                 logic=QF_NRA,
-                                 name="z3")
-
-            (res, res_invars) = dwcl(dyn_sys, invar, predicates, ant, cons,
-                                     get_solver = get_solver,
-                                     get_lzz_solver = get_solver_mathematica)
+            get_solver = partial(Solver, logic=QF_NRA, name="z3")
+            (res, res_invars) = get_invar_lazy(dyn_sys, invar, predicates, ant, cons,
+                                               get_solver = get_solver)
             # print(res)
             # print(res_invars.serialize())
             # print(cons.serialize())
@@ -399,5 +392,5 @@ class TestDecomposition(TestCase):
         # # ((True & (0.0 < _y)) & (0.0 < (_x + 1.0)))
 
         # solver = Solver(logic=QF_NRA, name="z3")
-        # is_invar = lzz(solver, candidate_invar, Derivator(dyn_sys.get_odes()), ant, invar)
+        # is_invar = lzz(solver, candidate_invar, dyn_sys.get_derivator(), ant, invar)
         # self.assertTrue(is_invar)

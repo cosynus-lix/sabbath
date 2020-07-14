@@ -108,10 +108,6 @@ def parse_dyn_sys(env, problem_json, is_lzz = False):
         ode = ode_eq_0.args()[0]
         odes[var] = ode
 
-    for var in input_vars:
-        # discrete vars do not change their value
-        odes[var] = Real(0)
-
     dyn_sys = DynSystem(cont_vars, input_vars, [], odes, {}, False)
 
     if (not is_lzz):

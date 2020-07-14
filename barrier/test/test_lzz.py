@@ -29,6 +29,7 @@ from pysmt.shortcuts import (
 )
 from pysmt.logics import QF_NRA
 
+import barrier.test
 from barrier.test import TestCase
 from barrier.system import DynSystem
 from barrier.lzz.lzz import (
@@ -49,7 +50,7 @@ def run_lzz(lzz_problem, env, solver = None):
         solver = Solver(logic=QF_NRA, name="z3")
 
     (name, candidate, dyn_sys, invar) = lzz_problem
-    is_invar = lzz(solver, candidate, Derivator(dyn_sys.get_odes()), candidate, invar)
+    is_invar = lzz(solver, candidate, dyn_sys.get_derivator(), candidate, invar)
 
     return is_invar
 
@@ -115,7 +116,7 @@ class TestLzz(TestCase):
             ])
         ]
 
-        derivator = Derivator(dyn_sys.get_odes())
+        derivator = dyn_sys.get_derivator()
         for pred, res in zip(preds, expected):
             inf = get_inf_dnf(derivator, pred)
             self.assertTrue(is_valid(Iff(res, inf)))
@@ -152,7 +153,7 @@ class TestLzz(TestCase):
             ])
         ]
 
-        derivator = Derivator(dyn_sys.get_odes())
+        derivator = dyn_sys.get_derivator()
         for pred, res in zip(preds, expected):
             inf = get_ivinf_dnf(derivator, pred)
 
@@ -171,7 +172,7 @@ class TestLzz(TestCase):
                        GT(y, Real(Fraction(-1,2))))
 
         solver = Solver(logic=QF_NRA, name="z3")
-        is_invar = lzz(solver, candidate, Derivator(dyn_sys.get_odes()), init, TRUE())
+        is_invar = lzz(solver, candidate, dyn_sys.get_derivator(), init, TRUE())
 
         self.assertTrue(is_invar)
 
@@ -188,7 +189,7 @@ class TestLzz(TestCase):
         candidate = inv
 
         solver = Solver(logic=QF_NRA, name="z3")
-        is_invar = lzz(solver, candidate, Derivator(dyn_sys.get_odes()), init, v < vseg)
+        is_invar = lzz(solver, candidate, dyn_sys.get_derivator(), init, v < vseg)
 
         self.assertTrue(is_invar)
 
@@ -208,8 +209,6 @@ class TestLzz(TestCase):
 
 
     def test_battery(self):
-        import barrier.test
-
         def run_with_timeout(lzz_problem,time_out,env):
             is_invar = None
             try:
@@ -316,6 +315,8 @@ class TestLzz(TestCase):
                         to_ignore = long_tests + not_supported + long_tests_mathematica
 
                     if (not lzz_problem[0] in to_ignore):
+                        print("BLABLA")
+                        print(lzz_problem)
                         print("Running LZZ problem from %s (%s)..." % (lzz_file, lzz_problem[0]))
                         is_invar = run_lzz(lzz_problem, env, solver)
                         self.assertTrue(is_invar)
