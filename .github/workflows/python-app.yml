@@ -23,7 +23,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 nosetests pysmt sympy ply
+        pip install flake8 nose pysmt sympy ply
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         ~/.local/bin/pysmt-install --confirm-agreement --z3 --bdd
     - name: Lint with flake8
