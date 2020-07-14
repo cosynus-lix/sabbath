@@ -25,7 +25,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 nose pysmt sympy ply
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        ~/.local/bin/pysmt-install --confirm-agreement --z3 --bdd
+        pysmt-install --confirm-agreement --z3 --bdd
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
