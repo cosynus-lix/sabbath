@@ -2,7 +2,10 @@ import os
 import errno
 import subprocess
 from shutil import which
-from pysmt.exceptions import SolverAPINotFound
+
+class MSatic3NotAvailable(Exception):
+    """The msatic3 executable was not found."""
+    pass
 
 class MSatic3():
     """
@@ -14,16 +17,31 @@ class MSatic3():
         UNSAFE = 1
         UNKNOWN = 2
 
+    def find_msatic(msatic3_path = None):
+        if msatic3_path is None:
+            msatic3_path = which("msatic3")
+            if msatic3_path is None:
+                return None
+
+        if not os.path.isfile(msatic3_path):
+            return None
+
+        return msatic3_path
+
     def __init__(self, msatic3_path=None):
+        self.msatic3_path = MSatic3.find_msatic(msatic3_path)
+        if (self.msatic3_path is None):
+            raise MSatic3NotAvailable()
+
         if msatic3_path is None:
             self.msatic3_path = which("msatic3")
             if self.msatic3_path is None:
-                raise SolverAPINotFound()
+                raise MSatic3NotAvailable()
         else:
             self.msatic3_path = msatic3_path
 
         if not os.path.isfile(self.msatic3_path):
-            raise SolverAPINotFound()
+            raise MSatic3NotAvailable()
 
 
     def solve(self, smt2file_path):
