@@ -60,7 +60,6 @@ class TestDecompositionEncoding(TestCase):
                                     suffix = "_next")(formula=x)
 
         res = _get_neigh_encoding(poly, next_p)
-nosetests -s barrier/test/test_dec_encoding.py 
         x_next = FormulaHelper.rename_formula(get_env(),vars, "_next", x)
         y_next = FormulaHelper.rename_formula(get_env(),vars, "_next", y)
 
