@@ -1,3 +1,5 @@
+![Regression tests](https://github.com/smover/semialgebraic_invariants/workflows/Regression%20tests/badge.svg)
+
 # Verify properties for polynomial dynamical systems
 
 The module use pysmt to represent formulas and polynomials (may not be the best choice).
