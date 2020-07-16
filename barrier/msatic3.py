@@ -18,6 +18,9 @@ class MSatic3():
         UNKNOWN = 2
 
     def find_msatic(msatic3_path = None):
+        # test
+        return None
+
         if msatic3_path is None:
             msatic3_path = which("msatic3")
             if msatic3_path is None:
