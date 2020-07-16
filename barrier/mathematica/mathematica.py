@@ -1,15 +1,17 @@
 from six.moves import xrange
 import logging
 
-from pysmt.exceptions import SolverAPINotFound
+from concurrent.futures import TimeoutError
 
 try:
   import wolframclient
   from wolframclient.evaluation import WolframLanguageSession
   from wolframclient.language import wl, wlexpr
+  from wolframclient.evaluation.kernel.path import find_default_kernel_path
 except:
   pass
 
+from pysmt.exceptions import SolverAPINotFound
 from pysmt.logics import QF_NRA
 from pysmt import typing as types
 from pysmt.solvers.solver import Solver, Converter, SolverOptions
@@ -29,17 +31,27 @@ class OutOfTimeSolverError(PysmtException):
                             "The solver used already a maximum budget (%s)" % str(budget))
 
 
+def has_kernel():
+  return not (find_default_kernel_path() is None)
+
 class MathematicaSession():
   _session = None
 
   @staticmethod
   def get_session():
+    if not has_kernel():
+      raise SolverAPINotFound
+
     if MathematicaSession._session is None:
-      logging.debug("Creating a session for mathematica...")
-      try:
-        MathematicaSession._session = WolframLanguageSession()
-        MathematicaSession._session.ensure_started()
-      except wolframclient.exception.WolframKernelException:
+      if True:
+        logging.debug("Creating a session for mathematica...")
+        try:
+          MathematicaSession._session = WolframLanguageSession()
+          MathematicaSession._session.ensure_started()
+        except:
+          raise SolverAPINotFound
+      else:
+        logging.debug("Mathematica Kernel not found")
         raise SolverAPINotFound
 
     return MathematicaSession._session

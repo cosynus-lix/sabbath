@@ -20,7 +20,7 @@ from pysmt.shortcuts import (
 )
 from pysmt.exceptions import SolverAPINotFound
 
-from barrier.test import TestCase
+from barrier.test import TestCase, skipIfMathematicaIsNotAvailable
 from barrier.mathematica.mathematica import (
     MathematicaSolver,
     MathematicaConverter,
@@ -62,6 +62,8 @@ class TestConverter(TestCase):
       self.assertTrue(res_str == math_expr)
 
 class TestMathematica(TestCase):
+
+  @skipIfMathematicaIsNotAvailable()
   def test_solve(self):
     env = Environment()
 

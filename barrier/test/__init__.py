@@ -11,10 +11,11 @@ try:
 except ImportError:
     import unittest
 
-from barrier.msatic3 import MSatic3
-
 from pysmt.environment import reset_env
 from pysmt.exceptions import SolverAPINotFound
+
+from barrier.msatic3 import MSatic3
+from barrier.mathematica.mathematica import has_kernel
 
 class TestCase(unittest.TestCase):
     """Wrapper on the unittest TestCase class.
@@ -54,6 +55,23 @@ class skipIfMSaticIsNotAvailable(object):
         msg = "MSatic3 not available"
         cond = MSatic3.find_msatic() is None
         @unittest.skipIf(cond, msg)
+        @wraps(test_fun)
+        def wrapper(*args, **kwargs):
+            return test_fun(*args, **kwargs)
+        return wrapper
+
+
+class skipIfMathematicaIsNotAvailable(object):
+    """Skip a test if mathematica is not available."""
+
+    def __init__(self):
+        self.has_kernel = has_kernel()
+        pass
+
+    def __call__(self, test_fun):
+        msg = "Mathematica not available"
+        skip = self.has_kernel
+        @unittest.skipIf(skip, msg)
         @wraps(test_fun)
         def wrapper(*args, **kwargs):
             return test_fun(*args, **kwargs)
