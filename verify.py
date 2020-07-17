@@ -43,6 +43,10 @@ def main():
 
     parser.add_argument("--outvmt", help="Output vmt file")
     parser.add_argument("--outpred", help="Output predicates file")
+    parser.add_argument("--encode_init_and_prop",
+                        choices=["true","false"],
+                        default="true",
+                        help="Retiming to encode init and property")
 
     args = parser.parse_args()
 
@@ -94,7 +98,17 @@ def main():
 
 
         print("Encoding verification problem in the vmt file to %s..." % args.outvmt)
-        opt = DecompositionOptions(False, False)
+
+        encode_init_and_prop = False
+        if (args.encode_init_and_prop == "true"):
+            encode_init_and_prop = True
+        else:
+            encode_init_and_prop = False
+
+        print("Re-encoding init and prop? %d" % encode_init_and_prop)
+
+        opt = DecompositionOptions(encode_init_and_prop,
+                                   encode_init_and_prop)
         encoder  = DecompositionEncoder(env,
                                         dyn_sys,
                                         invariants,
