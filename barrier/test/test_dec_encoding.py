@@ -7,6 +7,7 @@ import os
 import sys
 import tempfile
 from fractions import Fraction
+from nose.plugins.attrib import attr
 
 try:
     import unittest2 as unittest
@@ -29,7 +30,7 @@ from pysmt.shortcuts import (
 from pysmt.logics import QF_NRA
 from pysmt.exceptions import SolverAPINotFound
 
-from barrier.test import TestCase
+from barrier.test import TestCase, skipIfMSaticIsNotAvailable
 from barrier.system import DynSystem
 from barrier.utils import get_range_from_int
 from barrier.lzz.serialization import importInvar
@@ -60,7 +61,6 @@ class TestDecompositionEncoding(TestCase):
                                     suffix = "_next")(formula=x)
 
         res = _get_neigh_encoding(poly, next_p)
-
         x_next = FormulaHelper.rename_formula(get_env(),vars, "_next", x)
         y_next = FormulaHelper.rename_formula(get_env(),vars, "_next", y)
 
@@ -96,21 +96,16 @@ class TestDecompositionEncoding(TestCase):
             with open(tmp_file,"w") as outstream:
                 ts.to_vmt(outstream, prop)
 
-            try:
-                print("Verifying %s..." % tmp_file)
-                ic3 = MSatic3()
-                res = ic3.solve(tmp_file)
-
-                return res
-            except SolverAPINotFound:
-                print("MSatic3 not found...")
-                logging.debug("MSatic3 not found...")
-                return None
+            print("Verifying %s..." % tmp_file)
+            ic3 = MSatic3()
+            res = ic3.solve(tmp_file)
         finally:
             if os.path.isfile(tmp_file):
                 os.remove(tmp_file)
         return res
 
+    @attr('msatic3')
+    @skipIfMSaticIsNotAvailable()
     def test_enc(self):
         x, y = [Symbol(var, REAL) for var in ["x", "y"]]
         dyn_sys = DynSystem([x, y], [], [], {x : -y, y : -x}, {}, False)
@@ -128,7 +123,7 @@ class TestDecompositionEncoding(TestCase):
         (ts, p, predicates) = encoder.get_ts_ia()
 
         res = self._prove_ts(ts, p)
-        self.assertTrue(res == MSatic3.Result.SAFE or res is None)
+        self.assertTrue(res == MSatic3.Result.SAFE)
 
     def test_invar_in_init(self):
         env = get_env()
@@ -155,6 +150,8 @@ class TestDecompositionEncoding(TestCase):
         self.assertTrue(len(ts.init.get_free_variables().difference(all_and_next)) == 0)
         self.assertTrue(len(p.get_free_variables().difference(all_and_next)) == 0)
 
+    @attr('msatic3')
+    @skipIfMSaticIsNotAvailable()
     def test_wiggins(self):
         input_path = self.get_from_path("invar_inputs")
         test_case = os.path.join(input_path, "Wiggins_Example_18_7_3_n.invar")
@@ -199,5 +196,5 @@ class TestDecompositionEncoding(TestCase):
 
         print("Proving ts...")
         res = self._prove_ts(ts, p)
-        self.assertTrue(res == MSatic3.Result.SAFE or res is None)
+        self.assertTrue(res == MSatic3.Result.SAFE)
 

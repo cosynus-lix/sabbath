@@ -290,9 +290,10 @@ class TestLzz(TestCase):
         solvers = []
         for (name, f) in all_solvers:
             try:
-                f()
+                solver_instance = f()
+                solver_instance.is_sat(TRUE())
                 solvers.append((name,f))
-            except SolverAPINotFound:
+            except Exception:
                 logging.debug("Skipping not found solver %s..." % name)
                 pass
 

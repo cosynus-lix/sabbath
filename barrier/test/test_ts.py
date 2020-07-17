@@ -5,6 +5,7 @@ import unittest
 import os
 import sys
 from io import StringIO
+from nose.plugins.attrib import attr
 
 try:
     import unittest2 as unittest
@@ -19,7 +20,7 @@ from pysmt.shortcuts import is_valid
 from pysmt.typing import REAL
 from pysmt.exceptions import SolverAPINotFound
 
-from barrier.test import TestCase
+from barrier.test import TestCase, skipIfMSaticIsNotAvailable
 from barrier.ts import TS, ImplicitAbstractionEncoder
 from barrier.msatic3 import MSatic3
 
@@ -62,17 +63,27 @@ class TestSystem(TestCase):
                 test_ts_file(os.path.join(input_path, f))
 
 
+    @attr('msatic3')
+    @skipIfMSaticIsNotAvailable()
     def test_impl_abs(self):
+        long_tests = set(["toy",
+                          "mem_slave_tlm.1"])
+
         env = get_env()
         current_path = os.path.dirname(os.path.abspath(__file__))
         input_path = os.path.join(current_path, "vmt_models")
-        for predfile in os.listdir(input_path):
+        pred_files = os.listdir(input_path)
+        for predfile in pred_files:
+            print("Processing %s" % predfile)
             if not predfile.endswith("preds"):
                 continue
 
             base = os.path.splitext(os.path.basename(predfile))[0]
             smtfile = os.path.join(input_path, "%s.smt2" % base)
             if not os.path.isfile(smtfile):
+                continue
+            if (base in long_tests):
+                print("Skipping long test %s" % smtfile)
                 continue
 
             with open(smtfile, "r") as f:
@@ -94,10 +105,14 @@ class TestSystem(TestCase):
             print("Verifying %s..." % base)
             try:
                 ic3 = MSatic3()
+
+                print("Verifying using IA...")
+                res_orig = ic3.solve(smtfile)
+                print("Verifying using fixed IA encoding...")
                 res = ic3.solve(outfile)
-                self.assertTrue(res == MSatic3.Result.SAFE)
+
+                self.assertTrue(res == res_orig)
             except SolverAPINotFound:
                 print("MSatic3 not found...")
                 logging.debug("MSatic3 not found...")
-
             os.remove(outfile)
