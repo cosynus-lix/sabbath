@@ -7,6 +7,7 @@ import os
 import sys
 import tempfile
 from fractions import Fraction
+from nose.plugins.attrib import attr
 
 try:
     import unittest2 as unittest
@@ -103,6 +104,7 @@ class TestDecompositionEncoding(TestCase):
                 os.remove(tmp_file)
         return res
 
+    @attr('msatic3')
     @skipIfMSaticIsNotAvailable()
     def test_enc(self):
         x, y = [Symbol(var, REAL) for var in ["x", "y"]]
@@ -148,6 +150,7 @@ class TestDecompositionEncoding(TestCase):
         self.assertTrue(len(ts.init.get_free_variables().difference(all_and_next)) == 0)
         self.assertTrue(len(p.get_free_variables().difference(all_and_next)) == 0)
 
+    @attr('msatic3')
     @skipIfMSaticIsNotAvailable()
     def test_wiggins(self):
         input_path = self.get_from_path("invar_inputs")

@@ -5,6 +5,7 @@ import unittest
 import os
 import sys
 from io import StringIO
+from nose.plugins.attrib import attr
 
 try:
     import unittest2 as unittest
@@ -62,6 +63,7 @@ class TestSystem(TestCase):
                 test_ts_file(os.path.join(input_path, f))
 
 
+    @attr('msatic3')
     @skipIfMSaticIsNotAvailable()
     def test_impl_abs(self):
         long_tests = set(["toy",

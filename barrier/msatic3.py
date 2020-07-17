@@ -22,8 +22,6 @@ class MSatic3():
             msatic3_path = which("msatic3")
             if msatic3_path is None:
                 return None
-
-        return None
         if not os.path.isfile(msatic3_path):
             return None
 
