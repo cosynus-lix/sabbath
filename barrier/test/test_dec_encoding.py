@@ -164,23 +164,23 @@ class TestDecompositionEncoding(TestCase):
 
         (problem_name, ant, cons, dyn_sys, invar, predicates) = problem_list[0]
 
-        x = Symbol("_x", REAL)
-        y = Symbol("_y", REAL)
+        # x = Symbol("_x", REAL)
+        # y = Symbol("_y", REAL)
 
-        p1 = x + 1
-        p2 = y + 1
-        p3 = (
-            (Real(Fraction(-1,3)) - x) * (Real(Fraction(-1,3)) - x) +
-            (Real(Fraction(-1,3)) - y) * (Real(Fraction(-1,3)) - y) +
-            Real(Fraction(-1,16))
-        )
-        p4 = x
-        p5 = y
-        predicates = [p1,p2,p4,p5]
+        # p1 = x + 1
+        # p2 = y + 1
+        # p3 = (
+        #     (Real(Fraction(-1,3)) - x) * (Real(Fraction(-1,3)) - x) +
+        #     (Real(Fraction(-1,3)) - y) * (Real(Fraction(-1,3)) - y) +
+        #     Real(Fraction(-1,16))
+        # )
+        # p4 = x
+        # p5 = y
+        # predicates = [p1,p2,p4,p5]
 
         print("Creating decomposition...")
         # Use rewriting of init and prop
-        options = DecompositionOptions(True, True)
+        options = DecompositionOptions(False, False)
         encoder  = DecompositionEncoder(env,
                                         dyn_sys,
                                         invar,

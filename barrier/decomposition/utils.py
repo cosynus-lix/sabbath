@@ -4,6 +4,7 @@ Common utils for computing/encoding the algebraic decomposition.
 """
 
 from barrier.lie import Pysmt2Sympy, Sympy2Pysmt
+from barrier.formula_utils import PredicateExtractor
 
 def get_poly_from_pred(pred):
     poly = None
@@ -41,3 +42,10 @@ def get_unique_poly_list(poly_list):
             poly_set.add(sympy_minus_p)
 
     return new_poly_list
+
+def add_poly_from_formula(poly_list, formula, env):
+    new_preds = 0
+    for pred in PredicateExtractor.extract_predicates(formula,
+                                                      env):
+        poly_list.append(get_poly_from_pred(pred)[0])
+        new_preds += 1

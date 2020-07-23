@@ -45,6 +45,11 @@ from barrier.decomposition.explicit import (
     dwcl
 )
 
+
+from barrier.decomposition.utils import (
+    add_poly_from_formula
+)
+
 from barrier.utils import get_mathsat_smtlib
 from barrier.mathematica.mathematica import get_mathematica
 from pysmt.exceptions import SolverAPINotFound
@@ -367,7 +372,6 @@ class TestDecomposition(TestCase):
         p5 = y
         predicates = [p1,p2,p3,p4,p5]
 
-
         try:
             get_solver = partial(Solver, logic=QF_NRA, name="z3")
             (res, res_invars) = get_invar_lazy(dyn_sys, invar, predicates, ant, cons,
@@ -394,3 +398,36 @@ class TestDecomposition(TestCase):
         # solver = Solver(logic=QF_NRA, name="z3")
         # is_invar = lzz(solver, candidate_invar, dyn_sys.get_derivator(), ant, invar)
         # self.assertTrue(is_invar)
+
+    def test_hybrid_controller(self):
+        input_path = self.get_from_path("invar_inputs")
+        test_case = os.path.join(input_path, "Hybrid_Controller_Mode_1.invar")
+
+        self.log_to_stdout()
+
+        env = get_env()
+        with open(test_case, "r") as f:
+            problem_list = importInvar(f, env)
+            assert(len(problem_list) == 1)
+
+        (problem_name, ant, cons, dyn_sys, invar, predicates) = problem_list[0]
+
+        add_poly_from_formula(predicates, ant, env)
+        add_poly_from_formula(predicates, invar, env)
+        add_poly_from_formula(predicates, cons, env)
+
+        try:
+            get_solver = partial(Solver, logic=QF_NRA, name="z3")
+            (res, res_invars) = get_invar_lazy(dyn_sys, invar, predicates, ant, cons,
+                                               get_solver = get_solver)
+            # print(res)
+            # print(res_invars.serialize())
+            # print(cons.serialize())
+            # print(ant.serialize())
+            # print(cons.serialize())
+
+            # candidate_invar = And(GT(x, Real(-1)), GT(y, Real(-1)))
+            self.assertTrue(Result.SAFE == res)
+
+        except SolverAPINotFound:
+            logging.info("Skipping test, solver not found")

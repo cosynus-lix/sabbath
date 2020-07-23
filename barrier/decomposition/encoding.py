@@ -21,11 +21,10 @@ from barrier.lzz.lzz import get_inf_dnf, get_ivinf_dnf
 from barrier.lie import Derivator
 from barrier.formula_utils import (
     FormulaHelper,
-    PredicateExtractor
 )
 
 from barrier.decomposition.utils import (
-    get_poly_from_pred, get_unique_poly_list
+    get_poly_from_pred, get_unique_poly_list, add_poly_from_formula
 )
 
 from barrier.ts import TS, ImplicitAbstractionEncoder
@@ -51,8 +50,6 @@ def _get_lzz_in(derivator, preds_list, next_f, lzz_f):
                                    get_inf_dnf(derivator, lzz_f(p)))
     and_not_inf = lambda p : And(p,
                                  Not(get_inf_dnf(derivator, lzz_f(p))))
-
-    list(map(next_impl, preds_list))
 
     return And([And(list(map(current_impl, preds_list))),
                 And(list(map(next_impl, preds_list))),
@@ -138,14 +135,6 @@ class DecompositionEncoder:
         #
         # So, here we already add the predicates of init and safe if needed.
         #
-        def add_poly_from_formula(poly_list, formula, env):
-            new_preds = 0
-            for pred in PredicateExtractor.extract_predicates(formula,
-                                                              env):
-                poly_list.append(get_poly_from_pred(pred)[0])
-                new_preds += 1
-            logging.debug("Adding %d polynomials from %s" % (new_preds, formula))
-
         if (not options.rewrite_init):
             add_poly_from_formula(self.poly, And(init, invar), env)
         if (not options.rewrite_property):
@@ -251,13 +240,19 @@ class DecompositionEncoder:
         logging.debug("Encoding transition using lzz...")
 
         sys = self.dyn_sys.get_renamed(self.lzz_f)
-        derivator = sys.get_derivator()
 
-        lzz_in = _get_lzz_in(derivator, self.preds,
-                             self.next_f, self.lzz_f)
+        if (len(self.preds) > 0):
+            derivator = sys.get_derivator()
 
-        lzz_out = _get_lzz_out(derivator, self.preds,
-                               self.next_f, self.lzz_f)
+            lzz_in = _get_lzz_in(derivator, self.preds,
+                                 self.next_f, self.lzz_f)
+
+            lzz_out = _get_lzz_out(derivator, self.preds,
+                                   self.next_f, self.lzz_f)
+        else:
+            # corner case
+            lzz_in = TRUE()
+            lzz_out = TRUE()
 
         # frame condition for the time-independent parameters
         fc_list = [Equals(var, self.next_f(var)) for var in sys.inputs()]
