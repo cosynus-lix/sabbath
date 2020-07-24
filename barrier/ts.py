@@ -287,35 +287,10 @@ class ImplicitAbstractionEncoder():
                                                                            self.rewrite_init,
                                                                            self.rewrite_prop)
 
-    # @staticmethod
-    # def _rewrite_prop_for_ia(ts, prop):
-    #     """
-    #     init = init \land is_init
-    #     trans = trans \land ! (is_init')
-    #     prop = is_init \implies P
-    #     """
-    #     new_vars = []
-    #     is_init_var = FormulaHelper.get_fresh_var_name(self.env.formula_manager,
-    #                                                    "is_init")
-    #     new_vars.append(prop_var)
-    #     ts.next_f = TS.extend_next_f(ts.env,
-    #                                  ts.state_vars,
-    #                                  ts.next_f,
-    #                                  new_vars)
-    #     for new_var in new_vars:
-    #         ts.state_vars.add(new_var)
-
-    #     ts.init = 
-
-    #     ts.state_vars.
-
 
     @staticmethod
     def _make_sound(env, ts, prop, predicates,
                     rewrite_init=True, rewrite_property=True):
-
-        # (prop, new_preds) = ImplicitAbstractionEncoder._rewrite_prop_for_ia(prop)
-        # predicates += new_preds
 
         if (not rewrite_property):
             prop_preds = PredicateExtractor.extract_predicates(prop, env)
@@ -340,15 +315,14 @@ class ImplicitAbstractionEncoder():
         predicates expressed over variables V
 
         The abstract system is:
-        TS_abs := (V_new = \cup V_abs \cup {is_init, is_init_abs},
-                   Init(V) \land is_init \land EQ(V_new,V_new'),
-                   EQ(V_new,V_new') \land
-                     not(is_init)
-                     Trans(V_new,V_new') \land
-                     EQ(V_new,V_new')
+        TS_abs := (V \cup V_abs,
+                   Init(V) \land EQ(V,V_abs),
+                   EQ(V,V_abs) \land
+                   Trans(V_abs,V') \land
+                   EQ(V',V_abs')
                   )
 
-        P_abs := (is_init \implies P(V_abs)) \and (is_init' \implies P(V))
+        P_abs := P(V_abs)
         """
 
         def get_eq(abs_f_map, predicates):
@@ -370,7 +344,8 @@ class ImplicitAbstractionEncoder():
         vars_concrete = list(ts_concrete.state_vars)
 
         # define the abstract variables
-        # abs(v) = v_abs, abs(v_next) = v_abs_next
+        # abs(v) = v_abs
+        # abs(v_next) = v_abs_next
         abs_map = {}
         for var in vars_concrete:
             for symb in [var, ts_concrete.next_f(var)]:
@@ -397,19 +372,17 @@ class ImplicitAbstractionEncoder():
         # Init(V) \land EQ(V,V_abs)
         init_abs = And(eq_pred, ts_concrete.init)
 
-        # From T(V,V') to T(V_abs,V_abs')
+        # From T(V,V') to T(V_abs,V')
         trans_renamed = substitute(ts_concrete.trans, abs_concrete_map)
-        trans_renamed = substitute(ts_concrete.trans, abs_concrete_map_next)
-        # EQ(V,V_abs) \land Trans(V_abs,V_abs') \land EQ(V_abs',V')
+        # EQ(V,V_abs) \land EQ(V_abs',V') \land Trans(V_abs,V')
         trans_abs = And([eq_pred, next_f(eq_pred), trans_renamed])
 
         ts_abstract = TS(self.env, state_vars, next_f, init_abs, trans_abs)
 
         # From P(V) to P(V_abs)
         # prop_renamed = substitute(prop, abs_concrete_map)
-        # EQ(V, V_abs) \land P(V_abs)
         # Assume prop goes always with trans or init
-        prop_abstract = prop
+        prop_abstract = substitute(prop, abs_concrete_map)
 
         # print("ABS ENCODING")
         # print("Init: " + init_abs.serialize())
