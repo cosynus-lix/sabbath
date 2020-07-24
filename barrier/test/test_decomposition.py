@@ -14,6 +14,7 @@ except ImportError:
 
 import sys
 
+
 from pysmt.typing import BOOL, REAL, INT
 from pysmt.shortcuts import (
     is_valid,
@@ -34,10 +35,10 @@ from barrier.lzz.serialization import importInvar
 
 from barrier.lzz.lzz import lzz
 
+from barrier.explicit.utils import get_neighbors
 from barrier.decomposition.explicit import (
     Result,
     _get_solver,
-    _get_neighbors,
     _set_to_formula,
     get_invar_lazy_set,
     get_invar_lazy,
@@ -115,7 +116,7 @@ class TestDecomposition(TestCase):
         ]
 
         for (abs_state, neighbors) in tc:
-            res = _get_neighbors([x,y], abs_state)
+            res = get_neighbors([x,y], abs_state)
             res_set = set([frozenset(s) for s in res])
             neighbors_set = set([frozenset(s) for s in neighbors])
 

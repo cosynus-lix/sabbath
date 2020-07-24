@@ -29,12 +29,15 @@ from pysmt.shortcuts import (
     Real,
 )
 
-from barrier.mathematica.mathematica import get_mathematica
+from barrier.explicit.utils import get_neighbors
+
 
 class Result(Enum):
     UNSAFE=0
     UNKNOWN=1
     SAFE=2
+
+# EOC Result
 
 def _get_logger():
     return logging.getLogger(__name__)
@@ -64,87 +67,6 @@ def abstract(solver, polynomials, sigma):
 
     return abs_state
 
-
-
-def _get_neighbors(polynomials, abs_state):
-
-    """ Get the neighbors of abs_state """
-    def _get_neighbors_rec(signs,
-                           polynomials, index,
-                           abs_state,
-                           trail, res):
-        if index == len(polynomials):
-            assert(len(trail) == len(polynomials))
-            res.add(frozenset(trail))
-            return res
-        else:
-            a = polynomials[index]
-            pair = None
-            for (sign, first) in [(LT,True), (LT,False), (Equals,True)]:
-                predicate = sign(a, Real(0)) if first else sign(Real(0), a)
-                if predicate in abs_state:
-                    pair = (sign,first)
-                    break
-
-            assert not pair is None
-            assert not predicate is None
-
-            if sign == LT and sign in signs:
-                # < -> {=}
-                new_trail = set(trail)
-                new_trail.add(Equals(a, Real(0)))
-                trail.add(predicate)
-
-                return _get_neighbors_rec(signs, # do not change predicates
-                                          polynomials,
-                                          index+1,
-                                          abs_state,
-                                          new_trail,
-                                          _get_neighbors_rec(signs,
-                                                             polynomials,
-                                                             index+1,
-                                                             abs_state,
-                                                             trail,
-                                                             res))
-            elif sign == Equals and sign in signs:
-                # = -> {<, >}
-                new_trail = set(trail)
-                new_new_trail = set(trail)
-
-                trail.add(predicate)
-                new_trail.add(LT(a, Real(0)))
-                new_new_trail.add(LT(Real(0), a))
-
-                return _get_neighbors_rec(signs,
-                                          polynomials,
-                                          index+1,
-                                          abs_state,
-                                          new_new_trail,
-                                          _get_neighbors_rec(signs,
-                                                             polynomials,
-                                                             index+1,
-                                                             abs_state,
-                                                             new_trail,
-                                                             _get_neighbors_rec(signs,
-                                                                                polynomials,
-                                                                                index+1,
-                                                                                abs_state,
-                                                                                trail,
-                                                                                res)))
-            else:
-                trail.add(predicate)
-                return _get_neighbors_rec(signs,
-                                          polynomials,
-                                          index + 1,
-                                          abs_state,
-                                          trail,
-                                          res)
-
-    res_lt = _get_neighbors_rec({LT}, polynomials, 0, abs_state, set(), set())
-    res_eq = _get_neighbors_rec({Equals}, polynomials, 0, abs_state, set(), set())
-    res_lt.update(res_eq)
-    res_lt.remove(abs_state)
-    return res_lt
 
 def get_invar_lazy_set(dyn_sys, invar,
                        polynomials,
@@ -285,7 +207,7 @@ def _get_invar_lazy_set(derivator, invar,
             init_solver.add_assertion(Not(And(abs_state)))
 
             # Visit all the neighbors of abs_state
-            for neigh in _get_neighbors(polynomials, abs_state):
+            for neigh in get_neighbors(polynomials, abs_state):
                 if neigh in abs_visited:
                     continue
 

@@ -17,14 +17,18 @@ from pysmt.shortcuts import (
 
 from pysmt.typing import BOOL, REAL
 
-from barrier.lzz.lzz import get_inf_dnf, get_ivinf_dnf
+from barrier.lzz.lzz import (
+    get_inf_dnf, get_ivinf_dnf,
+    get_lzz_encoding
+)
 from barrier.lie import Derivator
 from barrier.formula_utils import (
     FormulaHelper,
 )
 
 from barrier.decomposition.utils import (
-    get_poly_from_pred, get_unique_poly_list, add_poly_from_formula
+    get_poly_from_pred, get_unique_poly_list, add_poly_from_formula,
+    get_neighbors
 )
 
 from barrier.ts import TS, ImplicitAbstractionEncoder
@@ -103,11 +107,59 @@ def _get_neigh_encoding(poly, get_next_formula):
               _iter(poly, partial(_change_eq, get_next = get_next_formula)))
 
 
+def _get_explicit_encoding(derivator, polynomials, next_f, lzz_f):
+    """
+    Builds the explicit encoding for the decomposition.
+
+    """
+    def _enum_states(polynomials):
+
+        stack = [(0, [])]
+
+        while len(stack) != 0:
+            (index, preds_trail) = stack.pop()
+
+            if (index == len(polynomials)):
+                yield set(preds_trail)
+            else:
+                a = polynomials[index]
+                for (sign, first) in [(LT,True), (LT,False), (Equals,True)]:
+                    predicate = sign(a, Real(0)) if first else sign(Real(0), a)
+                    new_preds_trail = list(preds_trail)
+                    new_preds_trail.append(predicate)
+                    stack.append((index+1, new_preds_trail))
+
+    trans_list = []
+    for s1_list in _enum_states(polynomials):
+        s1_abs = And(s1_list)
+        s1_lzz = lzz_f(s1_abs)
+        for s2_list in get_neighbors(polynomials, s1_list):
+            s2_abs = And(s2_list)
+            s2_lzz = lzz_f(s2_abs)
+            lzz = get_lzz_encoding(s1_lzz, derivator, Or(s1_lzz, s2_lzz))
+            trans_list.append(And(s1_abs, next_f(s2_abs), Not(lzz)))
+
+    return Or(trans_list)
+
 class DecompositionOptions:
-    def __init__(self, rewrite_init = False,
-                 rewrite_property = False):
+    def __init__(self,
+                 rewrite_init = False,
+                 rewrite_property = False,
+                 explicit_encoding = False):
+        """
+        Options for the decomposition:
+        - rewrite_init: add a reset states for the initial states of the
+          resulting ts
+        - rewrite_property: rewrite the property with a boolean variable
+          and an implication in the resulting ts
+        - explicit encoding: enumerates explicitly all the transitions
+          between abstract states.
+        """
         self.rewrite_init = rewrite_init
         self.rewrite_property = rewrite_property
+        self.explicit_encoding = explicit_encoding
+
+# EOC DecompositionOptions
 
 class DecompositionEncoder:
     def __init__(self, env, dyn_sys, invar, poly, init, safe,
@@ -244,15 +296,28 @@ class DecompositionEncoder:
         if (len(self.preds) > 0):
             derivator = sys.get_derivator()
 
-            lzz_in = _get_lzz_in(derivator, self.preds,
-                                 self.next_f, self.lzz_f)
+            if (not self.options.explicit_encoding):
+                lzz_in = _get_lzz_in(derivator, self.preds,
+                                     self.next_f, self.lzz_f)
 
-            lzz_out = _get_lzz_out(derivator, self.preds,
-                                   self.next_f, self.lzz_f)
+                lzz_out = _get_lzz_out(derivator, self.preds,
+                                       self.next_f, self.lzz_f)
+
+                lzz_encoding = Or(lzz_in, lzz_out)
+            else:
+                lzz_encoding = _get_explicit_encoding(derivator,
+                                                      self.poly,
+                                                      self.next_f,
+                                                      self.lzz_f)
         else:
             # corner case
-            lzz_in = TRUE()
-            lzz_out = TRUE()
+            lzz_encoding = TRUE()
+
+        # DEBUG
+        # from pysmt.shortcuts import Solver
+        # from pysmt.logics import QF_NRA
+        # solver = Solver(logic=QF_NRA, name="z3")
+        # assert(solver.is_sat(lzz_encoding))
 
         # frame condition for the time-independent parameters
         fc_list = [Equals(var, self.next_f(var)) for var in sys.inputs()]
@@ -265,8 +330,10 @@ class DecompositionEncoder:
                    self.invar,
                    self.next_f(self.invar),
                    fc,
-                   Or(lzz_in, lzz_out)])
+                   lzz_encoding])
 
         logging.debug("Encoded transition using lzz...")
 
         return res
+
+# EOC DecompositionEncoder

@@ -32,7 +32,7 @@ from pysmt.exceptions import SolverAPINotFound
 
 from barrier.test import TestCase, skipIfMSaticIsNotAvailable
 from barrier.system import DynSystem
-from barrier.utils import get_range_from_int
+from barrier.utils import get_range_from_int, get_mathsat_smtlib
 from barrier.lzz.serialization import importInvar
 
 from barrier.formula_utils import FormulaHelper
@@ -164,9 +164,8 @@ class TestDecompositionEncoding(TestCase):
 
         (problem_name, ant, cons, dyn_sys, invar, predicates) = problem_list[0]
 
-        # x = Symbol("_x", REAL)
-        # y = Symbol("_y", REAL)
-
+        #x = Symbol("_x", REAL)
+        #y = Symbol("_y", REAL)
         # p1 = x + 1
         # p2 = y + 1
         # p3 = (
@@ -174,13 +173,13 @@ class TestDecompositionEncoding(TestCase):
         #     (Real(Fraction(-1,3)) - y) * (Real(Fraction(-1,3)) - y) +
         #     Real(Fraction(-1,16))
         # )
-        # p4 = x
-        # p5 = y
-        # predicates = [p1,p2,p4,p5]
+        #p4 = x
+        #p5 = y
+        #predicates = [p4,p5]
 
         print("Creating decomposition...")
         # Use rewriting of init and prop
-        options = DecompositionOptions(False, False)
+        options = DecompositionOptions(True, True, False)
         encoder  = DecompositionEncoder(env,
                                         dyn_sys,
                                         invar,
