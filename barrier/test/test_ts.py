@@ -77,8 +77,6 @@ class TestSystem(TestCase):
             print("Processing %s" % predfile)
             if not predfile.endswith("preds"):
                 continue
-            if predfile != "bug.preds":
-                continue
 
             base = os.path.splitext(os.path.basename(predfile))[0]
             smtfile = os.path.join(input_path, "%s.smt2" % base)
@@ -129,35 +127,7 @@ class TestSystem(TestCase):
                 except SolverAPINotFound:
                     print("MSatic3 not found...")
                     logging.debug("MSatic3 not found...")
-                return
-                # os.remove(outfile)
-
-    @attr('msatic3')
-    @skipIfMSaticIsNotAvailable()
-    def test_init(self):
-        input_path = self.get_from_path("vmt_models", must_exists=True)
-        smtfile = os.path.join(input_path, "init.smt2")
-        predfile = os.path.join(input_path, "init.preds")
-
-        env = get_env()
-        with open(smtfile, "r") as f:
-            (ts, safe) = TS.from_vmt(f, env)
-        with open(os.path.join(input_path, predfile), "r") as f:
-            predicates = ts.read_predicates(f)
-
-        enc = ImplicitAbstractionEncoder(ts, safe, predicates, env, False, False)
-        ts_abs = enc.get_ts_abstract()
-        safe_abs = enc.get_prop_abstract()
-
-        outfile = os.path.join(input_path, "init_abs.smt2")
-        with open(outfile, "w") as f:
-            ts_abs.to_vmt(f, safe_abs)
-            f.close()
-
-        print("Verifying using fixed IA encoding...")
-        ic3 = MSatic3()
-        res = ic3.solve(outfile)
-
-        self.assertTrue(res == MSatic3.Result.UNSAFE)
+                os.remove(outfile)
+            print("Verified result %s" % str(res_orig))
 
 
