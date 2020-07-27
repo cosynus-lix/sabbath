@@ -70,7 +70,7 @@ class skipIfMathematicaIsNotAvailable(object):
 
     def __call__(self, test_fun):
         msg = "Mathematica not available"
-        skip = self.has_kernel
+        skip = not self.has_kernel
         @unittest.skipIf(skip, msg)
         @wraps(test_fun)
         def wrapper(*args, **kwargs):

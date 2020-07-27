@@ -4,15 +4,16 @@
 import logging
 import unittest
 import os
+import sys
 from fractions import Fraction
-from functools import partial
+from functools import partial, reduce
 
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
 
-import sys
+from nose.plugins.attrib import attr
 
 
 from pysmt.typing import BOOL, REAL, INT
@@ -25,6 +26,7 @@ from pysmt.shortcuts import (
     GE, GT, LT, LE
 )
 from pysmt.logics import QF_NRA
+from pysmt.exceptions import SolverAPINotFound
 
 from barrier.test import TestCase
 from barrier.lie import Derivator
@@ -35,7 +37,7 @@ from barrier.lzz.serialization import importInvar
 
 from barrier.lzz.lzz import lzz
 
-from barrier.explicit.utils import get_neighbors
+from barrier.decomposition.utils import get_neighbors
 from barrier.decomposition.explicit import (
     Result,
     _get_solver,
@@ -53,7 +55,7 @@ from barrier.decomposition.utils import (
 
 from barrier.utils import get_mathsat_smtlib
 from barrier.mathematica.mathematica import get_mathematica
-from pysmt.exceptions import SolverAPINotFound
+from barrier.formula_utils import has_vars_in_divisor
 
 class TestDecomposition(TestCase):
 
@@ -264,6 +266,40 @@ class TestDecomposition(TestCase):
             print("Cannot load mathematica...")
             return 0
 
+    def test_import_invar(self):
+        current_path = os.path.dirname(os.path.abspath(__file__))
+        input_path = os.path.join(current_path, "invar_inputs")
+
+        env = get_env()
+
+        for invar_file in os.listdir(input_path):
+            if (not invar_file.endswith("*.invar")):
+                continue
+
+            with open(os.path.join(input_path, invar_file), "r") as json_stream:
+                problem_list = importInvar(json_stream, env)
+                assert(len(problem_list) == 1)
+                for p in problem_list:
+                    (problem_name, ant, cons, dyn_sys, invar, predicates) = p
+
+    def test_import_invar_input(self):
+        input_path = self.get_from_path("invar_inputs")
+        test_case = os.path.join(input_path, "Constraint-based_Example_7__Human_Blood_Glucose_Metabolism_.invar")
+
+        env = get_env()
+
+        with open(test_case, "r") as f:
+            problem_list = importInvar(f, env)
+            assert(len(problem_list) == 1)
+
+            (problem_name, ant, cons, dyn_sys, invar, predicates) = problem_list[0]
+
+            u_var = Symbol("_u", REAL)
+            found_u = False
+            for i in dyn_sys.inputs():
+                if i == u_var:
+                    found_u = True
+            self.assertTrue(found_u)
 
 
     def test_invar(self):
@@ -298,6 +334,9 @@ class TestDecomposition(TestCase):
         not_supported = ["Nonlinear Circuit Example 1+2 (Tunnel Diode Oscillator)"]
 
         for invar_file in os.listdir(input_path):
+            if (not invar_file.endswith("*.invar")):
+                continue
+
             with open(os.path.join(input_path, invar_file), "r") as json_stream:
                 problem_list = importInvar(json_stream, env)
                 assert(len(problem_list) == 1)
@@ -400,35 +439,32 @@ class TestDecomposition(TestCase):
         # is_invar = lzz(solver, candidate_invar, dyn_sys.get_derivator(), ant, invar)
         # self.assertTrue(is_invar)
 
-    def test_hybrid_controller(self):
-        input_path = self.get_from_path("invar_inputs")
-        test_case = os.path.join(input_path, "Hybrid_Controller_Mode_1.invar")
 
-        self.log_to_stdout()
-
+    def test_models_with_div(self):
         env = get_env()
-        with open(test_case, "r") as f:
-            problem_list = importInvar(f, env)
-            assert(len(problem_list) == 1)
+        input_path = self.get_from_path("invar_inputs")
 
-        (problem_name, ant, cons, dyn_sys, invar, predicates) = problem_list[0]
+        for invar_file in os.listdir(input_path):
+            if (not invar_file.endswith("*.invar")):
+                continue
 
-        add_poly_from_formula(predicates, ant, env)
-        add_poly_from_formula(predicates, invar, env)
-        add_poly_from_formula(predicates, cons, env)
+            with open(os.path.join(input_path, invar_file), "r") as json_stream:
+                p = importInvar(json_stream, env)
 
-        try:
-            get_solver = partial(Solver, logic=QF_NRA, name="z3")
-            (res, res_invars) = get_invar_lazy(dyn_sys, invar, predicates, ant, cons,
-                                               get_solver = get_solver)
-            # print(res)
-            # print(res_invars.serialize())
-            # print(cons.serialize())
-            # print(ant.serialize())
-            # print(cons.serialize())
+                (problem_name, ant, cons, dyn_sys, invar, predicates) = p[0]
 
-            # candidate_invar = And(GT(x, Real(-1)), GT(y, Real(-1)))
-            self.assertTrue(Result.SAFE == res)
+                div_ant = has_vars_in_divisor(ant)
+                div_cons = has_vars_in_divisor(cons)
+                div_invar = has_vars_in_divisor(invar)
+                div_ode = reduce(lambda acc , y : (acc or has_vars_in_divisor(y)),
+                                 [rhs for lhs,rhs in dyn_sys.get_odes().items()],
+                                 False)
 
-        except SolverAPINotFound:
-            logging.info("Skipping test, solver not found")
+                if (div_ant or div_cons or div_invar or div_ode):
+                    print("%s contains division by non-constants (" \
+                          "ant: %d, cons : %d, invar: %d, ode: %d)" % (problem_name,
+                                                                       div_ant,
+                                                                       div_cons,
+                                                                       div_invar,
+                                                                       div_ode))
+                self.assertFalse(div_ant or div_cons or div_invar or div_ode)

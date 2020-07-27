@@ -164,6 +164,11 @@ class TestDecompositionEncoding(TestCase):
 
         (problem_name, ant, cons, dyn_sys, invar, predicates) = problem_list[0]
 
+        print(dyn_sys)
+        print(ant.serialize())
+        print(cons.serialize())
+        print(predicates)
+
         #x = Symbol("_x", REAL)
         #y = Symbol("_y", REAL)
         # p1 = x + 1

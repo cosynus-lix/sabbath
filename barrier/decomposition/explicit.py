@@ -29,7 +29,7 @@ from pysmt.shortcuts import (
     Real,
 )
 
-from barrier.explicit.utils import get_neighbors
+from barrier.decomposition.utils import get_neighbors
 
 
 class Result(Enum):

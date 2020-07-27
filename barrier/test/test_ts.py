@@ -5,13 +5,13 @@ import unittest
 import os
 import sys
 from io import StringIO
-from nose.plugins.attrib import attr
 
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
 
+from nose.plugins.attrib import attr
 
 from pysmt.typing import BOOL
 from pysmt.shortcuts import Symbol, TRUE, FALSE, get_env, GE, Real
