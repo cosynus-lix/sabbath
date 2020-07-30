@@ -109,6 +109,7 @@ def main():
 
         opt = DecompositionOptions(encode_init_and_prop,
                                    encode_init_and_prop,
+                                   False,
                                    False)
         encoder  = DecompositionEncoder(env,
                                         dyn_sys,
