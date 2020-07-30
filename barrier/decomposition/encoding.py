@@ -145,6 +145,7 @@ class DecompositionOptions:
     def __init__(self,
                  rewrite_init = False,
                  rewrite_property = False,
+                 add_init_prop_predicates = False,
                  explicit_encoding = False):
         """
         Options for the decomposition:
@@ -152,11 +153,14 @@ class DecompositionOptions:
           resulting ts
         - rewrite_property: rewrite the property with a boolean variable
           and an implication in the resulting ts
+        - add_init_prop_predicates: add automatically the initial and property
+          predicates
         - explicit encoding: enumerates explicitly all the transitions
           between abstract states.
         """
         self.rewrite_init = rewrite_init
         self.rewrite_property = rewrite_property
+        self.add_init_prop_predicates = add_init_prop_predicates
         self.explicit_encoding = explicit_encoding
 
 # EOC DecompositionOptions
@@ -187,9 +191,8 @@ class DecompositionEncoder:
         #
         # So, here we already add the predicates of init and safe if needed.
         #
-        if (not options.rewrite_init):
+        if (options.add_init_prop_predicates):
             add_poly_from_formula(self.poly, And(init, invar), env)
-        if (not options.rewrite_property):
             add_poly_from_formula(self.poly, safe, env)
 
         # TODO: normalize the list of polynomials (e.g., x and -x creates the
@@ -256,7 +259,8 @@ class DecompositionEncoder:
                                          preds_for_ia,
                                          self.env,
                                          self.options.rewrite_init,
-                                         self.options.rewrite_property)
+                                         self.options.rewrite_property,
+                                         self.options.add_init_prop_predicates)
 
         ts = enc.get_ts_abstract()
         new_prop = enc.get_prop_abstract()
@@ -303,6 +307,21 @@ class DecompositionEncoder:
                 lzz_out = _get_lzz_out(derivator, self.preds,
                                        self.next_f, self.lzz_f)
 
+#                 # DEBUG
+#                 print("Checking trans is sat")
+#                 from pysmt.shortcuts import Solver
+#                 from pysmt.logics import QF_NRA
+#                 from barrier.mathematica.mathematica import get_mathematica
+#                 from pysmt.shortcuts import get_env
+#                 solver = get_mathematica(get_env())
+#                 solver = Solver(logic=QF_NRA, name="z3")
+#                 print("check in...")
+#                 print(lzz_in.serialize())
+#                 assert(solver.is_sat(lzz_in))
+#                 print("check out...")
+#                 assert(solver.is_sat(lzz_out))
+#                 print("checked trans...")
+
                 lzz_encoding = Or(lzz_in, lzz_out)
             else:
                 lzz_encoding = _get_explicit_encoding(derivator,
@@ -312,12 +331,6 @@ class DecompositionEncoder:
         else:
             # corner case
             lzz_encoding = TRUE()
-
-        # DEBUG
-        # from pysmt.shortcuts import Solver
-        # from pysmt.logics import QF_NRA
-        # solver = Solver(logic=QF_NRA, name="z3")
-        # assert(solver.is_sat(lzz_encoding))
 
         # frame condition for the time-independent parameters
         fc_list = [Equals(var, self.next_f(var)) for var in sys.inputs()]

@@ -108,7 +108,8 @@ def main():
         print("Re-encoding init and prop? %d" % encode_init_and_prop)
 
         opt = DecompositionOptions(encode_init_and_prop,
-                                   encode_init_and_prop)
+                                   encode_init_and_prop,
+                                   False)
         encoder  = DecompositionEncoder(env,
                                         dyn_sys,
                                         invariants,

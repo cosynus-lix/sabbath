@@ -403,41 +403,25 @@ class TestDecomposition(TestCase):
         y = Symbol("_y", REAL)
         p1 = x + 1
         p2 = y + 1
-        p3 = (
-            (Real(Fraction(-1,3)) - x) * (Real(Fraction(-1,3)) - x) +
-            (Real(Fraction(-1,3)) - y) * (Real(Fraction(-1,3)) - y) +
-            Real(Fraction(-1,16))
-        )
         p4 = x
         p5 = y
-        predicates = [p1,p2,p3,p4,p5]
 
-        try:
-            get_solver = partial(Solver, logic=QF_NRA, name="z3")
-            (res, res_invars) = get_invar_lazy(dyn_sys, invar, predicates, ant, cons,
+
+        get_solver = partial(Solver, logic=QF_NRA, name="z3")
+        for predicates, expected in [([p5],Result.UNKNOWN),
+                                     ([p1,p2,p4,p5], Result.SAFE)]:
+
+            (res, res_invars) = get_invar_lazy(dyn_sys, invar,
+                                               predicates,
+                                               ant, cons,
                                                get_solver = get_solver)
-            # print(res)
-            # print(res_invars.serialize())
-            # print(cons.serialize())
-            # print(ant.serialize())
-            # print(cons.serialize())
+            self.assertTrue(expected == res)
 
-            # candidate_invar = And(GT(x, Real(-1)), GT(y, Real(-1)))
-            self.assertTrue(Result.SAFE == res)
-
-        except SolverAPINotFound:
-            logging.info("Skipping test, solver not found")
-
-
-        # candidate_invar = res_invars
-        # print("Candidate invariant %s" % candidate_invar.serialize())
-
-        # # This is an invariant
-        # # ((True & (0.0 < _y)) & (0.0 < (_x + 1.0)))
-
-        # solver = Solver(logic=QF_NRA, name="z3")
-        # is_invar = lzz(solver, candidate_invar, dyn_sys.get_derivator(), ant, invar)
-        # self.assertTrue(is_invar)
+            (res, invars) = dwcl(dyn_sys, invar,
+                                 predicates,
+                                 ant, cons,
+                                 get_solver, get_solver)
+            self.assertTrue(expected == res)
 
 
     def test_models_with_div(self):

@@ -271,7 +271,6 @@ def get_lzz_encoding(candidate, derivator, invar):
     candidate_dnf = c.get_dnf(candidate)
     invar_dnf = c.get_dnf(invar)
 
-
     c2 = Implies(And(candidate, invar,
                      get_inf_dnf(derivator, invar_dnf)),
                  get_inf_dnf(derivator, candidate_dnf))

@@ -67,19 +67,22 @@ class TS:
                 if not symbol in visited:
                     visited.add(symbol)
                     assert symbol.is_symbol()
-                    cmds.append(SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[symbol]))
+                    if not symbol in self.state_vars:
+                        cmds.append(SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[symbol]))
 
-                    if symbol in self.state_vars:
-                        nv_name = "nvdef_%d" % nvcount
-                        nvcount = nvcount + 1
-                        next_s = self.next_f(symbol)
+        for symbol in self.state_vars:
+            cmds.append(SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[symbol]))
 
-                        cmds.append(SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[next_s]))
-                        visited.add(next_s)
+            nv_name = "nvdef_%d" % nvcount
+            nvcount = nvcount + 1
+            next_s = self.next_f(symbol)
 
-                        cmds.append("(define-fun %s () %s (! %s :next %s))\n" %
-                                    (nv_name, symbol.symbol_type(),
-                                     symbol, self.next_f(symbol)))
+            cmds.append(SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[next_s]))
+            visited.add(next_s)
+
+            cmds.append("(define-fun %s () %s (! %s :next %s))\n" %
+                        (nv_name, symbol.symbol_type(),
+                         symbol, self.next_f(symbol)))
 
         # Assert formulas
         for cmd in cmds:
@@ -269,7 +272,8 @@ class ImplicitAbstractionEncoder():
     Encode the implicit predicate abstraction as a transition system.
     """
     def __init__(self, ts_concrete, prop, predicates, env = get_env(),
-                 rewrite_init=False, rewrite_prop=False):
+                 rewrite_init=False, rewrite_prop=False,
+                 add_init_prop_predicates = False):
         self.env = env
         self.ts_concrete = ts_concrete.copy_ts()
         self.prop = prop
@@ -277,6 +281,7 @@ class ImplicitAbstractionEncoder():
 
         self.rewrite_init = rewrite_init
         self.rewrite_prop = rewrite_prop
+        self.add_init_prop_predicates = add_init_prop_predicates
 
         self._ts_abstract = None
         self._prop_abstract = None
@@ -285,18 +290,18 @@ class ImplicitAbstractionEncoder():
                                                                            self.prop,
                                                                            self.predicates,
                                                                            self.rewrite_init,
-                                                                           self.rewrite_prop)
+                                                                           self.rewrite_prop,
+                                                                           self.add_init_prop_predicates)
 
 
     @staticmethod
-    def _make_sound(env, ts, prop, predicates,
-                    rewrite_init=True, rewrite_property=True):
+    def _init_and_prop_pred_handling(env, ts, prop, predicates,
+                                     rewrite_init, rewrite_property,
+                                     add_init_prop_predicates):
 
-        if (not rewrite_property):
+        if (add_init_prop_predicates):
             prop_preds = PredicateExtractor.extract_predicates(prop, env)
             predicates.update(prop_preds)
-
-        if (not rewrite_init):
             init_preds = PredicateExtractor.extract_predicates(ts.init, env)
             predicates.update(init_preds)
 
@@ -308,7 +313,8 @@ class ImplicitAbstractionEncoder():
 
 
     def _build_ts_abstract(self, ts_concrete, prop, predicates,
-                           rewrite_init, rewrite_prop):
+                           rewrite_init, rewrite_prop,
+                           add_init_prop_predicates):
         """
         TS := (V, Init(V), Trans(V,V'))
         P(V)
@@ -334,14 +340,16 @@ class ImplicitAbstractionEncoder():
             return And(iffs)
 
         (prop, predicates) = (
-            ImplicitAbstractionEncoder._make_sound(self.env,
-                                                   ts_concrete,
-                                                   prop,
-                                                   predicates,
-                                                   rewrite_init=rewrite_init,
-                                                   rewrite_property = rewrite_prop)
+            ImplicitAbstractionEncoder._init_and_prop_pred_handling(self.env,
+                                                                    ts_concrete,
+                                                                    prop,
+                                                                    predicates,
+                                                                    rewrite_init = rewrite_init,
+                                                                    rewrite_property = rewrite_prop,
+                                                                    add_init_prop_predicates = add_init_prop_predicates)
         )
         vars_concrete = list(ts_concrete.state_vars)
+
 
         # define the abstract variables
         # abs(v) = v_abs

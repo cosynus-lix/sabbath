@@ -213,7 +213,6 @@ class Derivator(object):
             # logging.debug("On vector field: " + str(self.vector_field))
 
             self._add_param(self.vector_field_params, expr)
-
             _params = [self._get_sympy_expr(v) for v in self.vector_field_params]
             (_expr, _vector_field, _domain) = self._get_sympy_problem(expr)
             rank = _get_lie_rank_sympy(_expr, _vector_field, _domain)

@@ -67,7 +67,9 @@ class TestSystem(TestCase):
     @skipIfMSaticIsNotAvailable()
     def test_impl_abs(self):
         long_tests = set(["toy",
-                          "mem_slave_tlm.1"])
+                          "mem_slave_tlm.1",
+                          "pipeline",
+                          "kundu-bug-1"])
 
         env = get_env()
         current_path = os.path.dirname(os.path.abspath(__file__))
@@ -104,10 +106,11 @@ class TestSystem(TestCase):
                 logging.debug("MSatic3 not found...")
                 continue
 
-            enc_1 = ImplicitAbstractionEncoder(ts, safe, predicates, env, True, True)
-            enc_2 = ImplicitAbstractionEncoder(ts, safe, predicates, env, False, False)
+            enc_1 = ImplicitAbstractionEncoder(ts, safe, predicates, env, True, True, False)
+            enc_2 = ImplicitAbstractionEncoder(ts, safe, predicates, env, False, False, True)
+            enc_3 = ImplicitAbstractionEncoder(ts, safe, predicates, env, False, False, False)
 
-            for enc in [enc_1, enc_2]:
+            for enc in [enc_1, enc_2, enc_3]:
                 ts_abs = enc.get_ts_abstract()
                 safe_abs = enc.get_prop_abstract()
 
