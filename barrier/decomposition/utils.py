@@ -113,6 +113,8 @@ def get_unique_poly_list(poly_list):
     same.
 
     We want to just keep one of p here.
+
+    TODO: refactor to use the conversio object in the derivator
     """
 
     pysmt2sympy = Pysmt2Sympy()
@@ -132,9 +134,67 @@ def get_unique_poly_list(poly_list):
 
     return new_poly_list
 
+def sort_poly_by_degree(derivator, predicates):
+    """ Sort the predicates by maximum degree of the
+    polynomial in the predicate.
+
+    Side effects on predicates.
+    """
+    predicates.sort(key=lambda x : derivator.get_poly_degree(x))
+
 def add_poly_from_formula(poly_list, formula, env):
     new_preds = 0
     for pred in PredicateExtractor.extract_predicates(formula,
                                                       env):
         poly_list.append(get_poly_from_pred(pred)[0])
         new_preds += 1
+
+
+def print_abs_stats(outstream, derivator, polynomials):
+    """
+    Prints the statistics about the decomposition abstraction
+
+    The statistics are:
+      - Polynomials
+        - Number of polynomials
+        - Poly degree
+      - Dynamical system:
+        - Number of variables
+        - Degree of RHS of the ODE
+    """
+
+    sort_poly_by_degree(derivator, list(polynomials))
+
+    outstream.write("Decomposition abstraction statistics:\n")
+
+    # Tot predicates
+    outstream.write("[AbsStats] - Total # of polynomials: %d\n" % len(polynomials))
+
+    # Tot polynomials by degree
+    def print_list_by_degree(outstream, polynomials, description):
+        def print_poly_degree(outstream, degree, poly_count):
+            if poly_count != 0:
+                outstream.write("[AbsStats] - Total # of %s of degree %d: %d\n" % (description, degree, poly_count))
+
+        degree = 0
+        degree_count = 0
+        for p in polynomials:
+            p_degree = derivator.get_poly_degree(p)
+
+            if (p_degree == degree):
+                degree_count += 1
+            else:
+                print_poly_degree(outstream, degree, degree_count)
+                degree = p_degree
+                degree_count = 1
+
+        if (degree_count != 0):
+            print_poly_degree(outstream, degree, degree_count)
+
+    print_list_by_degree(outstream, polynomials, "polynomials")
+
+    outstream.write("[AbsStats] - Total # of state variables: %d\n" % len(derivator.cont_vars))
+    print_list_by_degree(outstream,
+                         derivator.vector_field.values(),
+                         "ode expressions"
+)

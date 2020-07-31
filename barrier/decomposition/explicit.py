@@ -11,6 +11,7 @@ We implement the algorithms:
   - DWCL
 """
 
+import sys
 import logging
 
 from enum import Enum
@@ -29,7 +30,11 @@ from pysmt.shortcuts import (
     Real,
 )
 
-from barrier.decomposition.utils import get_neighbors
+from barrier.decomposition.utils import (
+    get_neighbors, print_abs_stats,
+    sort_poly_by_degree,
+    get_unique_poly_list
+)
 
 
 class Result(Enum):
@@ -71,8 +76,15 @@ def abstract(solver, polynomials, sigma):
 def get_invar_lazy_set(dyn_sys, invar,
                        polynomials,
                        init, safe,
-                       get_solver = _get_solver):
-    return _get_invar_lazy_set(dyn_sys.get_derivator(), invar,
+                       get_solver = _get_solver,
+                       stats_stream = None):
+
+    polynomials = get_unique_poly_list(polynomials)
+    derivator = dyn_sys.get_derivator()
+    if (not stats_stream is None):
+        print_abs_stats(stats_stream, derivator, polynomials)
+
+    return _get_invar_lazy_set(derivator, invar,
                                polynomials,
                                init, safe,
                                get_solver = _get_solver)
@@ -402,14 +414,28 @@ def dwc_general(dwcl, derivator,
 
 def dwc(dyn_sys, invar, polynomials, init, safe,
         get_solver = _get_solver,
-        get_lzz_solver = _get_lzz_solver):
+        get_lzz_solver = _get_lzz_solver,
+        stats_stream = None):
     derivator = dyn_sys.get_derivator()
+    polynomials = get_unique_poly_list(polynomials)
+    sort_poly_by_degree(derivator, polynomials)
+
+    if (not stats_stream is None):
+        print_abs_stats(stats_stream, derivator, polynomials)
+
     return dwc_general(False, derivator, invar, polynomials, init, safe,
                        get_solver, get_lzz_solver)
 
 def dwcl(dyn_sys, invar, polynomials, init, safe,
          get_solver = _get_solver,
-         get_lzz_solver = _get_lzz_solver):
+         get_lzz_solver = _get_lzz_solver,
+         stats_stream = None):
     derivator = Derivator(dyn_sys.get_odes())
+    polynomials = get_unique_poly_list(polynomials)
+    sort_poly_by_degree(derivator, polynomials)
+
+    if (not stats_stream is None):
+        print_abs_stats(stats_stream, derivator, polynomials)
+
     return dwc_general(True, derivator, invar, polynomials, init, safe,
                        get_solver, get_lzz_solver)

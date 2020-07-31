@@ -25,7 +25,10 @@ from barrier.decomposition.encoding import (
 )
 from barrier.ts import TS
 from barrier.utils import get_mathsat_smtlib
-from barrier.mathematica.mathematica import get_mathematica
+from barrier.mathematica.mathematica import (
+    get_mathematica, exit_callback_print_time
+)
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -40,6 +43,12 @@ def main():
                         choices=["z3","mathsat","mathematica"],
                         default="z3",
                         help="SMT solver to use")
+
+    parser.add_argument("--mathematica-budget_time",
+                        default=0,
+                        type=int,
+                        help="Time out for the mathematica kernel (Default: 0 (no timeout))")
+
 
     parser.add_argument("--outvmt", help="Output vmt file")
     parser.add_argument("--outpred", help="Output predicates file")
@@ -67,8 +76,13 @@ def main():
 
     if (args.task != "dump_vmt"):
 
+        exit_callback_inst = partial(exit_callback_print_time, outstream=sys.stdout)
+
         solvers = {"z3" : partial(Solver, logic=QF_NRA, name="z3"),
-                   "mathematica" : partial(get_mathematica, env=get_env()),
+                   "mathematica" : partial(get_mathematica,
+                                           budget_time=args.mathematica_budget_time,
+                                           env=get_env(),
+                                           exit_callback=exit_callback_inst),
                    "mathsat" : partial(get_mathsat_smtlib, env=get_env())}
 
         get_solver = solvers[args.solver]
@@ -76,14 +90,15 @@ def main():
         if (args.task == "dwcl"):
             print("Verifying using dwcl...")
             (res, invars) = dwcl(dyn_sys, invariants, predicates, init, safe,
-                                 get_solver, get_solver)
+                                 get_solver, get_solver, sys.stdout)
 
         elif (args.task == "reach"):
             print("Verifying using reachability analysis...")
             (res, invars) = get_invar_lazy(dyn_sys,
-                                          invariants,
-                                          predicates,
-                                          init, safe, get_solver)
+                                           invariants,
+                                           predicates,
+                                           init, safe, get_solver,
+                                           sys.stdout)
 
         print("%s %s: %s" % (problem_name, str(res), str(invars)))
 
@@ -117,7 +132,8 @@ def main():
                                         predicates,
                                         init,
                                         safe,
-                                        opt)
+                                        opt,
+                                        sys.stdout)
 
         (ts, p, predicates) = encoder.get_ts_ia()
         with open(args.outvmt, "w") as outstream:

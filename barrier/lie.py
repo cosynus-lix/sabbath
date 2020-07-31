@@ -16,6 +16,7 @@ from pysmt.typing import REAL
 
 from sympy import diff, sympify
 from sympy import symbols as sympy_symbols
+from sympy import total_degree
 
 from sympy import (
     diff as sympy_diff,
@@ -62,6 +63,9 @@ class Derivator(object):
 
         # memoization for the rank computation
         self._rank_memo = {}
+
+        # memo for computing the polynomial's degree
+        self._degree_memo = {}
 
     def _add_param(self, params, expr):
         for fv in get_free_variables(expr):
@@ -115,8 +119,8 @@ class Derivator(object):
             # print(_sympy_der)
             # print(_cont_vars)
             # print(_params)
-            _vector_field[_var] = _sympy_der #.as_poly(_cont_vars) # , domain=_domain
-        _expr = self._get_sympy_expr(expr)   #.as_poly(_cont_vars) #, domain=_domain
+            _vector_field[_var] = _sympy_der
+        _expr = self._get_sympy_expr(expr)
 
         return (_expr, _vector_field, _domain)
 
@@ -220,6 +224,18 @@ class Derivator(object):
 
             self._rank_memo[expr] = rank
             return rank
+
+    def get_poly_degree(self, expr):
+        # Get the degree of a polynomial
+        if expr in self._degree_memo:
+            return self._degree_memo[expr]
+
+        sympy_expr = self._get_sympy_expr(expr)
+        degree = total_degree(sympy_expr)
+        self._degree_memo[expr] = degree
+
+        return degree
+
 
 # EOC Derivator
 

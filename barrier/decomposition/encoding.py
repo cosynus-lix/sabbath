@@ -27,7 +27,12 @@ from barrier.formula_utils import (
 )
 
 from barrier.decomposition.utils import (
-    get_poly_from_pred, get_unique_poly_list, add_poly_from_formula,
+    get_poly_from_pred,
+    get_unique_poly_list,
+    sort_poly_by_degree,
+    print_abs_stats,
+    add_poly_from_formula,
+    sort_poly_by_degree,
     get_neighbors
 )
 
@@ -167,7 +172,8 @@ class DecompositionOptions:
 
 class DecompositionEncoder:
     def __init__(self, env, dyn_sys, invar, poly, init, safe,
-                 options = DecompositionOptions()):
+                 options = DecompositionOptions(),
+                 stats_stream = None):
         """
         Input (a safety verification problem):
         - a polynomial dynamical system der(X) = p(X)
@@ -180,8 +186,9 @@ class DecompositionEncoder:
         self.options = options
         self.dyn_sys = dyn_sys
         self.invar = invar
-        self.poly = poly
+        self.stats_stream = stats_stream
 
+        # Set the list of polynomials
         # The implicit abstraction encoding takes care of adding the
         # predicates for the init and the safety property or adding a reset
         # state/rewriting the property.
@@ -191,12 +198,12 @@ class DecompositionEncoder:
         #
         # So, here we already add the predicates of init and safe if needed.
         #
+        self.poly = poly
+
         if (options.add_init_prop_predicates):
             add_poly_from_formula(self.poly, And(init, invar), env)
             add_poly_from_formula(self.poly, safe, env)
-
-        # TODO: normalize the list of polynomials (e.g., x and -x creates the
-        # same decomposition)
+        # normalize the list of polynomials (e.g., x and -x creates the same decomposition)
         self.poly = get_unique_poly_list(self.poly)
         logging.debug("Total of polynomials %d" % len(self.poly))
 
@@ -297,9 +304,14 @@ class DecompositionEncoder:
 
         sys = self.dyn_sys.get_renamed(self.lzz_f)
 
-        if (len(self.preds) > 0):
-            derivator = sys.get_derivator()
+        derivator = sys.get_derivator()
+        # Not needed
+        # sort_poly_by_degree(derivator, self.poly)
 
+        if (not self.stats_stream is None):
+            print_abs_stats(self.stats_stream, derivator, self.poly)
+
+        if (len(self.preds) > 0):
             if (not self.options.explicit_encoding):
                 lzz_in = _get_lzz_in(derivator, self.preds,
                                      self.next_f, self.lzz_f)
