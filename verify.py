@@ -45,7 +45,7 @@ def main():
     parser.add_argument("--outpred", help="Output predicates file")
     parser.add_argument("--encode_init_and_prop",
                         choices=["true","false"],
-                        default="true",
+                        default="false",
                         help="Retiming to encode init and property")
 
     args = parser.parse_args()
