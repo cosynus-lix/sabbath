@@ -259,6 +259,28 @@ def lzz(solver, candidate, derivator, init, invar):
         return False
 
 
+def get_lzz_encoding(candidate, derivator, invar):
+    """
+    Return the formula:
+    ((candidate /\ Invar /\ Inf(Invar)) => Inf(candidate))  /\
+    ((!candidate /\ Invar /\ IvInf(Invar)) => !IvInf(candidate))
+    """
+
+    # TODO: Factor with lzz checks
+    c = DNFConverter()
+    candidate_dnf = c.get_dnf(candidate)
+    invar_dnf = c.get_dnf(invar)
+
+    c2 = Implies(And(candidate, invar,
+                     get_inf_dnf(derivator, invar_dnf)),
+                 get_inf_dnf(derivator, candidate_dnf))
+
+    c3 = Implies(And(Not(candidate), invar,
+                     get_ivinf_dnf(derivator, invar_dnf)),
+                 Not(get_ivinf_dnf(derivator, candidate_dnf)))
+
+    return And(c2, c3)
+
 def lzz_fast(solver, candidate, derivator, init, invar):
     """ Implement the "fast" LZZ procedure, as in Pegasus.
 

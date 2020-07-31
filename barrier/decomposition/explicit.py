@@ -29,12 +29,15 @@ from pysmt.shortcuts import (
     Real,
 )
 
-from barrier.mathematica.mathematica import get_mathematica
+from barrier.decomposition.utils import get_neighbors
+
 
 class Result(Enum):
     UNSAFE=0
     UNKNOWN=1
     SAFE=2
+
+# EOC Result
 
 def _get_logger():
     return logging.getLogger(__name__)
@@ -64,87 +67,6 @@ def abstract(solver, polynomials, sigma):
 
     return abs_state
 
-
-
-def _get_neighbors(polynomials, abs_state):
-
-    """ Get the neighbors of abs_state """
-    def _get_neighbors_rec(signs,
-                           polynomials, index,
-                           abs_state,
-                           trail, res):
-        if index == len(polynomials):
-            assert(len(trail) == len(polynomials))
-            res.add(frozenset(trail))
-            return res
-        else:
-            a = polynomials[index]
-            pair = None
-            for (sign, first) in [(LT,True), (LT,False), (Equals,True)]:
-                predicate = sign(a, Real(0)) if first else sign(Real(0), a)
-                if predicate in abs_state:
-                    pair = (sign,first)
-                    break
-
-            assert not pair is None
-            assert not predicate is None
-
-            if sign == LT and sign in signs:
-                # < -> {=}
-                new_trail = set(trail)
-                new_trail.add(Equals(a, Real(0)))
-                trail.add(predicate)
-
-                return _get_neighbors_rec(signs, # do not change predicates
-                                          polynomials,
-                                          index+1,
-                                          abs_state,
-                                          new_trail,
-                                          _get_neighbors_rec(signs,
-                                                             polynomials,
-                                                             index+1,
-                                                             abs_state,
-                                                             trail,
-                                                             res))
-            elif sign == Equals and sign in signs:
-                # = -> {<, >}
-                new_trail = set(trail)
-                new_new_trail = set(trail)
-
-                trail.add(predicate)
-                new_trail.add(LT(a, Real(0)))
-                new_new_trail.add(LT(Real(0), a))
-
-                return _get_neighbors_rec(signs,
-                                          polynomials,
-                                          index+1,
-                                          abs_state,
-                                          new_new_trail,
-                                          _get_neighbors_rec(signs,
-                                                             polynomials,
-                                                             index+1,
-                                                             abs_state,
-                                                             new_trail,
-                                                             _get_neighbors_rec(signs,
-                                                                                polynomials,
-                                                                                index+1,
-                                                                                abs_state,
-                                                                                trail,
-                                                                                res)))
-            else:
-                trail.add(predicate)
-                return _get_neighbors_rec(signs,
-                                          polynomials,
-                                          index + 1,
-                                          abs_state,
-                                          trail,
-                                          res)
-
-    res_lt = _get_neighbors_rec({LT}, polynomials, 0, abs_state, set(), set())
-    res_eq = _get_neighbors_rec({Equals}, polynomials, 0, abs_state, set(), set())
-    res_lt.update(res_eq)
-    res_lt.remove(abs_state)
-    return res_lt
 
 def get_invar_lazy_set(dyn_sys, invar,
                        polynomials,
@@ -250,14 +172,16 @@ def _get_invar_lazy_set(derivator, invar,
         # except:
         # Enum all the initial states
         # We have issue getting an algebraic model from mathematica and mathsat, apparently.
-        logger.info("Enumerating all initial abstract states...")
+        logger.debug("Enumerating all initial abstract states...")
         all_init_sates = get_all_abstract(init_solver, polynomials)
-        logger.info("get_invar_lazy: found %d initial states" % len(all_init_sates))
+        logger.debug("get_invar_lazy: found %d initial states" % len(all_init_sates))
 
 
         for init_abs_state in all_init_sates:
             init_solver.add_assertion(Not(And(init_abs_state)))
             to_visit.append(init_abs_state)
+
+            print(And(init_abs_state).serialize())
 
             # s = get_solver()
             # s.add_assertion(init)
@@ -274,18 +198,18 @@ def _get_invar_lazy_set(derivator, invar,
             if abs_state in abs_visited:
                 continue
 
-            logger.info("Visiting abs state: %s" %
-                        " ".join([s.serialize() for s in abs_state]))
+            logger.debug("Visiting abs state: %s" %
+                         " ".join([s.serialize() for s in abs_state]))
 
             if solve(safe_solver, And(abs_state)):
-                logger.info("Abstract state %s is Unsafe!" % (" ".join([s.serialize() for s in abs_state])))
+                logger.debug("Abstract state %s is Unsafe!" % (" ".join([s.serialize() for s in abs_state])))
                 return (Result.UNKNOWN, set())
 
             abs_visited.add(abs_state)
             init_solver.add_assertion(Not(And(abs_state)))
 
             # Visit all the neighbors of abs_state
-            for neigh in _get_neighbors(polynomials, abs_state):
+            for neigh in get_neighbors(polynomials, abs_state):
                 if neigh in abs_visited:
                     continue
 
@@ -305,14 +229,16 @@ def _get_invar_lazy_set(derivator, invar,
                                Or(And(abs_state), And(neigh)))
 
                 if (not is_invar):
-                    logger.info("New trans from %s to %s" %
-                                (" ".join([s.serialize() for s in abs_state]),
-                                 " ".join([s.serialize() for s in neigh])))
+                    logger.debug("New trans from %s to %s" %
+                                 (" ".join([s.serialize() for s in abs_state]),
+                                  " ".join([s.serialize() for s in neigh])))
                     to_visit.append(neigh)
 
                     if solve(safe_solver, And(neigh)):
-                        logger.info("Abstract state %s is Unsafe!" % (" ".join([s.serialize() for s in neigh])))
+                        logger.debug("Abstract state %s is Unsafe!" % (" ".join([s.serialize() for s in neigh])))
                         return (Result.UNKNOWN, set())
+                else:
+                    logger.debug("No trans...")
 
     return (Result.SAFE, abs_visited)
 
@@ -372,11 +298,11 @@ def dwc_general(dwcl, derivator,
     else:
         rt0 = Real(0)
 
-        logger.debug("Trying to remove predicates...")
+        logger.info("Trying to remove predicates...")
         counter = 0
         for a in polynomials:
             counter += 1
-            logger.debug("Testing DC on %d/%d..." % (counter, len(polynomials)))
+            logger.info("Testing DC on %d/%d..." % (counter, len(polynomials)))
             preds = {LT(rt0,a), LT(a,rt0), Equals(a,rt0)}
             for pred in preds:
                 if solver.is_valid(Implies(And(invar, init), pred)):
@@ -384,10 +310,10 @@ def dwc_general(dwcl, derivator,
                     is_invar = lzz_fast(lzz_solver, pred, derivator,
                                         pred, invar)
                     lzz_solver.exit()
-                    logger.debug("LZZ end...")
+                    logger.info("LZZ end...")
 
                     if (is_invar):
-                        logger.debug("[DC] Found %s is invar (under %s)" % (pred.serialize(), invar.serialize()))
+                        logger.info("[DC] Found %s is invar (under %s)" % (pred.serialize(), invar.serialize()))
                         new_polynomials = list(polynomials)
                         new_polynomials.remove(a)
                         dwc_invar = dwc_general(dwcl, derivator,
@@ -398,11 +324,11 @@ def dwc_general(dwcl, derivator,
                                                 get_lzz_solver)
                         return dwc_invar
 
-        logger.debug("Trying to decompose...")
+        logger.info("Trying to decompose...")
         counter = 0
         for a in polynomials:
             counter += 1
-            logger.debug("Trying DDC %d/%d..." % (counter, len(polynomials)))
+            logger.info("Trying DDC %d/%d..." % (counter, len(polynomials)))
 
             preds = {LT(rt0,a), LT(a,rt0), Equals(a,rt0)}
             eq_0 = Equals(a,rt0)
@@ -418,7 +344,7 @@ def dwc_general(dwcl, derivator,
                 lzz_solver.exit()
 
                 if (is_invar):
-                    logger.debug("[DDC] Cannot leave %s = 0 " % (eq_0.serialize()))
+                    logger.info("[DDC] Cannot leave %s = 0 " % (eq_0.serialize()))
                     new_polynomials = list(polynomials)
                     new_polynomials.remove(a)
 
@@ -462,7 +388,7 @@ def dwc_general(dwcl, derivator,
         if not dwcl:
             return (Result.UNKNOWN, invar)
         else:
-            logging.debug("Calling lazy invar computation with %d polynomials..." % (len(polynomials)))
+            logging.info("Calling lazy invar computation with %d polynomials..." % (len(polynomials)))
             (res, reach_states) = _get_invar_lazy(derivator,
                                                   invar,
                                                   polynomials,

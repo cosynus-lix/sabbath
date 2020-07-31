@@ -5,12 +5,14 @@ TODO: memoization needs to be aware of the prefix
 
 from pysmt import shortcuts
 from pysmt.shortcuts import Symbol, substitute
+from functools import reduce
 
 import pysmt.typing as types
 from pysmt.exceptions import UndefinedSymbolError
 from pysmt.walkers import DagWalker
 from pysmt.walkers import handles
 import pysmt.operators as op
+
 
 
 class FormulaHelper:
@@ -187,3 +189,64 @@ class PredicateExtractor(DagWalker):
 
 # EOC PredicateExtractor
 
+
+
+class CheckConstDivision(DagWalker):
+    @staticmethod
+    def has_vars_in_divisor(formula,env):
+        cd = CheckConstDivision(env)
+        return (cd.walk(formula))[1]
+
+    @staticmethod
+    def _or_tuples(t1, t2):
+        return (t1[0] or t2[0],  # has vars in subtree
+                t1[1] or t2[1])  # has vars in div
+
+    def __init__(self, env=None):
+        DagWalker.__init__(self, env=env)
+        self.manager = self.env.formula_manager
+
+    def walk_symbol(self, formula, args, **kwargs):
+        return (True, False)
+
+    @handles(op.REAL_CONSTANT, op.INT_CONSTANT, op.BOOL_CONSTANT)
+    @handles(op.BV_CONSTANT, op.STR_CONSTANT, op.ALGEBRAIC_CONSTANT)
+    def walk_identity(self, formula, args, **kwargs):
+        return (False, False)
+
+    @handles(op.DIV)
+    def walk_div(self, formula, args, **kwargs):
+        # false if there are vars in the rhs of div
+        # we implement an over-approximate check
+
+        return((args[0][0] or args[1][0],
+                args[0][1] or args[1][1] or args[1][0]))
+
+    @handles(op.PLUS, op.TIMES, op.POW, op.MINUS, op.TOREAL)
+    @handles(op.EQUALS, op.LE, op.LT, op.FORALL, op.EXISTS)
+    @handles(op.AND, op.OR, op.IFF, op.NOT, op.IMPLIES)
+    @handles(op.ITE)
+    @handles(op.BV_AND,op.BV_NOT,op.BV_NEG,op.BV_OR)
+    @handles(op.BV_XOR,op.BV_ADD,op.BV_MUL,op.BV_UDIV)
+    @handles(op.BV_UREM,op.BV_ULT,op.BV_ULE,op.BV_EXTRACT)
+    @handles(op.BV_ROR,op.BV_ROL,op.BV_SEXT,op.BV_ZEXT)
+    @handles(op.BV_CONCAT,op.BV_LSHL,op.BV_LSHR,op.BV_SUB)
+    @handles(op.BV_SLT,op.BV_SLE,op.BV_COMP,op.BV_SDIV)
+    @handles(op.BV_SREM,op.BV_ASHR,op.STR_LENGTH,op.STR_CONCAT)
+    @handles(op.STR_CHARAT,op.STR_INDEXOF,op.STR_REPLACE,op.STR_TO_INT)
+    @handles(op.INT_TO_STR,op.BV_TONATURAL,op.ARRAY_SELECT,op.ARRAY_STORE)
+    @handles(op.ARRAY_VALUE,op.STR_SUBSTR,op.STR_CONTAINS,op.STR_PREFIXOF)
+    @handles(op.STR_SUFFIXOF)
+    def walk_all(self, formula, args, **kwargs):
+        return reduce(CheckConstDivision._or_tuples, args, (False, False))
+
+    def walk_not_supported(self, formula, args, **kwargs):
+        raise NotImplementedError
+
+    def walk_function(self, formula, args, **kwargs):
+        return reduce(CheckConstDivision._or_tuples, args, (False, False))
+
+# EOC CheckConstDivision
+
+def has_vars_in_divisor(formula):
+    return CheckConstDivision.has_vars_in_divisor(formula, shortcuts.get_env())

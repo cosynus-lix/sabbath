@@ -32,7 +32,7 @@ from pysmt.exceptions import SolverAPINotFound
 
 from barrier.test import TestCase, skipIfMSaticIsNotAvailable
 from barrier.system import DynSystem
-from barrier.utils import get_range_from_int
+from barrier.utils import get_range_from_int, get_mathsat_smtlib
 from barrier.lzz.serialization import importInvar
 
 from barrier.formula_utils import FormulaHelper
@@ -164,37 +164,37 @@ class TestDecompositionEncoding(TestCase):
 
         (problem_name, ant, cons, dyn_sys, invar, predicates) = problem_list[0]
 
+        # print(dyn_sys)
+        # print(ant.serialize())
+        # print(cons.serialize())
+        # print(predicates)
+
         x = Symbol("_x", REAL)
         y = Symbol("_y", REAL)
-
         p1 = x + 1
         p2 = y + 1
-        p3 = (
-            (Real(Fraction(-1,3)) - x) * (Real(Fraction(-1,3)) - x) +
-            (Real(Fraction(-1,3)) - y) * (Real(Fraction(-1,3)) - y) +
-            Real(Fraction(-1,16))
-        )
         p4 = x
         p5 = y
-        predicates = [p1,p2,p4,p5]
 
-        print("Creating decomposition...")
-        # Use rewriting of init and prop
-        options = DecompositionOptions(True, True)
+        options = DecompositionOptions(False, False, False, False)
         encoder  = DecompositionEncoder(env,
                                         dyn_sys,
                                         invar,
-                                        predicates,
+                                        [p5],
                                         ant,
                                         cons,
                                         options)
         (ts, p, predicates) = encoder.get_ts_ia()
+        self.assertTrue(self._prove_ts(ts, p) == MSatic3.Result.UNSAFE)
 
-        print("Printing vmt...")
-        with open("/tmp/wiggings.vmt", "w") as outstream:
-            ts.to_vmt(outstream, p)
 
-        print("Proving ts...")
-        res = self._prove_ts(ts, p)
-        self.assertTrue(res == MSatic3.Result.SAFE)
-
+        options = DecompositionOptions(False, False, False, False)
+        encoder  = DecompositionEncoder(env,
+                                        dyn_sys,
+                                        invar,
+                                        [p1,p2,p4,p5],
+                                        ant,
+                                        cons,
+                                        options)
+        (ts, p, predicates) = encoder.get_ts_ia()
+        self.assertTrue(self._prove_ts(ts, p) == MSatic3.Result.SAFE)

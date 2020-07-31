@@ -157,39 +157,36 @@ class Derivator(object):
             """
             Implement the algorithm directly in sympy.x
             """
-            n = -1
-            lie_n = expr_sympy
-            lies = [expr_sympy]
+            n = 0
 
-            fix_point = False
+            # Min rank should be one
+            lie_n = Derivator._get_lie_der_sympy(expr_sympy, vector_field_sympy)
+            lies = [expr_sympy,
+                    lie_n]
+
             vars_list = [v for v in vector_field_sympy.keys()]
-            while (not fix_point):
+
+            remainder = 1
+            while (remainder != 0):
                 n = n + 1
 
                 # see https://mattpap.github.io/masters-thesis/html/src/groebner.html#algebraic-relations-in-invariant-theory
+                bases = groebner(lies, vars_list, order='lex')
+
+                # n-th lie derivative
                 lie_n = Derivator._get_lie_der_sympy(lie_n, vector_field_sympy)
+
+                # Append the lie for the next iteration
+                lies.append(lie_n)
+
 
                 if (0 == len(lie_n.free_symbols.intersection(vars_list))):
                     # lie derivative has only constants
-                    fix_point = True
                     break
-
-                bases = groebner(lies, vars_list, order='lex')
-                #bases = groebner(lies, vars_list, order='lex')
-
-
-                # print(lies)
-                # print(vars_list)
-                # print(bases)
-                # print(lie_n)
 
                 # Reduced is the heavy computation function here.
                 coeff, remainder = reduced(lie_n, bases, wrt=vars_list)
-
-                fix_point = True
-                if (remainder.expand() != 0):
-                    lies.append(lie_n)
-                    fix_point = False
+                remainder = remainder.expand()
 
             # DEBUG CODE -- verify that lie_n can be expressed using a
             # basis of the previous lie derivatives
@@ -216,7 +213,6 @@ class Derivator(object):
             # logging.debug("On vector field: " + str(self.vector_field))
 
             self._add_param(self.vector_field_params, expr)
-
             _params = [self._get_sympy_expr(v) for v in self.vector_field_params]
             (_expr, _vector_field, _domain) = self._get_sympy_problem(expr)
             rank = _get_lie_rank_sympy(_expr, _vector_field, _domain)

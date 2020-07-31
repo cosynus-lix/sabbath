@@ -121,6 +121,11 @@ class TestLie(TestCase):
             self.assertTrue(same)
 
     def _app_rank(self, expr, vector_field, expected):
+
+        # print("Computing rank for")
+        # print(vector_field)
+        # print(expr)
+
         der = Derivator(vector_field)
         rank = der.get_lie_rank(expr)
         self.assertTrue(rank == expected)
@@ -187,9 +192,9 @@ class TestLie(TestCase):
             ((r05 * x2 * x2 * (((k1 * m2 * u8) - (k2 * m1 * u8)) + (r2 * m2 * u10 * k2))) / (m2 * m1))
         )
 
-        self._app_rank(expr, vector_field, 0)
+        self._app_rank(expr, vector_field, 1)
 
 
     def test_rank_constant_lie(self):
         x1,u1 = [Symbol(v, REAL) for v in ["x1","u1"]]
-        self._app_rank(u1 - Real(20), {x1 : x1}, 0)
+        self._app_rank(u1 - Real(20), {x1 : x1}, 1)

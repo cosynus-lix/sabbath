@@ -5,13 +5,13 @@ import unittest
 import os
 import sys
 from io import StringIO
-from nose.plugins.attrib import attr
 
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
 
+from nose.plugins.attrib import attr
 
 from pysmt.typing import BOOL
 from pysmt.shortcuts import Symbol, TRUE, FALSE, get_env, GE, Real
@@ -67,7 +67,9 @@ class TestSystem(TestCase):
     @skipIfMSaticIsNotAvailable()
     def test_impl_abs(self):
         long_tests = set(["toy",
-                          "mem_slave_tlm.1"])
+                          "mem_slave_tlm.1",
+                          "pipeline",
+                          "kundu-bug-1"])
 
         env = get_env()
         current_path = os.path.dirname(os.path.abspath(__file__))
@@ -93,26 +95,42 @@ class TestSystem(TestCase):
             with open(os.path.join(input_path, predfile), "r") as f:
                 predicates = ts.read_predicates(f)
 
-            enc = ImplicitAbstractionEncoder(ts, safe, predicates, env)
-            ts_abs = enc.get_ts_abstract()
-            safe_abs = enc.get_prop_abstract()
 
-            outfile = os.path.join(input_path, "%s_abs.smt2" % base)
-            with open(outfile, "w") as f:
-                ts_abs.to_vmt(f, safe_abs)
-                f.close()
-
-            print("Verifying %s..." % base)
             try:
                 ic3 = MSatic3()
 
                 print("Verifying using IA...")
                 res_orig = ic3.solve(smtfile)
-                print("Verifying using fixed IA encoding...")
-                res = ic3.solve(outfile)
-
-                self.assertTrue(res == res_orig)
             except SolverAPINotFound:
                 print("MSatic3 not found...")
                 logging.debug("MSatic3 not found...")
-            os.remove(outfile)
+                continue
+
+            enc_1 = ImplicitAbstractionEncoder(ts, safe, predicates, env, True, True, False)
+            enc_2 = ImplicitAbstractionEncoder(ts, safe, predicates, env, False, False, True)
+            enc_3 = ImplicitAbstractionEncoder(ts, safe, predicates, env, False, False, False)
+
+            for enc in [enc_1, enc_2, enc_3]:
+                ts_abs = enc.get_ts_abstract()
+                safe_abs = enc.get_prop_abstract()
+
+                outfile = os.path.join(input_path, "%s_abs.smt2" % base)
+                with open(outfile, "w") as f:
+                    ts_abs.to_vmt(f, safe_abs)
+                    f.close()
+
+                print("Verifying %s..." % base)
+                try:
+                    ic3 = MSatic3()
+
+                    print("Verifying using fixed IA encoding...")
+                    res = ic3.solve(outfile)
+
+                    self.assertTrue(res == res_orig)
+                except SolverAPINotFound:
+                    print("MSatic3 not found...")
+                    logging.debug("MSatic3 not found...")
+                os.remove(outfile)
+            print("Verified result %s" % str(res_orig))
+
+

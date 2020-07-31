@@ -67,19 +67,22 @@ class TS:
                 if not symbol in visited:
                     visited.add(symbol)
                     assert symbol.is_symbol()
-                    cmds.append(SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[symbol]))
+                    if not symbol in self.state_vars:
+                        cmds.append(SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[symbol]))
 
-                    if symbol in self.state_vars:
-                        nv_name = "nvdef_%d" % nvcount
-                        nvcount = nvcount + 1
-                        next_s = self.next_f(symbol)
+        for symbol in self.state_vars:
+            cmds.append(SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[symbol]))
 
-                        cmds.append(SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[next_s]))
-                        visited.add(next_s)
+            nv_name = "nvdef_%d" % nvcount
+            nvcount = nvcount + 1
+            next_s = self.next_f(symbol)
 
-                        cmds.append("(define-fun %s () %s (! %s :next %s))\n" %
-                                    (nv_name, symbol.symbol_type(),
-                                     symbol, self.next_f(symbol)))
+            cmds.append(SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[next_s]))
+            visited.add(next_s)
+
+            cmds.append("(define-fun %s () %s (! %s :next %s))\n" %
+                        (nv_name, symbol.symbol_type(),
+                         symbol, self.next_f(symbol)))
 
         # Assert formulas
         for cmd in cmds:
@@ -195,46 +198,36 @@ class TS:
         Rewrite the initial states and properties to ensure soundeness or
         add the predicates from init and prop.
 
+        Rewriting of prop:
+        new_prop = prop_var
+        new_init = init and (prop_var <-> prop)
+        new_trans = trans and (prop_var <-> prop) and (prop_var' <-> prop')
+
         Rewriting of init:
 
         init = reset
         new_prop = reset or prop
         new_trans = not(reset') and (reset -> init') and (!reset -> trans)
                   = not(reset') and (not reset or init') and (reset or trans)
-
-        Rewriting of prop:
-        new_prop = prop_var
-        new_init = init and (prop_var <-> prop)
-        new_trans = trans and (prop_var <-> prop) and (prop_var' <-> prop')
-
         """
         new_vars = []
-        if rewrite_init:
-            reset = FormulaHelper.get_fresh_var_name(self.env.formula_manager, "reset")
-            new_vars.append(reset)
 
         if rewrite_prop:
             prop_var = FormulaHelper.get_fresh_var_name(self.env.formula_manager,
                                                         "new_prop")
             new_vars.append(prop_var)
 
+        if rewrite_init:
+            reset = FormulaHelper.get_fresh_var_name(self.env.formula_manager, "reset")
+            new_vars.append(reset)
+
+
         self.next_f = TS.extend_next_f(self.env,
                                        self.state_vars,
                                        self.next_f,
                                        new_vars)
         for new_var in new_vars:
-            self.state_vars.add(prop_var)
-            self.state_vars.add(reset)
-
-        if rewrite_init:
-            new_prop = Or(reset, prop)
-            new_init = reset
-            new_trans = And(Not(self.next_f(reset)),
-                            And(Or(Not(reset), self.next_f(self.init)),
-                                Or(reset, self.trans)))
-            prop = new_prop
-            self.init = new_init
-            self.trans = new_trans
+            self.state_vars.add(new_var)
 
         if rewrite_prop:
             new_prop = prop_var
@@ -246,6 +239,17 @@ class TS:
             prop = new_prop
             self.init = new_init
             self.trans = new_trans
+
+        if rewrite_init:
+            new_prop = Or(reset, prop)
+            new_init = reset
+            new_trans = And([Not(self.next_f(reset)),
+                             Or(Not(reset), self.next_f(self.init)),
+                             Or(reset, self.trans)])
+            prop = new_prop
+            self.init = new_init
+            self.trans = new_trans
+
 
         return (prop, new_vars)
 
@@ -268,7 +272,8 @@ class ImplicitAbstractionEncoder():
     Encode the implicit predicate abstraction as a transition system.
     """
     def __init__(self, ts_concrete, prop, predicates, env = get_env(),
-                 rewrite_init=False, rewrite_prop=False):
+                 rewrite_init=False, rewrite_prop=False,
+                 add_init_prop_predicates = False):
         self.env = env
         self.ts_concrete = ts_concrete.copy_ts()
         self.prop = prop
@@ -276,6 +281,7 @@ class ImplicitAbstractionEncoder():
 
         self.rewrite_init = rewrite_init
         self.rewrite_prop = rewrite_prop
+        self.add_init_prop_predicates = add_init_prop_predicates
 
         self._ts_abstract = None
         self._prop_abstract = None
@@ -284,20 +290,22 @@ class ImplicitAbstractionEncoder():
                                                                            self.prop,
                                                                            self.predicates,
                                                                            self.rewrite_init,
-                                                                           self.rewrite_prop)
+                                                                           self.rewrite_prop,
+                                                                           self.add_init_prop_predicates)
+
 
     @staticmethod
-    def _make_sound(env, ts, prop, predicates,
-                    rewrite_init=True, rewrite_property=True):
-        if (not rewrite_init):
+    def _init_and_prop_pred_handling(env, ts, prop, predicates,
+                                     rewrite_init, rewrite_property,
+                                     add_init_prop_predicates):
+
+        if (add_init_prop_predicates):
+            prop_preds = PredicateExtractor.extract_predicates(prop, env)
+            predicates.update(prop_preds)
             init_preds = PredicateExtractor.extract_predicates(ts.init, env)
             predicates.update(init_preds)
 
-        if (not rewrite_property):
-            prop_preds = PredicateExtractor.extract_predicates(prop, env)
-            predicates.update(prop_preds)
-
-        if (rewrite_property or rewrite_init):
+        if (rewrite_init or rewrite_property):
             (prop, new_preds) = ts.rewrite(prop, rewrite_init, rewrite_property)
             predicates.update(new_preds)
 
@@ -305,16 +313,22 @@ class ImplicitAbstractionEncoder():
 
 
     def _build_ts_abstract(self, ts_concrete, prop, predicates,
-                           rewrite_init, rewrite_prop):
+                           rewrite_init, rewrite_prop,
+                           add_init_prop_predicates):
         """
         TS := (V, Init(V), Trans(V,V'))
         P(V)
+        predicates expressed over variables V
 
         The abstract system is:
-        TS_abs := (V \cup V_abs, Init(V) \land EQ(V,V_abs),
-                   EQ(V,V_abs) \land Trans(V_abs,V') \land EQ(V',V_abs') )
+        TS_abs := (V \cup V_abs,
+                   Init(V) \land EQ(V,V_abs),
+                   EQ(V,V_abs) \land
+                   Trans(V_abs,V') \land
+                   EQ(V',V_abs')
+                  )
 
-        P_abs := EQ(V, V_abs) \land P(V_abs)
+        P_abs := P(V_abs)
         """
 
         def get_eq(abs_f_map, predicates):
@@ -326,16 +340,20 @@ class ImplicitAbstractionEncoder():
             return And(iffs)
 
         (prop, predicates) = (
-            ImplicitAbstractionEncoder._make_sound(self.env,
-                                                   ts_concrete,
-                                                   prop,
-                                                   predicates,
-                                                   rewrite_init=rewrite_init,
-                                                   rewrite_property = rewrite_prop)
+            ImplicitAbstractionEncoder._init_and_prop_pred_handling(self.env,
+                                                                    ts_concrete,
+                                                                    prop,
+                                                                    predicates,
+                                                                    rewrite_init = rewrite_init,
+                                                                    rewrite_property = rewrite_prop,
+                                                                    add_init_prop_predicates = add_init_prop_predicates)
         )
         vars_concrete = list(ts_concrete.state_vars)
 
-        # define abs
+
+        # define the abstract variables
+        # abs(v) = v_abs
+        # abs(v_next) = v_abs_next
         abs_map = {}
         for var in vars_concrete:
             for symb in [var, ts_concrete.next_f(var)]:
@@ -344,42 +362,42 @@ class ImplicitAbstractionEncoder():
                                                             symb.symbol_type())
                 abs_map[symb] = abs_symb
         abs_concrete_map = {v : abs_map[v] for v in vars_concrete}
+        vars_abstract = [abs_map[v] for v in vars_concrete]
+        state_vars = vars_concrete + vars_abstract
 
+        # re-define next function
+        # next(v) = v_next, next(v_abs) = v_abs_next
         next_map = {}
         for v in vars_concrete:
             next_map[v] = ts_concrete.next_f(v)
             next_map[abs_map[v]] = abs_map[ts_concrete.next_f(v)]
         next_f = lambda x : partial(substitute,
                                     subs = next_map)(formula = x)
-
-        vars_abstract = [abs_map[v] for v in vars_concrete]
-        state_vars = vars_concrete + vars_abstract
+        abs_concrete_map_next = {next_f(v) : abs_map[next_f(v)] for v in vars_concrete}
 
         eq_pred = get_eq(abs_map, predicates)
 
         # Init(V) \land EQ(V,V_abs)
         init_abs = And(eq_pred, ts_concrete.init)
 
-
         # From T(V,V') to T(V_abs,V')
         trans_renamed = substitute(ts_concrete.trans, abs_concrete_map)
-        # EQ(V,V_abs) \land Trans(V_abs,V') \land EQ(V',V_abs')
+        # EQ(V,V_abs) \land EQ(V_abs',V') \land Trans(V_abs,V')
         trans_abs = And([eq_pred, next_f(eq_pred), trans_renamed])
 
         ts_abstract = TS(self.env, state_vars, next_f, init_abs, trans_abs)
 
         # From P(V) to P(V_abs)
-        prop_renamed = substitute(prop, abs_concrete_map)
-        # EQ(V, V_abs) \land P(V_abs)
+        # prop_renamed = substitute(prop, abs_concrete_map)
         # Assume prop goes always with trans or init
-        prop_abstract = prop_renamed
+        prop_abstract = substitute(prop, abs_concrete_map)
 
         # print("ABS ENCODING")
-        # print(init_abs.serialize())
-        # print(prop_abstract.serialize())
-        # print(eq_pred.serialize())
-        # print(trans_renamed.serialize())
-        # print(next_f(eq_pred))
+        # print("Init: " + init_abs.serialize())
+        # print("Prop: " + prop_abstract.serialize())
+        # print("trans: " + trans_abs.serialize())
+        # print("Eqpred: " + eq_pred.serialize())
+        # print("Eqpred: " + next_f(eq_pred).serialize())
         # print("END ABS ENCODING")
 
         return (ts_abstract, prop_abstract)

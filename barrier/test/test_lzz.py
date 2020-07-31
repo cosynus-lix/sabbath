@@ -4,7 +4,7 @@
 import logging
 import unittest
 import os
-from functools import partial
+from functools import partial, reduce
 from fractions import Fraction
 
 try:
@@ -43,6 +43,7 @@ from barrier.lzz.dnf import DNFConverter
 
 from barrier.mathematica.mathematica import get_mathematica
 from barrier.utils import get_mathsat_smtlib
+from barrier.formula_utils import has_vars_in_divisor
 
 
 def run_lzz(lzz_problem, env, solver = None):
@@ -50,6 +51,7 @@ def run_lzz(lzz_problem, env, solver = None):
         solver = Solver(logic=QF_NRA, name="z3")
 
     (name, candidate, dyn_sys, invar) = lzz_problem
+
     is_invar = lzz(solver, candidate, dyn_sys.get_derivator(), candidate, invar)
 
     return is_invar
@@ -261,11 +263,18 @@ class TestLzz(TestCase):
                           "Strogatz Example 6_3_2"]
 
         long_tests_z3 = [] + long_tests_smt
+        long_tests_msat = [] + long_tests_smt + [
+            "Stable Limit Cycle 2",
+            "Ben Sassi Girard Sankaranarayanan 2014 Fitzhugh-Nagumo",
+            "Strogatz Exercise 7_3_5",
+            "MIT astronautics Lyapunov",
+            "Unstable Unit Circle 2",
+            "Unstable Unit Circle 1",
+            "Arrowsmith Place Fig_3_1 page 72"]
 
-        long_tests_msat = [] + long_tests_smt + ["Coupled Spring-Mass System (I)",
-                                                 "Ben Sassi Girard Sankaranarayanan 2014 Fitzhugh-Nagumo"]
-
-        long_tests_mathematica = ["Strogatz Exercise 7_3_5"]
+        long_tests_mathematica = ["Strogatz Exercise 7_3_5",
+                                  "Nonlinear Circuit Example 3",
+                                  "Nonlinear Circuit Example 4"]
 
         # Ignore checks with ghost variables in the invariant
         # We do not support that.
@@ -278,14 +287,16 @@ class TestLzz(TestCase):
             "Collision Avoidance Maneuver (II)",
             "Collision Avoidance Maneuver (III)"]
 
-        all_solvers = [("msathsat-smtlib",partial(get_mathsat_smtlib,
-                                                  env=get_env())),
-                       ("z3", partial(Solver,
-                                      logic=QF_NRA,
-                                      name="z3")),
-                       ("mathematica", partial(get_mathematica,
-                                               env=get_env(),
-                                               budget_time=0))]
+        all_solvers = [
+            ("msathsat-smtlib",partial(get_mathsat_smtlib,env=get_env())),
+            ("z3", partial(Solver,
+                           logic=QF_NRA,
+                           name="z3")),
+            ("mathematica", partial(get_mathematica,
+                                    env=get_env(),
+                                    budget_time=0))
+        ]
+
 
         solvers = []
         for (name, f) in all_solvers:
@@ -324,36 +335,31 @@ class TestLzz(TestCase):
                     solver.exit()
                     solver = None
 
-    def test_import_invar(self):
-        current_path = os.path.dirname(os.path.abspath(__file__))
-        input_path = os.path.join(current_path, "invar_inputs")
-
+    def test_models_with_div(self):
         env = get_env()
+        input_path = self.get_from_path("lzz_inputs")
 
-        for invar_file in os.listdir(input_path):
-            with open(os.path.join(input_path, invar_file), "r") as json_stream:
-                problem_list = importInvar(json_stream, env)
-                assert(len(problem_list) == 1)
-                for p in problem_list:
-                    (problem_name, ant, cons, dyn_sys, invar, predicates) = p
+        for lzz_file in os.listdir(input_path):
+            if (not lzz_file.endswith("*.lzz")):
+                continue
 
-    def test_import_invar_input(self):
-        input_path = self.get_from_path("invar_inputs")
-        test_case = os.path.join(input_path, "Constraint-based_Example_7__Human_Blood_Glucose_Metabolism_.invar")
+            with open(os.path.join(input_path, lzz_file), "r") as json_stream:
+                p= importLzz(json_stream, env)
 
-        env = get_env()
+                (name, candidate, dyn_sys, invar) = p
 
-        with open(test_case, "r") as f:
-            problem_list = importInvar(f, env)
-            assert(len(problem_list) == 1)
+                print(name)
 
-            (problem_name, ant, cons, dyn_sys, invar, predicates) = problem_list[0]
+                div_candidate = has_vars_in_divisor(candidate)
+                div_invar = has_vars_in_divisor(invar)
+                div_ode = reduce(lambda acc , y : (acc or has_vars_in_divisor(y)),
+                                 [rhs for lhs,rhs in dyn_sys.get_odes().items()],
+                                 False)
 
-            u_var = Symbol("_u", REAL)
-            found_u = False
-            for i in dyn_sys.inputs():
-                if i == u_var:
-                    found_u = True
-            self.assertTrue(found_u)
-
-
+                if (div_candidate or div_invar or div_ode):
+                    print("%s contains division by non-constants (" \
+                          "candidate: %d, invar: %d, ode: %d)" % (name,
+                                                                  div_candidate,
+                                                                  div_invar,
+                                                                  div_ode))
+                self.assertFalse(div_candidate or div_invar or div_ode)
