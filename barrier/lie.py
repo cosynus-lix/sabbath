@@ -209,7 +209,7 @@ class Derivator(object):
             return n
 
         if (expr in self._rank_memo):
-            logging.debug("Rank in cache... " + expr.serialize())
+            # logging.debug("Rank in cache... " + expr.serialize())
             return self._rank_memo[expr]
         else:
             logging.debug("Computing rank... ")

@@ -81,8 +81,6 @@ def get_invar_lazy_set(dyn_sys, invar,
 
     polynomials = get_unique_poly_list(polynomials)
     derivator = dyn_sys.get_derivator()
-    if (not stats_stream is None):
-        print_abs_stats(stats_stream, derivator, polynomials)
 
     return _get_invar_lazy_set(derivator, invar,
                                polynomials,
@@ -92,7 +90,8 @@ def get_invar_lazy_set(dyn_sys, invar,
 def _get_invar_lazy_set(derivator, invar,
                         polynomials,
                         init, safe,
-                        get_solver = _get_solver):
+                        get_solver = _get_solver,
+                        stats_stream = None):
     """
     Implement the LazyReach invariant computation using semi-algebraic
     decomposition.
@@ -139,6 +138,9 @@ def _get_invar_lazy_set(derivator, invar,
 
 
     logger = _get_logger()
+
+    if (not stats_stream is None):
+        print_abs_stats(stats_stream, derivator, polynomials)
 
     # remove duplicates, keep order
     has_poly = set()
@@ -262,15 +264,18 @@ def _set_to_formula(abs_state_set):
 
 def get_invar_lazy(dyn_sys, invar, polynomials,
                    init, safe,
-                   get_solver = _get_solver):
+                   get_solver = _get_solver,
+                   stats_stream = None):
     return _get_invar_lazy(dyn_sys.get_derivator(),
                            invar, polynomials,
                            init, safe,
-                           get_solver)
+                           get_solver,
+                           stats_stream)
 
 def _get_invar_lazy(derivator, invar, polynomials,
                     init, safe,
-                    get_solver = _get_solver):
+                    get_solver = _get_solver,
+                    stats_stream = None):
     """
     Compute the set of abstract reachable states for dyn_sys, starting
     from init and staying inside safe.
@@ -279,7 +284,8 @@ def _get_invar_lazy(derivator, invar, polynomials,
     (res, reach_states) = _get_invar_lazy_set(derivator, invar,
                                               polynomials,
                                               init, safe,
-                                              get_solver)
+                                              get_solver,
+                                              stats_stream)
     return (res, _set_to_formula(reach_states))
 
 
@@ -301,6 +307,7 @@ def dwc_general(dwcl, derivator,
     solver = get_solver()
     if (solver.is_unsat(And(invar, init))):
         logger.info("Init and invar unsat!")
+        print(And(invar, init).serialize())
         return (Result.SAFE, FALSE())
     elif (solver.is_valid(Implies(invar, safe))):
         # DW - Differential Weakening
