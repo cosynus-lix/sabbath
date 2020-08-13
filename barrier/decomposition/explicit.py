@@ -21,6 +21,12 @@ from barrier.lzz.lzz import (lzz, lzz_fast)
 from barrier.system import DynSystem
 from barrier.lie import Derivator
 
+from barrier.decomposition.utils import (
+    get_neighbors, print_abs_stats,
+    sort_poly_by_degree,
+    get_unique_poly_list
+)
+
 from pysmt.logics import QF_NRA
 from pysmt.shortcuts import (
     Solver,
@@ -29,13 +35,6 @@ from pysmt.shortcuts import (
     LT, Equals,
     Real,
 )
-
-from barrier.decomposition.utils import (
-    get_neighbors, print_abs_stats,
-    sort_poly_by_degree,
-    get_unique_poly_list
-)
-
 
 class Result(Enum):
     UNSAFE=0
