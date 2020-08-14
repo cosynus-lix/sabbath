@@ -34,6 +34,16 @@ class OutOfTimeSolverError(PysmtException):
 def has_kernel():
   return not (find_default_kernel_path() is None)
 
+def exit_callback_print_time(solver, outstream):
+    if (not solver.session is None):
+      outstream.write("Getting out of mathematica!\n")
+
+      if (solver.options.budget_time != 0):
+        outstream.write("Mathematica time: %s\n" % str(solver.used_time))
+      else:
+        outstream.write("Mathematica time (no budget): %s\n" % str(solver.session.evaluate(wl.TimeUsed())))
+
+
 class MathematicaSession():
   _session = None
 
@@ -104,6 +114,8 @@ class MathematicaSolver(Solver):
     self.backtrack = []
     self.assertions_stack = []
     self.reset_assertions()
+
+    self._exit_callback = None
 
     self.session = MathematicaSession.get_session()
 
@@ -185,9 +197,12 @@ class MathematicaSolver(Solver):
       l = self.backtrack.pop()
       self.assertions_stack = self.assertions_stack[:l]
 
+  def set_exit_callback(self, callback):
+    self._exit_callback = callback
+
   def _exit(self):
-    # nothing to do
-    pass
+    if (not None is self._exit_callback):
+      self._exit_callback(self)
 
 # EOC MathematicaSolver
 
@@ -339,14 +354,18 @@ class MathematicaConverter(Converter, DagWalker):
 # EOC MathematicaConverter
 
 
-def get_mathematica(env=get_env(), budget_time=0):
+def get_mathematica(env=get_env(), budget_time=0, exit_callback=None):
   try:
     import wolframclient
   except:
     raise SolverAPINotFound
 
   solver = MathematicaSolver(env, QF_NRA,
-                             solver_options={"budget_time":budget_time})
+                             solver_options={"budget_time" : budget_time})
+
+  if (not exit_callback is None):
+    solver.set_exit_callback(exit_callback)
+
   return solver
 
 

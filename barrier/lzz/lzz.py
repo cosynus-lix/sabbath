@@ -11,6 +11,7 @@ from functools import partial
 from barrier.system import DynSystem
 from barrier.lie import Derivator
 from barrier.lzz.dnf import ApplyPredicate, DNFConverter
+from barrier.formula_utils import get_max_poly_degree
 
 import pysmt.operators as pysmt_op
 from pysmt.shortcuts import (
@@ -20,6 +21,11 @@ from pysmt.shortcuts import (
     Minus,
     Real,
 )
+
+def debug_print_max_degree(logger, formula):
+    if (logger.level <= logging.DEBUG):
+        degree = get_max_poly_degree(formula)
+        logger.debug("[LZZ] - max degree: %d" % degree)
 
 def get_polynomial_ge(predicate):
     """
@@ -229,7 +235,9 @@ def lzz(solver, candidate, derivator, init, invar):
     # 2. (candidate /\ Invar /\ Inf(Invar)) => Inf(candidate); and
     # 3. (!candidate /\ Invar /\ IvInf(Invar)) => !IvInf(candidate)
     # are valid
-    if (solver.is_valid(Implies(And(init, invar), candidate))):
+    c1 = Implies(And(init, invar), candidate)
+    logger.debug("Checking c1...")
+    if (solver.is_valid(c1)):
         # Check condition on the differential equation
 
         c = DNFConverter()
@@ -240,11 +248,16 @@ def lzz(solver, candidate, derivator, init, invar):
                          get_inf_dnf(derivator, invar_dnf)),
                      get_inf_dnf(derivator, candidate_dnf))
 
+        logger.debug("Checking c2...")
+        debug_print_max_degree(logger, c2)
+
         if solver.is_valid(c2):
             c3 = Implies(And(Not(candidate), invar,
                              get_ivinf_dnf(derivator, invar_dnf)),
                          Not(get_ivinf_dnf(derivator, candidate_dnf)))
 
+            logger.debug("Checking c3...")
+            debug_print_max_degree(logger, c3)
             if solver.is_valid(c3):
                 return True
             else:
@@ -296,8 +309,10 @@ def lzz_fast(solver, candidate, derivator, init, invar):
     # 2. (candidate /\ Invar) => Inf(candidate); and
     # 3. (!candidate /\ Invar) => !IvInf(candidate)
     # are valid
-    logger.debug("Checking c1: %s" % Implies(init, candidate).serialize())
-    if (solver.is_valid(Implies(init, candidate))):
+    c1 = Implies(init, candidate)
+    logger.debug("Checking c1...")
+    debug_print_max_degree(logger, c1)
+    if (solver.is_valid(c1)):
         # Check condition on the differential equation
 
         c = DNFConverter()
@@ -307,10 +322,15 @@ def lzz_fast(solver, candidate, derivator, init, invar):
         c2 = Implies(And(candidate, invar),
                      get_inf_dnf(derivator, candidate_dnf))
 
+        logger.debug("Checking c2...")
+        debug_print_max_degree(logger, c2)
+
         if solver.is_valid(c2):
             c3 = Implies(And(Not(candidate), invar),
                          Not(get_ivinf_dnf(derivator, candidate_dnf)))
 
+            logger.debug("Checking c3...")
+            debug_print_max_degree(logger, c3)
             if solver.is_valid(c3):
               return True
             else:

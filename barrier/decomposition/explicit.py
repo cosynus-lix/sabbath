@@ -11,6 +11,7 @@ We implement the algorithms:
   - DWCL
 """
 
+import sys
 import logging
 
 from enum import Enum
@@ -20,6 +21,12 @@ from barrier.lzz.lzz import (lzz, lzz_fast)
 from barrier.system import DynSystem
 from barrier.lie import Derivator
 
+from barrier.decomposition.utils import (
+    get_neighbors, print_abs_stats,
+    sort_poly_by_degree,
+    get_unique_poly_list
+)
+
 from pysmt.logics import QF_NRA
 from pysmt.shortcuts import (
     Solver,
@@ -28,9 +35,6 @@ from pysmt.shortcuts import (
     LT, Equals,
     Real,
 )
-
-from barrier.decomposition.utils import get_neighbors
-
 
 class Result(Enum):
     UNSAFE=0
@@ -71,8 +75,13 @@ def abstract(solver, polynomials, sigma):
 def get_invar_lazy_set(dyn_sys, invar,
                        polynomials,
                        init, safe,
-                       get_solver = _get_solver):
-    return _get_invar_lazy_set(dyn_sys.get_derivator(), invar,
+                       get_solver = _get_solver,
+                       stats_stream = None):
+
+    polynomials = get_unique_poly_list(polynomials)
+    derivator = dyn_sys.get_derivator()
+
+    return _get_invar_lazy_set(derivator, invar,
                                polynomials,
                                init, safe,
                                get_solver = _get_solver)
@@ -80,7 +89,8 @@ def get_invar_lazy_set(dyn_sys, invar,
 def _get_invar_lazy_set(derivator, invar,
                         polynomials,
                         init, safe,
-                        get_solver = _get_solver):
+                        get_solver = _get_solver,
+                        stats_stream = None):
     """
     Implement the LazyReach invariant computation using semi-algebraic
     decomposition.
@@ -127,6 +137,9 @@ def _get_invar_lazy_set(derivator, invar,
 
 
     logger = _get_logger()
+
+    if (not stats_stream is None):
+        print_abs_stats(stats_stream, derivator, polynomials)
 
     # remove duplicates, keep order
     has_poly = set()
@@ -250,15 +263,18 @@ def _set_to_formula(abs_state_set):
 
 def get_invar_lazy(dyn_sys, invar, polynomials,
                    init, safe,
-                   get_solver = _get_solver):
+                   get_solver = _get_solver,
+                   stats_stream = None):
     return _get_invar_lazy(dyn_sys.get_derivator(),
                            invar, polynomials,
                            init, safe,
-                           get_solver)
+                           get_solver,
+                           stats_stream)
 
 def _get_invar_lazy(derivator, invar, polynomials,
                     init, safe,
-                    get_solver = _get_solver):
+                    get_solver = _get_solver,
+                    stats_stream = None):
     """
     Compute the set of abstract reachable states for dyn_sys, starting
     from init and staying inside safe.
@@ -267,7 +283,8 @@ def _get_invar_lazy(derivator, invar, polynomials,
     (res, reach_states) = _get_invar_lazy_set(derivator, invar,
                                               polynomials,
                                               init, safe,
-                                              get_solver)
+                                              get_solver,
+                                              stats_stream)
     return (res, _set_to_formula(reach_states))
 
 
@@ -289,6 +306,7 @@ def dwc_general(dwcl, derivator,
     solver = get_solver()
     if (solver.is_unsat(And(invar, init))):
         logger.info("Init and invar unsat!")
+        print(And(invar, init).serialize())
         return (Result.SAFE, FALSE())
     elif (solver.is_valid(Implies(invar, safe))):
         # DW - Differential Weakening
@@ -402,14 +420,28 @@ def dwc_general(dwcl, derivator,
 
 def dwc(dyn_sys, invar, polynomials, init, safe,
         get_solver = _get_solver,
-        get_lzz_solver = _get_lzz_solver):
+        get_lzz_solver = _get_lzz_solver,
+        stats_stream = None):
     derivator = dyn_sys.get_derivator()
+    polynomials = get_unique_poly_list(polynomials)
+    sort_poly_by_degree(derivator, polynomials)
+
+    if (not stats_stream is None):
+        print_abs_stats(stats_stream, derivator, polynomials)
+
     return dwc_general(False, derivator, invar, polynomials, init, safe,
                        get_solver, get_lzz_solver)
 
 def dwcl(dyn_sys, invar, polynomials, init, safe,
          get_solver = _get_solver,
-         get_lzz_solver = _get_lzz_solver):
+         get_lzz_solver = _get_lzz_solver,
+         stats_stream = None):
     derivator = Derivator(dyn_sys.get_odes())
+    polynomials = get_unique_poly_list(polynomials)
+    sort_poly_by_degree(derivator, polynomials)
+
+    if (not stats_stream is None):
+        print_abs_stats(stats_stream, derivator, polynomials)
+
     return dwc_general(True, derivator, invar, polynomials, init, safe,
                        get_solver, get_lzz_solver)
