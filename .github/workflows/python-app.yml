@@ -36,4 +36,4 @@ jobs:
 #        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with nosetests
       run: |
-        nosetests -v --eval-attr='(not msatic3) and (not mathematica)'
+        nosetests -v --eval-attr='(not msatic3) and (not mathematica) and (not long)'

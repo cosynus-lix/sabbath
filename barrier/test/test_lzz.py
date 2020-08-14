@@ -12,6 +12,8 @@ try:
 except ImportError:
     import unittest
 
+from nose.plugins.attrib import attr
+
 import sys
 
 from multiprocessing import Pool
@@ -210,6 +212,7 @@ class TestLzz(TestCase):
         _test_dnf(And(Or(p1,p2), Or(p1,p3), Or(p2)))
 
 
+    @attr('long')
     def test_battery(self):
         def run_with_timeout(lzz_problem,time_out,env):
             is_invar = None
