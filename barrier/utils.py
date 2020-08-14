@@ -2,6 +2,7 @@
 Utility functions
 """
 
+import logging
 from fractions import Fraction
 from pysmt.typing import BOOL, REAL, INT
 from pysmt.shortcuts import (
@@ -67,7 +68,12 @@ def get_mathsat_smtlib(env = get_env()):
         if not env.factory.is_generic_solver(name):
             from shutil import which
             mathsat_path = which("mathsat")
-            env.factory.add_generic_solver(name, mathsat_path, logics)
+
+            if mathsat_path is None:
+                logging.debug("Mathsat path not found!")
+            else:
+                logging.debug("Mathsat path: %s" % mathsat_path)
+                env.factory.add_generic_solver(name, mathsat_path, logics)
 
         solver = env.factory.Solver(name=name, logic=logics[0])
     except:
