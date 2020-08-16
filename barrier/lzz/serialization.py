@@ -30,7 +30,11 @@ from io import StringIO
 
 from pysmt.smtlib.parser import SmtLibParser
 import pysmt.smtlib.commands as smtcmd
-from pysmt.shortcuts import Real
+from pysmt.shortcuts import Real, Equals
+
+import pysmt.smtlib.commands as smtcmd
+from pysmt.smtlib.printers import SmtDagPrinter
+from pysmt.smtlib.script import SmtLibScript, SmtLibCommand
 
 from barrier.system import DynSystem
 
@@ -132,3 +136,44 @@ def importInvar(json_stream, env):
                         dyn_sys, invar, predicates))
 
     return results
+
+
+
+def serializeInvar(outstream, invar_problems, env):
+    """
+    Writes invar_problem problem on outstream
+    """
+    def _get_smt_vars(var, env):
+        var_cmd = SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[var])
+        outstream = StringIO()
+        var_cmd.serialize(outstream=outstream)
+        return outstream.getvalue()
+
+    def _get_smt_formula(formula, printer):
+        outstream = StringIO()
+        printer = SmtDagPrinter(outstream)
+        printer.printer(formula)
+        return outstream.getvalue()
+
+    def _get_smt_formula_pred(formula, printer):
+        return _get_smt_formula(Equals(formula, Real(0)), printer)
+
+
+    invar_problems_json = []
+    for invar_problem in invar_problems:
+        name, antecedent, consequent, dyn_sys, invar, predicates = invar_problem
+        cont_vars_smt = [_get_smt_vars(v, env) for v in dyn_sys.states()]
+        json_data = {
+            "name" : name,
+            "contVars" : cont_vars_smt,
+            "varsDecl" : cont_vars_smt + [_get_smt_vars(v, env) for v in dyn_sys.inputs()],
+            "antecedent": _get_smt_formula(antecedent, env),
+            "consequent": _get_smt_formula(consequent, env),
+            "constraints": _get_smt_formula(invar, env),
+            "predicates" : [_get_smt_formula_pred(p, env) for p in predicates],
+            "vectorField": [_get_smt_formula_pred(dyn_sys.get_ode(v), env) for v in dyn_sys.states()]
+        }
+        invar_problems_json.append(json_data)
+
+    json.dump(invar_problems_json, outstream)
+
