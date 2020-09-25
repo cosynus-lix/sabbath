@@ -194,8 +194,6 @@ def _get_invar_lazy_set(derivator, invar,
             init_solver.add_assertion(Not(And(init_abs_state)))
             to_visit.append(init_abs_state)
 
-            print(And(init_abs_state).serialize())
-
             # s = get_solver()
             # s.add_assertion(init)
             # print(init.serialize())
@@ -306,7 +304,6 @@ def dwc_general(dwcl, derivator,
     solver = get_solver()
     if (solver.is_unsat(And(invar, init))):
         logger.info("Init and invar unsat!")
-        print(And(invar, init).serialize())
         return (Result.SAFE, FALSE())
     elif (solver.is_valid(Implies(invar, safe))):
         # DW - Differential Weakening
