@@ -63,6 +63,8 @@ class MathematicaSession():
       else:
         logging.debug("Mathematica Kernel not found")
         raise SolverAPINotFound
+    else:
+        logging.debug("Mathematica session already exists...")
 
     return MathematicaSession._session
 
@@ -159,14 +161,25 @@ class MathematicaSolver(Solver):
         self.used_time)
 
       if (remaining_time <= 0):
+        if (not None is self._exit_callback):
+          self._exit_callback(self)
         raise OutOfTimeSolverError(budget_time)
+
+      logging.debug("Dummy command...")
+      timing = self.session.evaluate(wl.TimeUsed())
+      logging.debug("Dummy command done...")
 
       timed_eval_cmd = wl.TimeConstrained(reduce_cmd,
                                           remaining_time)
+      logging.debug("About to evaluate an expression with Mathematica...")
       exist_res = self.session.evaluate(timed_eval_cmd)
+      logging.debug("Mathematica expression evaluated...")
 
       if (type(exist_res) != bool):
         if (exist_res.name == '$Aborted'):
+          self.used_time += remaining_time
+          if (not None is self._exit_callback):
+            self._exit_callback(self)
           raise OutOfTimeSolverError(self.options.budget_time)
       self.used_time = self.session.evaluate(wl.TimeUsed())
     else:

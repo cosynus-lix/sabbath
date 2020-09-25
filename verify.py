@@ -5,9 +5,13 @@
 import sys
 import argparse
 import logging
+import os
+import signal
+import sys
 
 from functools import partial
 
+from pysmt.exceptions import SolverAPINotFound
 from pysmt.logics import QF_NRA
 from pysmt.shortcuts import (
     get_env, Solver
@@ -26,7 +30,7 @@ from barrier.decomposition.encoding import (
 from barrier.ts import TS
 from barrier.utils import get_mathsat_smtlib
 from barrier.mathematica.mathematica import (
-    get_mathematica, exit_callback_print_time
+    get_mathematica, exit_callback_print_time, OutOfTimeSolverError
 )
 
 
@@ -61,6 +65,15 @@ def main():
 
     logging.basicConfig(level=logging.DEBUG)
 
+
+    def signal_handler(sig, frame):
+        # Kill any instance of mathematica, if any.
+        print('You pressed Ctrl+C!')
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os._exit(1)
+    signal.signal(signal.SIGINT, signal_handler)
+
     print("Parsing problem...")
     env = get_env()
     with open(args.problem, "r") as json_stream:
@@ -87,20 +100,33 @@ def main():
 
         get_solver = solvers[args.solver]
 
-        if (args.task == "dwcl"):
-            print("Verifying using dwcl...")
-            (res, invars) = dwcl(dyn_sys, invariants, predicates, init, safe,
-                                 get_solver, get_solver, sys.stdout)
+        try:
+            if (args.task == "dwcl"):
+                print("Verifying using dwcl...")
+                (res, invars) = dwcl(dyn_sys, invariants, predicates, init, safe,
+                                     get_solver, get_solver, sys.stdout)
 
-        elif (args.task == "reach"):
-            print("Verifying using reachability analysis...")
-            (res, invars) = get_invar_lazy(dyn_sys,
-                                           invariants,
-                                           predicates,
-                                           init, safe, get_solver,
-                                           sys.stdout)
+            elif (args.task == "reach"):
+                print("Verifying using reachability analysis...")
+                (res, invars) = get_invar_lazy(dyn_sys,
+                                               invariants,
+                                               predicates,
+                                               init, safe, get_solver,
+                                               sys.stdout)
 
-        print("%s %s: %s" % (problem_name, str(res), str(invars)))
+            print("%s %s: %s" % (problem_name, str(res), str(invars)))
+        except SolverAPINotFound as e:
+            print("Did not find the solver.")
+        except Exception as e:
+            print("Some other exception")
+            print(e)
+        finally:
+            # Need to force the exit after an exception --- this will kill
+            # the mathematica thread
+            sys.stdout.flush()
+            sys.stderr.flush()
+            os._exit(1)
+            pass
 
     else:
         assert(args.task == "dump_vmt")
