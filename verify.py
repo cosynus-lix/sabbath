@@ -39,7 +39,7 @@ def main():
     parser.add_argument("problem",help="Verification problem file")
 
     parser.add_argument("--task",
-                        choices=["dwcl","reach","dump_vmt"],
+                        choices=["dwcl","reach","dump_vmt","dwcl_ic3"],
                         default="dwcl",
                         help="Verify using dwcl or dump vmt file")
 
@@ -87,7 +87,7 @@ def main():
     # print(init.serialize())
     # print(safe.serialize())
 
-    if (args.task != "dump_vmt"):
+    if (args.task in ["dwcl","reach","dwcl_ic3"]):
 
         exit_callback_inst = partial(exit_callback_print_time, outstream=sys.stdout)
 
@@ -101,10 +101,11 @@ def main():
         get_solver = solvers[args.solver]
 
         try:
-            if (args.task == "dwcl"):
-                print("Verifying using dwcl...")
+            if (args.task in ["dwcl", "dwcl_ic3"]):
+                print("Verifying using " + args.task + "...")
                 (res, invars) = dwcl(dyn_sys, invariants, predicates, init, safe,
-                                     get_solver, get_solver, sys.stdout)
+                                     get_solver, get_solver, sys.stdout,
+                                     args.task == "dwcl_ic3")
 
             elif (args.task == "reach"):
                 print("Verifying using reachability analysis...")
@@ -117,16 +118,16 @@ def main():
             print("%s %s: %s" % (problem_name, str(res), str(invars)))
         except SolverAPINotFound as e:
             print("Did not find the solver.")
-        except Exception as e:
-            print("Some other exception")
-            print(e)
-        finally:
-            # Need to force the exit after an exception --- this will kill
-            # the mathematica thread
-            sys.stdout.flush()
-            sys.stderr.flush()
-            os._exit(1)
-            pass
+        # except Exception as e:
+        #     print("Some other exception")
+        #     print(e)
+        # finally:
+        #     # Need to force the exit after an exception --- this will kill
+        #     # the mathematica thread
+        #     sys.stdout.flush()
+        #     sys.stderr.flush()
+        #     os._exit(1)
+        #     pass
 
     else:
         assert(args.task == "dump_vmt")

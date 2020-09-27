@@ -1,6 +1,9 @@
 import os
 import errno
 import subprocess
+import tempfile
+import logging
+import sys
 from shutil import which
 
 class MSatic3NotAvailable(Exception):
@@ -50,10 +53,25 @@ class MSatic3():
 
         args= [self.msatic3_path,"-m", "ia", "-W", smt2file_path]
 
-        p = subprocess.Popen(args, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        output, err = p.communicate()
+        logging.info("Executing %s" % " ".join(args))
 
-        res = self.parse_out(output)
+        try:
+            completed_process = subprocess.run(args,
+                                               check = True,
+                                               stderr = subprocess.PIPE,
+                                               stdout = subprocess.PIPE,
+                                               universal_newlines = True)
+            assert(completed_process.returncode == 0)
+
+            sys.stdout.write(completed_process.stdout)
+            sys.stderr.write(completed_process.stderr)
+            res = self.parse_out(completed_process.stdout)
+        except subprocess.CalledProcessError as cpe:
+            sys.stdout.write(cpe.stdout)
+            sys.stderr.write(cpe.stderr)
+            sys.stderr.write("%s ended with code %d" % (" ".join(args), cpe.returncode))
+            raise cpe
+
         return res
 
     def parse_out(self, output):
@@ -70,17 +88,37 @@ class MSatic3():
             if not line: continue
 
             if parse_phase == PRE:
-                if line == b"Statistics:":
+                if line == "Statistics:":
                     parse_phase = STATS
             elif parse_phase == STATS:
-                if line.startswith(b"mem_used_mb"):
+                if line.startswith("mem_used_m"):
                     parse_phase = RES
             elif parse_phase == RES:
-                if line == b"Safe":
+                if line == "Safe":
                     res = MSatic3.Result.SAFE
-                elif line == b"Unsafe":
+                elif line == "Unsafe":
                     res = MSatic3.Result.UNSAFE
-                elif line == b"Unknown":
+                elif line == "Unknown":
                     res = MSatic3.Result.UNKNOWN
 
         return res
+# EOC Msatic3
+
+def prove_ts(ts, prop):
+    res = None
+
+    try:
+        (_, tmp_file) = tempfile.mkstemp(suffix=None,
+                                         prefix=None,
+                                         dir=None,
+                                         text=True)
+        with open(tmp_file,"w") as outstream:
+            ts.to_vmt(outstream, prop)
+
+        print("Verifying %s..." % tmp_file)
+        ic3 = MSatic3()
+        res = ic3.solve(tmp_file)
+    finally:
+        if os.path.isfile(tmp_file):
+            os.remove(tmp_file)
+    return res

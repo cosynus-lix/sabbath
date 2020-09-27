@@ -27,6 +27,13 @@ from barrier.decomposition.utils import (
     get_unique_poly_list
 )
 
+from barrier.decomposition.encoding import (
+    DecompositionOptions,
+    DecompositionEncoder
+)
+
+from barrier.msatic3 import MSatic3, prove_ts
+
 from pysmt.logics import QF_NRA
 from pysmt.shortcuts import (
     Solver,
@@ -34,6 +41,7 @@ from pysmt.shortcuts import (
     FALSE, TRUE,
     LT, Equals,
     Real,
+    get_env
 )
 
 class Result(Enum):
@@ -289,7 +297,8 @@ def _get_invar_lazy(derivator, invar, polynomials,
 def dwc_general(dwcl, derivator,
                 invar, polynomials, init, safe,
                 get_solver = _get_solver,
-                get_lzz_solver = _get_lzz_solver):
+                get_lzz_solver = _get_lzz_solver,
+                use_ic3 = False):
     """
     Implements the Differential Weakening Cut (dwc) algorithm.
 
@@ -403,12 +412,42 @@ def dwc_general(dwcl, derivator,
         if not dwcl:
             return (Result.UNKNOWN, invar)
         else:
-            logging.info("Calling lazy invar computation with %d polynomials..." % (len(polynomials)))
-            (res, reach_states) = _get_invar_lazy(derivator,
-                                                  invar,
-                                                  polynomials,
-                                                  init, safe,
-                                                  get_solver)
+            if (not use_ic3):
+                logging.info("Calling lazy invar computation with %d polynomials..." % (len(polynomials)))
+                (res, reach_states) = _get_invar_lazy(derivator,
+                                                      invar,
+                                                      polynomials,
+                                                      init, safe,
+                                                      get_solver)
+            else:
+                def get_dyn_sys_from_derivator(derivator):
+                    vector_field = {}
+                    for var, ode in derivator.vector_field.items():
+                        vector_field[var] = ode
+
+                    states = [v for v in derivator.cont_vars]
+                    inputs = [v for v in derivator.vector_field_params]
+
+                    return DynSystem(states, inputs, [], vector_field, {}, False)
+
+                dyn_sys = get_dyn_sys_from_derivator(derivator)
+                encoder  = DecompositionEncoder(get_env(),
+                                                dyn_sys,     #
+                                                invar,       #
+                                                polynomials, #
+                                                init,        #
+                                                safe,        #
+                                                DecompositionOptions(False, False, False, False))
+                (ts, p, predicates) = encoder.get_ts_ia()
+
+                msatic3_res = prove_ts(ts, p)
+
+                if (msatic3_res == MSatic3.Result.SAFE):
+                    res = Result.SAFE
+                    reach_states = TRUE()
+                elif (msatic3_res == MSatic3.Result.UNSAFE):
+                    res = Result.UNKNOWN
+                    reach_states = FALSE()
 
             # Add the invariant states to the set of reachable states
             # The predicates cut from DW are in the invariant
@@ -432,7 +471,8 @@ def dwc(dyn_sys, invar, polynomials, init, safe,
 def dwcl(dyn_sys, invar, polynomials, init, safe,
          get_solver = _get_solver,
          get_lzz_solver = _get_lzz_solver,
-         stats_stream = None):
+         stats_stream = None,
+         use_ic3 = False):
     derivator = Derivator(dyn_sys.get_odes())
     polynomials = get_unique_poly_list(polynomials)
     sort_poly_by_degree(derivator, polynomials)
@@ -441,4 +481,4 @@ def dwcl(dyn_sys, invar, polynomials, init, safe,
         print_abs_stats(stats_stream, derivator, polynomials)
 
     return dwc_general(True, derivator, invar, polynomials, init, safe,
-                       get_solver, get_lzz_solver)
+                       get_solver, get_lzz_solver, use_ic3)
