@@ -42,6 +42,8 @@ class DynSystem(object):
         if (check_malformed and not self.__check_syntax__()):
             raise MalformedSystem
 
+        self._derivator = None
+
     def __repr__(self):
         output = StringIO()
         self._to_stream(output)
@@ -114,17 +116,19 @@ class DynSystem(object):
         """ Return the derivator object for the
         dynamical system.
         """
-        derivator_vars = self._states
-        assert(len(self._disturbances) == 0)
 
-        vector_field = {}
-        for var, ode in self._odes.items():
-            vector_field[var] = ode
+        if self._derivator is None:
+            derivator_vars = self._states
+            assert(len(self._disturbances) == 0)
 
-        derivator = Derivator(vector_field)
+            vector_field = {}
+            for var, ode in self._odes.items():
+                vector_field[var] = ode
 
-        return derivator
+            derivator = Derivator(vector_field)
+            self._derivator = derivator
 
+        return self._derivator
 
     def states(self):
         for x in self._states: yield x

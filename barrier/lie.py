@@ -30,7 +30,7 @@ from sympy import (
     Integer as Integer_sympy,
 )
 
-from sympy import groebner
+from sympy import groebner, factor_list
 from sympy.polys.domains import RR,ZZ
 from sympy.polys.polytools import reduced
 
@@ -235,6 +235,20 @@ class Derivator(object):
         self._degree_memo[expr] = degree
 
         return degree
+
+
+    def add_poly_factors(self, expr, factor_set):
+        sympy_expr = self._get_sympy_expr(expr)
+        factor_predicateslist = []
+
+        # sympy_factor has type Int x (sympy_expr, inteter) List
+        # and represents the constant coefficient (the int)
+        # and a list of (factor, power pairs).
+        # The initial polynomial is equal to constant coefficient + factor * power + ...
+        sympy_factors =  factor_list(sympy_expr)
+        assert(len(sympy_factors) == 2)
+        for (factor_sympy, power) in sympy_factors[1]:
+            factor_set.add(self._get_pysmt_expr(factor_sympy))
 
 
 # EOC Derivator

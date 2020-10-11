@@ -7,6 +7,7 @@ import os
 import sys
 from fractions import Fraction
 from functools import partial, reduce
+from io import StringIO
 
 try:
     import unittest2 as unittest
@@ -33,7 +34,7 @@ from barrier.lie import Derivator
 from barrier.system import DynSystem
 from barrier.utils import get_range_from_int
 
-from barrier.lzz.serialization import importInvar
+from barrier.lzz.serialization import importInvar, serializeInvar
 
 from barrier.lzz.lzz import lzz
 
@@ -204,6 +205,7 @@ class TestDecomposition(TestCase):
             (res, invars) = dwcl(dyn_sys, invar, poly, init, safe)
             self.assertTrue(res == expected[0] and self._eq_wformula(invars,expected[1]))
 
+    @attr('mathematica')
     def test_invar_dwcl(self):
         def rf(a,b):
             return Real(Fraction(a,b))
@@ -267,20 +269,56 @@ class TestDecomposition(TestCase):
             return 0
 
     def test_import_invar(self):
+        def f_eq(f1,f2):
+            solver = _get_solver()
+            return solver.is_valid(Iff(f1,f2))
+
+        def _compare_invar_prob(inv1, inv2):
+            (name1, ant1, cons1, dyn_sys1, invar1, predicates1) = p1
+            (name2, ant2, cons2, dyn_sys2, invar2, predicates2) = p2
+
+            self.assertTrue(name1 == name2 and 
+                            f_eq(ant1, ant2) and
+                            f_eq(cons1, cons2) and
+                            #
+                            set([v for v in dyn_sys1.states()]) == set([v for v in dyn_sys2.states()]) and
+                            set([v for v in dyn_sys1.inputs()]) == set([v for v in dyn_sys2.inputs()]))
+
+            states2 = [v for v in dyn_sys2.states()]
+            for v in dyn_sys1.states():
+                self.assertTrue(v in states2)
+                self.assertTrue(f_eq(Equals(dyn_sys1.get_ode(v),Real(0)),
+                                     Equals(dyn_sys2.get_ode(v), Real(0))))
+
+            for pred1, pred2 in zip(predicates1,predicates2):
+                self.assertTrue(f_eq(Equals(pred1,Real(0)),
+                                     Equals(pred2, Real(0))))
+
+
         current_path = os.path.dirname(os.path.abspath(__file__))
         input_path = os.path.join(current_path, "invar_inputs")
-
         env = get_env()
 
         for invar_file in os.listdir(input_path):
-            if (not invar_file.endswith("*.invar")):
+            if (not invar_file.endswith(".invar")):
                 continue
 
             with open(os.path.join(input_path, invar_file), "r") as json_stream:
                 problem_list = importInvar(json_stream, env)
                 assert(len(problem_list) == 1)
+
                 for p in problem_list:
                     (problem_name, ant, cons, dyn_sys, invar, predicates) = p
+
+                outstream = StringIO()
+                serializeInvar(outstream, problem_list, env)
+                outstream.seek(0)
+                problem_list2 = importInvar(outstream, env)
+
+                for p1,p2 in zip(problem_list,problem_list2):
+                    _compare_invar_prob(p1,p2)
+
+                print("Serialization ok on %s" % problem_name)
 
     def test_import_invar_input(self):
         input_path = self.get_from_path("invar_inputs")
@@ -334,7 +372,7 @@ class TestDecomposition(TestCase):
         not_supported = ["Nonlinear Circuit Example 1+2 (Tunnel Diode Oscillator)"]
 
         for invar_file in os.listdir(input_path):
-            if (not invar_file.endswith("*.invar")):
+            if (not invar_file.endswith(".invar")):
                 continue
 
             with open(os.path.join(input_path, invar_file), "r") as json_stream:
@@ -429,7 +467,7 @@ class TestDecomposition(TestCase):
         input_path = self.get_from_path("invar_inputs")
 
         for invar_file in os.listdir(input_path):
-            if (not invar_file.endswith("*.invar")):
+            if (not invar_file.endswith(".invar")):
                 continue
 
             with open(os.path.join(input_path, invar_file), "r") as json_stream:
@@ -445,8 +483,9 @@ class TestDecomposition(TestCase):
                                  False)
 
                 if (div_ant or div_cons or div_invar or div_ode):
-                    print("%s contains division by non-constants (" \
+                    print("%s (%s) contains division by non-constants (" \
                           "ant: %d, cons : %d, invar: %d, ode: %d)" % (problem_name,
+                                                                       invar_file,
                                                                        div_ant,
                                                                        div_cons,
                                                                        div_invar,
