@@ -62,15 +62,18 @@ class MSatic3():
                                                stdout = subprocess.PIPE,
                                                universal_newlines = True)
             assert(completed_process.returncode == 0)
-
-            sys.stdout.write(completed_process.stdout)
-            sys.stderr.write(completed_process.stderr)
-            res = self.parse_out(completed_process.stdout)
         except subprocess.CalledProcessError as cpe:
-            sys.stdout.write(cpe.stdout)
-            sys.stderr.write(cpe.stderr)
-            sys.stderr.write("%s ended with code %d" % (" ".join(args), cpe.returncode))
-            raise cpe
+            if (cpe.returncode != 1):
+                sys.stdout.write(cpe.stdout)
+                sys.stderr.write(cpe.stderr)
+                sys.stderr.write("%s ended with code %d" % (" ".join(args), cpe.returncode))
+                raise cpe
+            else:
+                completed_process = cpe
+
+        sys.stdout.write(completed_process.stdout)
+        sys.stderr.write(completed_process.stderr)
+        res = self.parse_out(completed_process.stdout)
 
         return res
 

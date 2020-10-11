@@ -345,7 +345,8 @@ def dwc_general(dwcl, derivator,
                                                 new_polynomials,
                                                 init, safe,
                                                 get_solver,
-                                                get_lzz_solver)
+                                                get_lzz_solver,
+                                                use_ic3)
                         return dwc_invar
 
         logger.info("Trying to decompose...")
@@ -389,7 +390,8 @@ def dwc_general(dwcl, derivator,
                                                            And(init, pred),
                                                            safe,
                                                            get_solver,
-                                                           get_lzz_solver)
+                                                           get_lzz_solver,
+                                                           use_ic3)
 
                         # Invar holds under pred
                         dwc_invar = And(dwc_invar, pred)
@@ -429,6 +431,8 @@ def dwc_general(dwcl, derivator,
                     inputs = [v for v in derivator.vector_field_params]
 
                     return DynSystem(states, inputs, [], vector_field, {}, False)
+
+                logging.info("Calling symbolic encoding and ic3 with %d polynomials..." % (len(polynomials)))
 
                 dyn_sys = get_dyn_sys_from_derivator(derivator)
                 encoder  = DecompositionEncoder(get_env(),
