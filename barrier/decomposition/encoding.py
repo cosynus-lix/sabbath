@@ -174,7 +174,8 @@ class DecompositionOptions:
 class DecompositionEncoder:
     def __init__(self, env, dyn_sys, invar, poly, init, safe,
                  options = DecompositionOptions(),
-                 stats_stream = None):
+                 stats_stream = None,
+                 quantified_ts = False):
         """
         Input (a safety verification problem):
         - a polynomial dynamical system der(X) = p(X)
@@ -191,6 +192,7 @@ class DecompositionEncoder:
         self.dyn_sys = dyn_sys
         self.invar = invar
         self.stats_stream = stats_stream
+        self.quantified_ts = False
 
         # Set the list of polynomials
         # The implicit abstraction encoding takes care of adding the
@@ -243,9 +245,11 @@ class DecompositionEncoder:
 
                 build_preds_rec(preds, index + 1, res)
 
-        self.pred_map = {}
-        build_preds_rec(self.preds, 0, self.pred_map)
-        self.pred_vars_f = lambda x : self.pred_map[x]
+
+        if (self.quantified_ts):
+            pred_map = {}
+            build_preds_rec(self.preds, 0, self.pred_map)
+            self.pred_vars_f = lambda x : self.pred_map[x]
 
 
     def get_ts_ia(self):
@@ -280,7 +284,33 @@ class DecompositionEncoder:
         return (ts, new_prop, preds_for_ia)
 
 
+    def get_direct_ts_ia(self):
+        """
+        Output:
+        - A transition system where:
+          - init: initial state expressed over the abstraction predicates
+          - prop: property expressed over the abstraction predicates
+          - trans: the transition relation
+        - List of abstraction polynomials
+        """
+        new_trans = self._get_trans_enc()
+        new_init = And([self.init, self.invar])
+        new_prop = self.safe
+
+        preds_for_ia = _get_preds_ia_list(self.poly)
+        ts_vars = self.vars
+        ts_next = self.next_f
+
+        print("CAVALLO")
+        print(", ".join([str(v) for v in ts_vars]))
+
+        ts = TS(self.env, self.vars, self.next_f, new_init, new_trans)
+
+        return (ts, new_prop, preds_for_ia)
+
+
     def get_quantified_ts(self):
+        assert self.quantified_ts
         abs_rel = _get_abs_rel(self.preds,
                                self.pred_vars_f)
         abs_rel_next = self.next_f(abs_rel)

@@ -60,6 +60,10 @@ def main():
                         choices=["true","false"],
                         default="false",
                         help="Retiming to encode init and property")
+    parser.add_argument("--direct_encoding",
+                        choices=["true","false"],
+                        default="false",
+                        help="Use the direct encoding (must be used in IC3-IA)")
 
     args = parser.parse_args()
 
@@ -147,6 +151,13 @@ def main():
         else:
             encode_init_and_prop = False
 
+        direct_encoding = False
+        if (args.direct_encoding == "true"):
+            direct_encoding = True
+        else:
+            assert args.direct_encoding == "false"
+            direct_encoding = False
+
         print("Re-encoding init and prop? %d" % encode_init_and_prop)
 
         opt = DecompositionOptions(encode_init_and_prop,
@@ -162,7 +173,13 @@ def main():
                                         opt,
                                         sys.stdout)
 
-        (ts, p, predicates) = encoder.get_ts_ia()
+        if (direct_encoding):
+            print("Using the direct encoding to IA...")
+            (ts, p, predicates) = encoder.get_direct_ts_ia()
+        else:
+            print("Using the manual encoding to IA...")
+            (ts, p, predicates) = encoder.get_ts_ia()
+
         with open(args.outvmt, "w") as outstream:
             ts.to_vmt(outstream, p)
             print("Printed vmt to %s..." % args.outvmt)
