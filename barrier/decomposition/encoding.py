@@ -301,9 +301,6 @@ class DecompositionEncoder:
         ts_vars = self.vars
         ts_next = self.next_f
 
-        print("CAVALLO")
-        print(", ".join([str(v) for v in ts_vars]))
-
         ts = TS(self.env, self.vars, self.next_f, new_init, new_trans)
 
         return (ts, new_prop, preds_for_ia)
