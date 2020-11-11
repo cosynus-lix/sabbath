@@ -198,3 +198,28 @@ class TestLie(TestCase):
     def test_rank_constant_lie(self):
         x1,u1 = [Symbol(v, REAL) for v in ["x1","u1"]]
         self._app_rank(u1 - Real(20), {x1 : x1}, 1)
+
+
+    def test_get_remainders_list(self):
+        def aux(poly, f, vars_list):
+            dyn_sys = DynSystem(vars_list, [], [], f, {})
+            derivator = dyn_sys.get_derivator()
+            return derivator.get_remainders_list(poly)
+
+        vars_list_str = ["x","y"]
+        vars_map = {var : Symbol(var, REAL) for var in vars_list_str}
+        vars_list = [vars_map[s] for s in vars_list_str]
+        x = vars_map["x"]
+        y = vars_map["y"]
+
+        tc = [
+            (x, {x : x*x + y, y : 2*y*y}, vars_list, [x,y]),
+            (x*x, {x : x*x + y, y : 2*y*y}, vars_list, [(x * x), (2.0 * x * y), (2.0 * (y * y))]),
+            (x+y, {x : x*x + y, y : 2*y*y}, vars_list, [(x + y), (y + (3.0 * (y * y))), (Fraction(2,3) * y)]),
+            (x*y, {x : x*x + y, y : 2*y*y}, vars_list, [(x * y), (y*y)]),
+        ]
+
+        for t in tc:
+            res = aux(t[0],t[1],t[2])
+            for p1,p2 in zip(res, t[3]):
+                self.assertTrue(is_valid(Equals(p1,p2)))
