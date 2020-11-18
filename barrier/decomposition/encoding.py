@@ -192,7 +192,7 @@ class DecompositionEncoder:
         self.dyn_sys = dyn_sys
         self.invar = invar
         self.stats_stream = stats_stream
-        self.quantified_ts = False
+        self.quantified_ts = quantified_ts
 
         # Set the list of polynomials
         # The implicit abstraction encoding takes care of adding the
@@ -247,7 +247,7 @@ class DecompositionEncoder:
 
 
         if (self.quantified_ts):
-            pred_map = {}
+            self.pred_map = {}
             build_preds_rec(self.preds, 0, self.pred_map)
             self.pred_vars_f = lambda x : self.pred_map[x]
 
