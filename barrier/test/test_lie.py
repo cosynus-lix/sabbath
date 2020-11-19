@@ -217,6 +217,7 @@ class TestLie(TestCase):
             (x*x, {x : x*x + y, y : 2*y*y}, vars_list, [(x * x), (2.0 * x * y), (2.0 * (y * y))]),
             (x+y, {x : x*x + y, y : 2*y*y}, vars_list, [(x + y), (y + (3.0 * (y * y))), (Fraction(2,3) * y)]),
             (x*y, {x : x*x + y, y : 2*y*y}, vars_list, [(x * y), (y*y)]),
+            (x + Real(1), {x : -Fraction(2,1) * y, y : x * x}, [x,y], [1 + x, -2 * y, Real(-2)])
         ]
 
         for t in tc:

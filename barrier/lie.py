@@ -16,7 +16,8 @@ from pysmt.typing import REAL
 
 from sympy import diff, sympify
 from sympy import symbols as sympy_symbols
-from sympy import total_degree
+from sympy import total_degree, S
+
 
 from sympy import (
     diff as sympy_diff,
@@ -237,8 +238,11 @@ class Derivator(object):
             remainders = [rem]
             while (rem != 0):
                 rem_der = Derivator._get_lie_der_sympy(rem, _vector_field)
-                coeff, rem = reduced(rem_der, gb_bases, wrt=vars_list)
-                rem = rem.expand()
+                if (len(gb_bases) == 1 and gb_bases[0].is_number):
+                    rem = S.Zero
+                else:
+                    coeff, rem = reduced(rem_der, gb_bases, wrt=vars_list)
+                    rem = rem.expand()
                 remainders.append(rem)
                 gb_bases = groebner(gb_bases.exprs + [rem], vars_list, order='lex')
 
