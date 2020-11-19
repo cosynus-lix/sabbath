@@ -118,7 +118,10 @@ class TestDecompositionEncoding(TestCase):
                                         TRUE(),
                                         [x,y],
                                         init,
-                                        safe)
+                                        safe,
+                                        DecompositionOptions(),
+                                        None,
+                                        True)
         (ts, p) = encoder.get_quantified_ts()
         (ts, p, predicates) = encoder.get_ts_ia()
 

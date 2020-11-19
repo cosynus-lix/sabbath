@@ -17,7 +17,7 @@ import logging
 from enum import Enum
 
 from barrier.system import DynSystem
-from barrier.lzz.lzz import (lzz, lzz_fast)
+from barrier.lzz.lzz import lzz, lzz_fast, LzzOpt
 from barrier.system import DynSystem
 from barrier.lie import Derivator
 
@@ -242,7 +242,7 @@ def _get_invar_lazy_set(derivator, invar,
 
                 lzz_solver = get_solver()
 
-                is_invar = lzz(lzz_solver, And(abs_state),
+                is_invar = lzz(LzzOpt(), lzz_solver, And(abs_state),
                                derivator,
                                And(abs_state),
                                Or(And(abs_state), And(neigh)))
@@ -331,7 +331,8 @@ def dwc_general(dwcl, derivator,
             for pred in preds:
                 if solver.is_valid(Implies(And(invar, init), pred)):
                     lzz_solver = get_lzz_solver()
-                    is_invar = lzz_fast(lzz_solver, pred, derivator,
+                    is_invar = lzz_fast(LzzOpt(),
+                                        lzz_solver, pred, derivator,
                                         pred, invar)
                     lzz_solver.exit()
                     logger.info("LZZ end...")
@@ -359,13 +360,13 @@ def dwc_general(dwcl, derivator,
             eq_0 = Equals(a,rt0)
 
             lzz_solver = get_lzz_solver()
-            is_invar = lzz(lzz_solver, eq_0, derivator, eq_0, invar)
+            is_invar = lzz(LzzOpt(), lzz_solver, eq_0, derivator, eq_0, invar)
             lzz_solver.exit()
 
             if is_invar:
                 inv_derivator = derivator.get_inverse()
                 lzz_solver = get_lzz_solver()
-                is_invar = lzz(lzz_solver, eq_0, inv_derivator, eq_0, invar)
+                is_invar = lzz(LzzOpt(), lzz_solver, eq_0, inv_derivator, eq_0, invar)
                 lzz_solver.exit()
 
                 if (is_invar):

@@ -20,7 +20,8 @@ from pysmt.typing import BOOL, REAL
 from barrier.lzz.lzz import (
     get_inf_dnf, get_ivinf_dnf,
     get_lzz_encoding,
-    debug_print_max_degree
+    debug_print_max_degree,
+    LzzOpt
 )
 from barrier.lie import Derivator
 from barrier.formula_utils import (
@@ -54,20 +55,20 @@ def _get_preds_ia_list(poly):
         [LE(p, zero) for p in poly]
     )
 
-def _get_lzz_in(derivator, preds_list, next_f, lzz_f):
+def _get_lzz_in(opt, derivator, preds_list, next_f, lzz_f):
     current_impl = lambda p : Implies(p, lzz_f(p))
     next_impl = lambda p : Implies(next_f(p),
-                                   get_inf_dnf(derivator, lzz_f(p)))
+                                   get_inf_dnf(opt, derivator, lzz_f(p)))
     and_not_inf = lambda p : And(p,
-                                 Not(get_inf_dnf(derivator, lzz_f(p))))
+                                 Not(get_inf_dnf(opt, derivator, lzz_f(p))))
 
     return And([And(list(map(current_impl, preds_list))),
                 And(list(map(next_impl, preds_list))),
                 Or(list(map(and_not_inf, preds_list)))])
 
 
-def _get_lzz_out(derivator, preds_list, next_f, lzz_f):
-    current_impl = lambda p : Implies(p, get_ivinf_dnf(derivator, lzz_f(p)))
+def _get_lzz_out(opt, derivator, preds_list, next_f, lzz_f):
+    current_impl = lambda p : Implies(p, get_ivinf_dnf(opt, derivator, lzz_f(p)))
     next_impl = lambda p : Implies(next_f(p), lzz_f(p))
     and_not_inf = lambda p : And(p, Not(lzz_f(p)))
 
@@ -152,7 +153,8 @@ class DecompositionOptions:
                  rewrite_init = False,
                  rewrite_property = False,
                  add_init_prop_predicates = False,
-                 explicit_encoding = False):
+                 explicit_encoding = False,
+                 lzz_opt = LzzOpt()):
         """
         Options for the decomposition:
         - rewrite_init: add a reset states for the initial states of the
@@ -168,6 +170,7 @@ class DecompositionOptions:
         self.rewrite_property = rewrite_property
         self.add_init_prop_predicates = add_init_prop_predicates
         self.explicit_encoding = explicit_encoding
+        self.lzz_opt = lzz_opt
 
 # EOC DecompositionOptions
 
@@ -345,10 +348,10 @@ class DecompositionEncoder:
 
         if (len(self.preds) > 0):
             if (not self.options.explicit_encoding):
-                lzz_in = _get_lzz_in(derivator, self.preds,
+                lzz_in = _get_lzz_in(self.options.lzz_opt, derivator, self.preds,
                                      self.next_f, self.lzz_f)
 
-                lzz_out = _get_lzz_out(derivator, self.preds,
+                lzz_out = _get_lzz_out(self.options.lzz_opt, derivator, self.preds,
                                        self.next_f, self.lzz_f)
 
 #                 # DEBUG

@@ -135,7 +135,7 @@ class ApplyPredicate(IdentityDagWalker):
     Apply a function map_f[predicate] to each formula
     containing predicate.
 
-    Note: the walker is restricted to predicates (<, <=)
+    Note: the walker is restricted to predicates (<, <=, =)
     """
     def __init__(self, map_f, env=None, invalidate_memoization=None):
         IdentityDagWalker.__init__(self,
@@ -158,5 +158,8 @@ class ApplyPredicate(IdentityDagWalker):
 
         return new_node
 
-
-
+    def walk_equals(self, formula, args, **kwargs):
+        predicate = Minus(args[0], args[1])
+        f = self.map_f[operators.EQUALS]
+        new_node = f(predicate)
+        return new_node

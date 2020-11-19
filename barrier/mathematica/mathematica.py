@@ -68,6 +68,10 @@ class MathematicaSession():
 
     return MathematicaSession._session
 
+  def terminate_session():
+    if not MathematicaSession._session is None:
+      MathematicaSession._session.terminate()
+
 class MathematicaOptions(SolverOptions):
   """Options for the Mathematica Solver.
   """

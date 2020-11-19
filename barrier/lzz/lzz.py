@@ -22,6 +22,13 @@ from pysmt.shortcuts import (
     Real,
 )
 
+class LzzOpt:
+    def __init__(self, ivinf_via_inf = False, use_remainder = False):
+        # remainder without inverting ivinf is not implemented now
+        assert ((not use_remainder) or ivinf_via_inf)
+        self.ivinf_via_inf = ivinf_via_inf
+        self.use_remainder = use_remainder
+
 def debug_print_max_degree(logger, formula):
     if (logger.level <= logging.DEBUG):
         degree = get_max_poly_degree(formula)
@@ -49,12 +56,22 @@ def get_generic_set(poly, derivator, op, sign_mult, rank = None):
     """
     TODO: document, factor the computation of trans_f, \psi+ and \phi+
     """
+    # lie derivatives = [l0,l1,...,lk]
+    # returns:   p0 op 0
+    #          | (p_0 = 0 & p_1 op 0)
+    #          | (p_0 = 0 & p_1 = 0 & p_2 op 0)
+    #          ...
+    # op should be <,>,=
+    #
+
     def get_lie_op_term(lie, op, sign_mult, i):
         if (sign_mult and i % 2 != 0):
             # on odd indexes we switch the sign of lie
             # this is to encode \phi+
             lie = Minus(Real(0), lie)
         return op(lie, Real(0))
+
+    assert (op == GT or op == LT or op == Equals)
 
     if rank is None:
         rank = derivator.get_lie_rank(poly)
@@ -85,6 +102,27 @@ def get_generic_set(poly, derivator, op, sign_mult, rank = None):
     #              (str(poly), str(op), str(sign_mult), rank, str(trans_f_p.serialize())))
 
     return trans_f_p.simplify()
+
+def get_inf_op_remainders(poly, derivator, op):
+    # remainders = [r0,r1,...,rk]
+    # returns:   r0 < 0
+    #          | (r_0 = 0 & r_1 op 0)
+    #          | (r_0 = 0 & r_1 = 0 & r_2 op 0)
+    #          ...
+    remainders = derivator.get_remainders_list(poly)
+
+    trans_f_p = FALSE()
+    index = 0
+    for r in remainders:
+        disjunct = Equals(r, Real(0))
+        j = 0
+        while (j < index):
+            disjunct = And(disjunct, remainders[j])
+            j = j + 1
+        trans_f_p = Or(trans_f_p, disjunct)
+        index = index + 1
+    return trans_f_p
+
 
 def get_trans_f_p(poly, dyn_sys):
     """
@@ -174,10 +212,12 @@ def get_lie_eq_0(derivator, predicate, rank):
             all_eq_0 = And(all_eq_0, Equals(lie_at_i, Real(0)))
     return all_eq_0
 
+# IN_{f,<}
 def get_inf_lt_pred(derivator, predicate):
     predicate = change_sign(predicate)
     return get_generic_set(predicate, derivator, GT, False)
 
+# IN_{f,<=}
 def get_inf_le_pred(derivator, predicate):
     predicate = change_sign(predicate)
     rank = derivator.get_lie_rank(predicate)
@@ -186,10 +226,12 @@ def get_inf_le_pred(derivator, predicate):
     res = Or(first_disjunct, all_eq_0)
     return res
 
+# IvIN_{f,<}
 def get_ivinf_lt_pred(derivator, predicate):
     predicate = change_sign(predicate)
     return get_generic_set(predicate, derivator, GT, True)
 
+# IvIN_{f,<=}
 def get_ivinf_le_pred(derivator, predicate):
     predicate = change_sign(predicate)
     rank = derivator.get_lie_rank(predicate)
@@ -198,9 +240,13 @@ def get_ivinf_le_pred(derivator, predicate):
     res = Or(first_disjunct, all_eq_0)
     return res
 
-def get_inf_dnf(derivator, formula):
+def unsupported(pred):
+    raise Exception("Unsupported predicate")
+
+def get_inf_dnf(lzz_opt, derivator, formula):
     app = ApplyPredicate({pysmt_op.LT : partial(get_inf_lt_pred, derivator),
-                          pysmt_op.LE : partial(get_inf_le_pred, derivator)})
+                          pysmt_op.LE : partial(get_inf_le_pred, derivator),
+                          pysmt_op.EQUALS : unsupported })
     inf_dnf = app.walk(formula)
     return inf_dnf
 
@@ -210,18 +256,18 @@ def get_inf_dnf(derivator, formula):
 # The main drawback is that we will not reuse the memoization of the
 # rank for a polynomial, since the vector field changes.
 #
-IVINF_VIA_MINUS_F = False
-def get_ivinf_dnf(derivator, formula):
-    if IVINF_VIA_MINUS_F:
+def get_ivinf_dnf(lzz_opt, derivator, formula):
+    if lzz_opt.ivinf_via_inf:
         inverse_derivator = derivator.get_inverse()
-        return get_inf_dnf(inverse_derivator, formula)
+        return get_inf_dnf(lzz_opt, inverse_derivator, formula)
     else:
         app = ApplyPredicate({pysmt_op.LT : partial(get_ivinf_lt_pred, derivator),
-                              pysmt_op.LE : partial(get_ivinf_le_pred, derivator)})
+                              pysmt_op.LE : partial(get_ivinf_le_pred, derivator),
+                              pysmt_op.EQUALS : unsupported })
         ivinf_dnf = app.walk(formula)
         return ivinf_dnf
 
-def lzz(solver, candidate, derivator, init, invar):
+def lzz(lzz_opt, solver, candidate, derivator, init, invar):
     """ Implement the LZZ procedure.
 
     Check if the candidate an invariant for derivator, starting from
@@ -245,16 +291,16 @@ def lzz(solver, candidate, derivator, init, invar):
         invar_dnf = c.get_dnf(invar)
 
         c2 = Implies(And(candidate, invar,
-                         get_inf_dnf(derivator, invar_dnf)),
-                     get_inf_dnf(derivator, candidate_dnf))
+                         get_inf_dnf(lzz_opt, derivator, invar_dnf)),
+                     get_inf_dnf(lzz_opt, derivator, candidate_dnf))
 
         logger.debug("Checking c2...")
         debug_print_max_degree(logger, c2)
 
         if solver.is_valid(c2):
             c3 = Implies(And(Not(candidate), invar,
-                             get_ivinf_dnf(derivator, invar_dnf)),
-                         Not(get_ivinf_dnf(derivator, candidate_dnf)))
+                             get_ivinf_dnf(lzz_opt, derivator, invar_dnf)),
+                         Not(get_ivinf_dnf(lzz_opt, derivator, candidate_dnf)))
 
             logger.debug("Checking c3...")
             debug_print_max_degree(logger, c3)
@@ -272,7 +318,7 @@ def lzz(solver, candidate, derivator, init, invar):
         return False
 
 
-def get_lzz_encoding(candidate, derivator, invar):
+def get_lzz_encoding(lzz_opt, candidate, derivator, invar):
     """
     Return the formula:
     ((candidate /\ Invar /\ Inf(Invar)) => Inf(candidate))  /\
@@ -285,16 +331,16 @@ def get_lzz_encoding(candidate, derivator, invar):
     invar_dnf = c.get_dnf(invar)
 
     c2 = Implies(And(candidate, invar,
-                     get_inf_dnf(derivator, invar_dnf)),
-                 get_inf_dnf(derivator, candidate_dnf))
+                     get_inf_dnf(lzz_opt, derivator, invar_dnf)),
+                 get_inf_dnf(lzz_opt, derivator, candidate_dnf))
 
     c3 = Implies(And(Not(candidate), invar,
-                     get_ivinf_dnf(derivator, invar_dnf)),
-                 Not(get_ivinf_dnf(derivator, candidate_dnf)))
+                     get_ivinf_dnf(lzz_opt, derivator, invar_dnf)),
+                 Not(get_ivinf_dnf(lzz_opt, derivator, candidate_dnf)))
 
     return And(c2, c3)
 
-def lzz_fast(solver, candidate, derivator, init, invar):
+def lzz_fast(lzz_opt, solver, candidate, derivator, init, invar):
     """ Implement the "fast" LZZ procedure, as in Pegasus.
 
     The "fast" LZZ drops the possibly expensive conjuncts from
@@ -310,26 +356,25 @@ def lzz_fast(solver, candidate, derivator, init, invar):
     # 3. (!candidate /\ Invar) => !IvInf(candidate)
     # are valid
     c1 = Implies(init, candidate)
-    logger.debug("Checking c1...")
+    logger.debug("Checking c1 (fast)...")
     debug_print_max_degree(logger, c1)
     if (solver.is_valid(c1)):
         # Check condition on the differential equation
-
         c = DNFConverter()
         candidate_dnf = c.get_dnf(candidate)
         invar_dnf = c.get_dnf(invar)
 
         c2 = Implies(And(candidate, invar),
-                     get_inf_dnf(derivator, candidate_dnf))
+                     get_inf_dnf(lzz_opt, derivator, candidate_dnf))
 
-        logger.debug("Checking c2...")
+        logger.debug("Checking c2 (fast)...")
         debug_print_max_degree(logger, c2)
 
         if solver.is_valid(c2):
             c3 = Implies(And(Not(candidate), invar),
-                         Not(get_ivinf_dnf(derivator, candidate_dnf)))
+                         Not(get_ivinf_dnf(lzz_opt, derivator, candidate_dnf)))
 
-            logger.debug("Checking c3...")
+            logger.debug("Checking c3 (fast)...")
             debug_print_max_degree(logger, c3)
             if solver.is_valid(c3):
               return True

@@ -30,7 +30,7 @@ from barrier.decomposition.encoding import (
 from barrier.ts import TS
 from barrier.utils import get_mathsat_smtlib
 from barrier.mathematica.mathematica import (
-    get_mathematica, exit_callback_print_time, OutOfTimeSolverError
+    get_mathematica, exit_callback_print_time, OutOfTimeSolverError, MathematicaSession
 )
 
 
@@ -125,6 +125,9 @@ def main():
         # except Exception as e:
         #     print("Some other exception")
         #     print(e)
+        finally:
+            if (args.solver == "mathematica"):
+                MathematicaSession.terminate_session()
         # finally:
         #     # Need to force the exit after an exception --- this will kill
         #     # the mathematica thread
@@ -190,3 +193,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    sys.exit(os.EX_OK)
