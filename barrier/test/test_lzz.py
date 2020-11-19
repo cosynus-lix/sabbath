@@ -139,8 +139,8 @@ class TestLzz(TestCase):
         ]
 
         derivator = dyn_sys.get_derivator()
-        for opt in get_lzz_opts():
-            for pred, res in zip(preds, expected):
+        for pred, res in zip(preds, expected):
+            for opt in get_lzz_opts():
                 inf = get_inf_dnf(opt, derivator, pred)
                 self.assertTrue(is_valid(Iff(res, inf)))
 
@@ -355,8 +355,6 @@ class TestLzz(TestCase):
                 p= importLzz(json_stream, env)
 
                 (name, candidate, dyn_sys, invar) = p
-
-                print(name)
 
                 div_candidate = has_vars_in_divisor(candidate)
                 div_invar = has_vars_in_divisor(invar)

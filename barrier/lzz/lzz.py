@@ -103,25 +103,26 @@ def get_generic_set(poly, derivator, op, sign_mult, rank = None):
 
     return trans_f_p.simplify()
 
-def get_inf_op_remainders(poly, derivator, op):
+def get_inf_op_remainders(derivator, poly, op):
     # remainders = [r0,r1,...,rk]
-    # returns:   r0 < 0
+    # returns: (rank,  r0 < 0
     #          | (r_0 = 0 & r_1 op 0)
     #          | (r_0 = 0 & r_1 = 0 & r_2 op 0)
-    #          ...
-    remainders = derivator.get_remainders_list(poly)
+    #          ...)
 
+    remainders = derivator.get_remainders_list(poly)
     trans_f_p = FALSE()
     index = 0
     for r in remainders:
-        disjunct = Equals(r, Real(0))
         j = 0
+        disjunct = op(r, Real(0))
         while (j < index):
-            disjunct = And(disjunct, remainders[j])
+            disjunct = And(disjunct, Equals(remainders[j], Real(0)))
             j = j + 1
+
         trans_f_p = Or(trans_f_p, disjunct)
         index = index + 1
-    return trans_f_p
+    return (len(remainders), trans_f_p)
 
 
 def get_trans_f_p(poly, dyn_sys):
@@ -221,9 +222,30 @@ def get_inf_lt_pred(derivator, predicate):
 def get_inf_le_pred(derivator, predicate):
     predicate = change_sign(predicate)
     rank = derivator.get_lie_rank(predicate)
+
+    print("rank " + str(rank))
+
     first_disjunct = get_generic_set(predicate, derivator, GT, False, rank)
     all_eq_0 = get_lie_eq_0(derivator, predicate, rank)
     res = Or(first_disjunct, all_eq_0)
+    return res
+
+# IN_{f,<}
+def get_inf_lt_pred_remainders(derivator, predicate):
+    predicate = change_sign(predicate)
+    rank, inf = get_inf_op_remainders(derivator, predicate, GT)
+    return inf
+
+# IN_{f,<=}
+def get_inf_le_pred_remainders(derivator, predicate):
+    predicate = change_sign(predicate)
+    rank, inf = get_inf_op_remainders(derivator, predicate, GT)
+
+    rank = rank - 1
+    print("rank " + str(rank))
+
+    all_eq_0 = get_lie_eq_0(derivator, predicate, rank)
+    res = Or(inf, all_eq_0)
     return res
 
 # IvIN_{f,<}
@@ -244,9 +266,16 @@ def unsupported(pred):
     raise Exception("Unsupported predicate")
 
 def get_inf_dnf(lzz_opt, derivator, formula):
-    app = ApplyPredicate({pysmt_op.LT : partial(get_inf_lt_pred, derivator),
-                          pysmt_op.LE : partial(get_inf_le_pred, derivator),
-                          pysmt_op.EQUALS : unsupported })
+    if (not lzz_opt.use_remainder):
+        op_map = {pysmt_op.LT : partial(get_inf_lt_pred, derivator),
+                  pysmt_op.LE : partial(get_inf_le_pred, derivator),
+                  pysmt_op.EQUALS : unsupported }
+    else:
+        op_map = {pysmt_op.LT : partial(get_inf_lt_pred_remainders, derivator),
+                  pysmt_op.LE : partial(get_inf_le_pred_remainders, derivator),
+                  pysmt_op.EQUALS : unsupported }
+
+    app = ApplyPredicate(op_map)
     inf_dnf = app.walk(formula)
     return inf_dnf
 
@@ -261,6 +290,7 @@ def get_ivinf_dnf(lzz_opt, derivator, formula):
         inverse_derivator = derivator.get_inverse()
         return get_inf_dnf(lzz_opt, inverse_derivator, formula)
     else:
+        assert not lzz_opt.use_remainder
         app = ApplyPredicate({pysmt_op.LT : partial(get_ivinf_lt_pred, derivator),
                               pysmt_op.LE : partial(get_ivinf_le_pred, derivator),
                               pysmt_op.EQUALS : unsupported })
