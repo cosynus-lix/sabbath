@@ -18,6 +18,7 @@ from pysmt.shortcuts import (
 )
 
 from barrier.lzz.serialization import importInvar
+from barrier.lzz.lzz import LzzOpt
 from barrier.decomposition.explicit import (
     Result,
     dwcl,
@@ -53,6 +54,9 @@ def main():
                         type=int,
                         help="Time out for the mathematica kernel (Default: 0 (no timeout))")
 
+    parser.add_argument("--lzz_use_remainders",
+                        dest='lzz_use_remainders', action='store_true',
+                        help="Encode In set with remainders (Default: False)")
 
     parser.add_argument("--outvmt", help="Output vmt file")
     parser.add_argument("--outpred", help="Output predicates file")
@@ -60,6 +64,7 @@ def main():
                         choices=["true","false"],
                         default="false",
                         help="Retiming to encode init and property")
+
     parser.add_argument("--direct_encoding",
                         choices=["true","false"],
                         default="false",
@@ -91,6 +96,12 @@ def main():
     # print(init.serialize())
     # print(safe.serialize())
 
+    if (args.lzz_use_remainders):
+        lzz_opt = LzzOpt(True, True)
+    else:
+        lzz_opt = LzzOpt(False, False)
+
+
     if (args.task in ["dwcl","reach","dwcl_ic3"]):
 
         exit_callback_inst = partial(exit_callback_print_time, outstream=sys.stdout)
@@ -109,7 +120,8 @@ def main():
                 print("Verifying using " + args.task + "...")
                 (res, invars) = dwcl(dyn_sys, invariants, predicates, init, safe,
                                      get_solver, get_solver, sys.stdout,
-                                     args.task == "dwcl_ic3")
+                                     args.task == "dwcl_ic3",
+                                     lzz_opt)
 
             elif (args.task == "reach"):
                 print("Verifying using reachability analysis...")
@@ -117,7 +129,8 @@ def main():
                                                invariants,
                                                predicates,
                                                init, safe, get_solver,
-                                               sys.stdout)
+                                               sys.stdout,
+                                               lzz_opt)
 
             print("%s %s: %s" % (problem_name, str(res), str(invars)))
         except SolverAPINotFound as e:
@@ -166,7 +179,8 @@ def main():
         opt = DecompositionOptions(encode_init_and_prop,
                                    encode_init_and_prop,
                                    False,
-                                   False)
+                                   False,
+                                   lzz_opt)
         encoder  = DecompositionEncoder(env,
                                         dyn_sys,
                                         invariants,
