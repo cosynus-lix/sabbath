@@ -122,7 +122,7 @@ def get_inf_op_remainders(derivator, poly, op):
 
         trans_f_p = Or(trans_f_p, disjunct)
         index = index + 1
-    return (len(remainders), trans_f_p)
+    return (len(remainders) - 1, trans_f_p)
 
 
 def get_trans_f_p(poly, dyn_sys):
@@ -222,9 +222,6 @@ def get_inf_lt_pred(derivator, predicate):
 def get_inf_le_pred(derivator, predicate):
     predicate = change_sign(predicate)
     rank = derivator.get_lie_rank(predicate)
-
-    print("rank " + str(rank))
-
     first_disjunct = get_generic_set(predicate, derivator, GT, False, rank)
     all_eq_0 = get_lie_eq_0(derivator, predicate, rank)
     res = Or(first_disjunct, all_eq_0)
@@ -240,10 +237,6 @@ def get_inf_lt_pred_remainders(derivator, predicate):
 def get_inf_le_pred_remainders(derivator, predicate):
     predicate = change_sign(predicate)
     rank, inf = get_inf_op_remainders(derivator, predicate, GT)
-
-    rank = rank - 1
-    print("rank " + str(rank))
-
     all_eq_0 = get_lie_eq_0(derivator, predicate, rank)
     res = Or(inf, all_eq_0)
     return res

@@ -64,9 +64,12 @@ class Derivator(object):
 
         # memoization for the rank computation
         self._rank_memo = {}
+        # memoization for computing the remainder
+        self._remainder_memo = {}
 
         # memo for computing the polynomial's degree
         self._degree_memo = {}
+
 
     def _add_param(self, params, expr):
         for fv in get_free_variables(expr):
@@ -249,11 +252,15 @@ class Derivator(object):
             remainders.pop() # remove last element
             return remainders
 
-        (_expr, _vector_field, _domain) = self._get_sympy_problem(expr)
-        remainders_sympy = _get_remainder_list_sympy(_expr, _vector_field, _domain)
-        remainders = [self._get_pysmt_expr(e) for e in remainders_sympy]
-        logging.debug("Computed remainders (%d elements)" % len(remainders))
-        return remainders
+        if (expr in self._remainder_memo):
+            return self._remainder_memo[expr]
+        else:
+            (_expr, _vector_field, _domain) = self._get_sympy_problem(expr)
+            remainders_sympy = _get_remainder_list_sympy(_expr, _vector_field, _domain)
+            remainders = [self._get_pysmt_expr(e) for e in remainders_sympy]
+            logging.debug("Computed remainders (%d elements)" % len(remainders))
+            self._remainder_memo[expr] = tuple(remainders)
+            return remainders
 
     def get_poly_degree(self, expr):
         # Get the degree of a polynomial

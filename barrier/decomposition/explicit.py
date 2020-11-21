@@ -327,7 +327,7 @@ def dwc_general(dwcl, derivator,
         for a in polynomials:
             counter += 1
             logger.info("Testing DC on %d/%d..." % (counter, len(polynomials)))
-            preds = {LT(rt0,a), LT(a,rt0), Equals(a,rt0)}
+            preds = [LT(rt0,a), LT(a,rt0), Equals(a,rt0)]
             for pred in preds:
                 if solver.is_valid(Implies(And(invar, init), pred)):
                     lzz_solver = get_lzz_solver()
@@ -356,7 +356,7 @@ def dwc_general(dwcl, derivator,
             counter += 1
             logger.info("Trying DDC %d/%d..." % (counter, len(polynomials)))
 
-            preds = {LT(rt0,a), LT(a,rt0), Equals(a,rt0)}
+            preds = [LT(rt0,a), LT(a,rt0), Equals(a,rt0)]
             eq_0 = Equals(a,rt0)
 
             lzz_solver = get_lzz_solver()
