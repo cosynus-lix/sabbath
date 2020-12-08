@@ -98,9 +98,9 @@ def main():
 
     if (args.lzz_use_remainders):
         lzz_opt = LzzOpt(True, True)
+        print("Using remainders...")
     else:
         lzz_opt = LzzOpt(False, False)
-
 
     if (args.task in ["dwcl","reach","dwcl_ic3"]):
 
