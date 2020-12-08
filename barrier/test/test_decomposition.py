@@ -36,7 +36,7 @@ from barrier.utils import get_range_from_int
 
 from barrier.lzz.serialization import importInvar, serializeInvar
 
-from barrier.lzz.lzz import lzz
+from barrier.lzz.lzz import lzz, LzzOpt
 
 from barrier.decomposition.utils import get_neighbors
 from barrier.decomposition.explicit import (
@@ -55,7 +55,7 @@ from barrier.decomposition.utils import (
 )
 
 from barrier.utils import get_mathsat_smtlib
-from barrier.mathematica.mathematica import get_mathematica
+from barrier.mathematica.mathematica import get_mathematica, MathematicaSession
 from barrier.formula_utils import has_vars_in_divisor
 
 class TestDecomposition(TestCase):
@@ -251,7 +251,7 @@ class TestDecomposition(TestCase):
 
             print("Checking invar...")
             solver = get_solver()
-            is_invar = lzz(solver, invars, dyn_sys.get_derivator(), invars, invar)
+            is_invar = lzz(LzzOpt(), solver, invars, dyn_sys.get_derivator(), invars, invar)
             solver.exit()
             self.assertTrue(is_invar)
 
@@ -261,12 +261,15 @@ class TestDecomposition(TestCase):
             env = get_env()
             solver = get_solver()
             print("Checking invar...")
-            is_invar = lzz(solver, invars, dyn_sys.get_derivator(), invars, invar)
+            is_invar = lzz(LzzOpt(), solver, invars, dyn_sys.get_derivator(), invars, invar)
             solver.exit()
             self.assertTrue(is_invar)
         except SolverAPINotFound as e:
             print("Cannot load mathematica...")
             return 0
+        finally:
+            MathematicaSession.terminate_session()
+
 
     def test_import_invar(self):
         def f_eq(f1,f2):
@@ -409,7 +412,7 @@ class TestDecomposition(TestCase):
                         assert (not invariants is None)
                         solver = Solver(logic=QF_NRA, name="z3")
 
-                        is_invar = lzz(solver, invars, dyn_sys.get_derivator(), init, invariants)
+                        is_invar = lzz(LzzOpt(), solver, invars, dyn_sys.get_derivator(), init, invariants)
                         solver.exit()
                         self.assertTrue(is_invar)
 

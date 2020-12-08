@@ -17,7 +17,7 @@ import logging
 from enum import Enum
 
 from barrier.system import DynSystem
-from barrier.lzz.lzz import (lzz, lzz_fast)
+from barrier.lzz.lzz import lzz, lzz_fast, LzzOpt
 from barrier.system import DynSystem
 from barrier.lie import Derivator
 
@@ -98,7 +98,8 @@ def _get_invar_lazy_set(derivator, invar,
                         polynomials,
                         init, safe,
                         get_solver = _get_solver,
-                        stats_stream = None):
+                        stats_stream = None,
+                        lzz_opt = LzzOpt()):
     """
     Implement the LazyReach invariant computation using semi-algebraic
     decomposition.
@@ -172,6 +173,7 @@ def _get_invar_lazy_set(derivator, invar,
     invar_solver.add_assertion(invar)
 
     safe_solver = get_solver()
+    safe_solver.add_assertion(invar)
     safe_solver.add_assertion(Not(safe))
 
     if solve(safe_solver, init):
@@ -242,10 +244,12 @@ def _get_invar_lazy_set(derivator, invar,
 
                 lzz_solver = get_solver()
 
-                is_invar = lzz(lzz_solver, And(abs_state),
-                               derivator,
-                               And(abs_state),
-                               Or(And(abs_state), And(neigh)))
+                is_invar = lzz(lzz_opt=lzz_opt,
+                               solver=lzz_solver,
+                               candidate=And(abs_state),
+                               derivator=derivator,
+                               init=And(abs_state),
+                               invar=Or(And(abs_state), And(neigh)))
 
                 if (not is_invar):
                     logger.debug("New trans from %s to %s" %
@@ -270,27 +274,32 @@ def _set_to_formula(abs_state_set):
 def get_invar_lazy(dyn_sys, invar, polynomials,
                    init, safe,
                    get_solver = _get_solver,
-                   stats_stream = None):
+                   stats_stream = None,
+                   lzz_opt = LzzOpt()):
     return _get_invar_lazy(dyn_sys.get_derivator(),
                            invar, polynomials,
                            init, safe,
                            get_solver,
-                           stats_stream)
+                           stats_stream,
+                           lzz_opt)
 
 def _get_invar_lazy(derivator, invar, polynomials,
                     init, safe,
                     get_solver = _get_solver,
-                    stats_stream = None):
+                    stats_stream = None,
+                    lzz_opt = LzzOpt()):
     """
     Compute the set of abstract reachable states for dyn_sys, starting
     from init and staying inside safe.
 
     """
+
     (res, reach_states) = _get_invar_lazy_set(derivator, invar,
                                               polynomials,
                                               init, safe,
                                               get_solver,
-                                              stats_stream)
+                                              stats_stream,
+                                              lzz_opt)
     return (res, _set_to_formula(reach_states))
 
 
@@ -298,7 +307,8 @@ def dwc_general(dwcl, derivator,
                 invar, polynomials, init, safe,
                 get_solver = _get_solver,
                 get_lzz_solver = _get_lzz_solver,
-                use_ic3 = False):
+                use_ic3 = False,
+                lzz_opt = LzzOpt()):
     """
     Implements the Differential Weakening Cut (dwc) algorithm.
 
@@ -327,11 +337,12 @@ def dwc_general(dwcl, derivator,
         for a in polynomials:
             counter += 1
             logger.info("Testing DC on %d/%d..." % (counter, len(polynomials)))
-            preds = {LT(rt0,a), LT(a,rt0), Equals(a,rt0)}
+            preds = [LT(rt0,a), LT(a,rt0), Equals(a,rt0)]
             for pred in preds:
                 if solver.is_valid(Implies(And(invar, init), pred)):
                     lzz_solver = get_lzz_solver()
-                    is_invar = lzz_fast(lzz_solver, pred, derivator,
+                    is_invar = lzz_fast(LzzOpt(),
+                                        lzz_solver, pred, derivator,
                                         pred, invar)
                     lzz_solver.exit()
                     logger.info("LZZ end...")
@@ -343,10 +354,12 @@ def dwc_general(dwcl, derivator,
                         dwc_invar = dwc_general(dwcl, derivator,
                                                 And(invar, pred),
                                                 new_polynomials,
-                                                init, safe,
+                                                init,
+                                                safe,
                                                 get_solver,
                                                 get_lzz_solver,
-                                                use_ic3)
+                                                use_ic3,
+                                                lzz_opt)
                         return dwc_invar
 
         logger.info("Trying to decompose...")
@@ -355,17 +368,17 @@ def dwc_general(dwcl, derivator,
             counter += 1
             logger.info("Trying DDC %d/%d..." % (counter, len(polynomials)))
 
-            preds = {LT(rt0,a), LT(a,rt0), Equals(a,rt0)}
+            preds = [LT(rt0,a), LT(a,rt0), Equals(a,rt0)]
             eq_0 = Equals(a,rt0)
 
             lzz_solver = get_lzz_solver()
-            is_invar = lzz(lzz_solver, eq_0, derivator, eq_0, invar)
+            is_invar = lzz(LzzOpt(), lzz_solver, eq_0, derivator, eq_0, invar)
             lzz_solver.exit()
 
             if is_invar:
                 inv_derivator = derivator.get_inverse()
                 lzz_solver = get_lzz_solver()
-                is_invar = lzz(lzz_solver, eq_0, inv_derivator, eq_0, invar)
+                is_invar = lzz(LzzOpt(), lzz_solver, eq_0, inv_derivator, eq_0, invar)
                 lzz_solver.exit()
 
                 if (is_invar):
@@ -391,7 +404,8 @@ def dwc_general(dwcl, derivator,
                                                            safe,
                                                            get_solver,
                                                            get_lzz_solver,
-                                                           use_ic3)
+                                                           use_ic3,
+                                                           lzz_opt)
 
                         # Invar holds under pred
                         dwc_invar = And(dwc_invar, pred)
@@ -420,7 +434,9 @@ def dwc_general(dwcl, derivator,
                                                       invar,
                                                       polynomials,
                                                       init, safe,
-                                                      get_solver)
+                                                      get_solver,
+                                                      None,
+                                                      lzz_opt)
             else:
                 def get_dyn_sys_from_derivator(derivator):
                     vector_field = {}
@@ -441,7 +457,7 @@ def dwc_general(dwcl, derivator,
                                                 polynomials, #
                                                 init,        #
                                                 safe,        #
-                                                DecompositionOptions(False, False, False, False))
+                                                DecompositionOptions(False, False, False, False, lzz_opt))
                 (ts, p, predicates) = encoder.get_ts_ia()
 
                 msatic3_res = prove_ts(ts, p)
@@ -461,7 +477,8 @@ def dwc_general(dwcl, derivator,
 def dwc(dyn_sys, invar, polynomials, init, safe,
         get_solver = _get_solver,
         get_lzz_solver = _get_lzz_solver,
-        stats_stream = None):
+        stats_stream = None,
+        lzz_opt = LzzOpt()):
     derivator = dyn_sys.get_derivator()
     polynomials = get_unique_poly_list(polynomials)
     sort_poly_by_degree(derivator, polynomials)
@@ -470,13 +487,14 @@ def dwc(dyn_sys, invar, polynomials, init, safe,
         print_abs_stats(stats_stream, derivator, polynomials)
 
     return dwc_general(False, derivator, invar, polynomials, init, safe,
-                       get_solver, get_lzz_solver)
+                       get_solver, get_lzz_solver, lzz_opt)
 
 def dwcl(dyn_sys, invar, polynomials, init, safe,
          get_solver = _get_solver,
          get_lzz_solver = _get_lzz_solver,
          stats_stream = None,
-         use_ic3 = False):
+         use_ic3 = False,
+         lzz_opt = LzzOpt()):
     derivator = Derivator(dyn_sys.get_odes())
     polynomials = get_unique_poly_list(polynomials)
     sort_poly_by_degree(derivator, polynomials)
@@ -485,4 +503,4 @@ def dwcl(dyn_sys, invar, polynomials, init, safe,
         print_abs_stats(stats_stream, derivator, polynomials)
 
     return dwc_general(True, derivator, invar, polynomials, init, safe,
-                       get_solver, get_lzz_solver, use_ic3)
+                       get_solver, get_lzz_solver, use_ic3, lzz_opt)

@@ -28,7 +28,8 @@ from barrier.test import TestCase, skipIfMathematicaIsNotAvailable
 from barrier.mathematica.mathematica import (
     MathematicaSolver,
     MathematicaConverter,
-    get_mathematica
+    get_mathematica,
+    MathematicaSession
 )
 
 class TestConverter(TestCase):
@@ -96,3 +97,6 @@ class TestMathematica(TestCase):
             self.assertTrue(solver.solve())
         except SolverAPINotFound:
             print("Mathematica not found - skipping test...")
+        finally:
+            MathematicaSession.terminate_session()
+

@@ -16,7 +16,8 @@ from pysmt.typing import REAL
 
 from sympy import diff, sympify
 from sympy import symbols as sympy_symbols
-from sympy import total_degree
+from sympy import total_degree, S
+
 
 from sympy import (
     diff as sympy_diff,
@@ -63,9 +64,12 @@ class Derivator(object):
 
         # memoization for the rank computation
         self._rank_memo = {}
+        # memoization for computing the remainder
+        self._remainder_memo = {}
 
         # memo for computing the polynomial's degree
         self._degree_memo = {}
+
 
     def _add_param(self, params, expr):
         for fv in get_free_variables(expr):
@@ -224,6 +228,39 @@ class Derivator(object):
 
             self._rank_memo[expr] = rank
             return rank
+
+    def get_remainders_list(self, expr):
+        # See Characterizing Positively Invariant Sets: Inductive and Topological Methods
+        # https://arxiv.org/abs/2009.09797
+
+        def _get_remainder_list_sympy(_expr, _vector_field, _domain):
+            vars_list = [v for v in _vector_field.keys()]
+            rem = _expr
+            rem = rem.expand()
+            gb_bases = groebner([rem], vars_list, order='lex')
+            remainders = [rem]
+            while (rem != 0):
+                rem_der = Derivator._get_lie_der_sympy(rem, _vector_field)
+                if (len(gb_bases) == 1 and gb_bases[0].is_number):
+                    rem = S.Zero
+                else:
+                    coeff, rem = reduced(rem_der, gb_bases, wrt=vars_list)
+                    rem = rem.expand()
+                remainders.append(rem)
+                gb_bases = groebner(gb_bases.exprs + [rem], vars_list, order='lex')
+
+            remainders.pop() # remove last element
+            return remainders
+
+        if (expr in self._remainder_memo):
+            return self._remainder_memo[expr]
+        else:
+            (_expr, _vector_field, _domain) = self._get_sympy_problem(expr)
+            remainders_sympy = _get_remainder_list_sympy(_expr, _vector_field, _domain)
+            remainders = [self._get_pysmt_expr(e) for e in remainders_sympy]
+            logging.debug("Computed remainders (%d elements)" % len(remainders))
+            self._remainder_memo[expr] = tuple(remainders)
+            return remainders
 
     def get_poly_degree(self, expr):
         # Get the degree of a polynomial

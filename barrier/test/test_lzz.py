@@ -32,10 +32,14 @@ from pysmt.shortcuts import (
 from pysmt.logics import QF_NRA
 
 import barrier.test
-from barrier.test import TestCase
+from barrier.test import TestCase, skipIfMathematicaIsNotAvailable
+
 from barrier.system import DynSystem
 from barrier.lzz.lzz import (
-    is_p_invar, lzz, get_inf_dnf, get_ivinf_dnf
+    is_p_invar, lzz, get_inf_dnf, get_ivinf_dnf,
+    get_generic_set,
+    get_inf_op_remainders,
+    LzzOpt
 )
 
 from barrier.lie import Derivator
@@ -43,21 +47,24 @@ from barrier.lzz.serialization import importLzz, importInvar
 from barrier.lzz.dnf import DNFConverter
 
 
-from barrier.mathematica.mathematica import get_mathematica
+from barrier.mathematica.mathematica import get_mathematica, MathematicaSession
 from barrier.utils import get_mathsat_smtlib
 from barrier.formula_utils import has_vars_in_divisor
 
 
-def run_lzz(lzz_problem, env, solver = None):
+def run_lzz(opt, lzz_problem, env, solver = None):
     if solver is None:
         solver = Solver(logic=QF_NRA, name="z3")
 
     (name, candidate, dyn_sys, invar) = lzz_problem
 
-    is_invar = lzz(solver, candidate, dyn_sys.get_derivator(), candidate, invar)
+    is_invar = lzz(opt, solver, candidate, dyn_sys.get_derivator(), candidate, invar)
 
     return is_invar
 
+def get_lzz_opts():
+    opts = [LzzOpt(),LzzOpt(False, False), LzzOpt(True,False), LzzOpt(True,True)]
+    return opts
 
 class TestLzz(TestCase):
 
@@ -91,6 +98,17 @@ class TestLzz(TestCase):
 
         return x, y, dyn_sys
 
+    def test_unsupported(self):
+        x,y,dyn_sys = self._get_sys()
+        derivator = dyn_sys.get_derivator()
+        lzz_opt = LzzOpt()
+
+        pred = Equals(x,Real(0))
+
+        with self.assertRaises(Exception):
+            get_inf_dnf(lzz_opt, derivator, pred)
+        with self.assertRaises(Exception):
+            get_ivinf_dnf(lzz_opt, derivator, pred)
 
     def test_inf_pred(self):
         x,y,dyn_sys = self._get_sys()
@@ -122,8 +140,9 @@ class TestLzz(TestCase):
 
         derivator = dyn_sys.get_derivator()
         for pred, res in zip(preds, expected):
-            inf = get_inf_dnf(derivator, pred)
-            self.assertTrue(is_valid(Iff(res, inf)))
+            for opt in get_lzz_opts():
+                inf = get_inf_dnf(opt, derivator, pred)
+                self.assertTrue(is_valid(Iff(res, inf)))
 
     def test_ivinf_pred(self):
         x,y,dyn_sys = self._get_sys()
@@ -158,10 +177,10 @@ class TestLzz(TestCase):
         ]
 
         derivator = dyn_sys.get_derivator()
-        for pred, res in zip(preds, expected):
-            inf = get_ivinf_dnf(derivator, pred)
-
-            self.assertTrue(is_valid(Iff(res, inf)))
+        for opt in get_lzz_opts():
+            for pred, res in zip(preds, expected):
+                inf = get_ivinf_dnf(opt, derivator, pred)
+                self.assertTrue(is_valid(Iff(res, inf)))
 
     def test_lzz(self):
         x, y = [Symbol(var, REAL) for var in ["x","y"]]
@@ -176,9 +195,10 @@ class TestLzz(TestCase):
                        GT(y, Real(Fraction(-1,2))))
 
         solver = Solver(logic=QF_NRA, name="z3")
-        is_invar = lzz(solver, candidate, dyn_sys.get_derivator(), init, TRUE())
 
-        self.assertTrue(is_invar)
+        for opt in get_lzz_opts():
+            is_invar = lzz(opt, solver, candidate, dyn_sys.get_derivator(), init, TRUE())
+            self.assertTrue(is_invar)
 
     def test_lzz_2(self):
         s, v, a, vseg = [Symbol(var, REAL) for var in ["s", "v", "a", "v_seg"]]
@@ -193,9 +213,9 @@ class TestLzz(TestCase):
         candidate = inv
 
         solver = Solver(logic=QF_NRA, name="z3")
-        is_invar = lzz(solver, candidate, dyn_sys.get_derivator(), init, v < vseg)
-
-        self.assertTrue(is_invar)
+        for opt in get_lzz_opts():
+            is_invar = lzz(opt, solver, candidate, dyn_sys.get_derivator(), init, v < vseg)
+            self.assertTrue(is_invar)
 
     def test_dnf(self):
         def _test_dnf(forig):
@@ -211,132 +231,117 @@ class TestLzz(TestCase):
 
         _test_dnf(And(Or(p1,p2), Or(p1,p3), Or(p2)))
 
-
-    @attr('long')
-    def test_battery(self):
-        def run_with_timeout(lzz_problem,time_out,env):
-            is_invar = None
-            try:
-                name = lzz_problem[0]
-                print("Running %s" % name)
-                kwargs = {"lzz_problem": lzz_problem,
-                          "env" : env}
-                pool = Pool(1)
-                future_res_run_lzz = pool.apply_async(run_lzz, kwds=kwargs)
-                pool.close()
-
-                # Get result after 10 seconds or kill
-                try:
-                    # is_invar = run_lzz(lzz_problem, env)
-                    is_invar = future_res_run_lzz.get(time_out)
-                    is_invar = future_res_run_lzz.get(0)
-                    print("%s is %s!" % (name, "True" if is_invar else "False"))
-                except TimeoutError:
-                    print("%s time out!" % name)
-                    is_invar = None
-            finally:
-                pass
-
-            return is_invar
-
-
-        current_path = os.path.dirname(os.path.abspath(barrier.test.__file__))
-        input_path = os.path.join(current_path, "lzz_inputs")
-
-        env = get_env()
-
+    def get_lzz_problems(self, input_path, solver_name):
         # Ignore longer checks
         long_tests = [
-            "3D Lotka Volterra (III)",
-            "3D Lotka Volterra (I)",
-            "Coupled Spring-Mass System (II)",
-            "3D Lotka Volterra (II)",
-            "Longitudinal Motion of an Aircraft",
-            "Van der Pol Fourth Quadrant",
-            "Dumortier Llibre Artes Ex. 10_15_ii",
-            "Constraint-based Example 8 (Phytoplankton Growth)",
-            "Collision Avoidance Maneuver (I)",
-            "Bhatia Szego Ex_2_4 page 68" # because of rank computation
+            "3D_Lotka_Volterra__III_.lzz",
+            "3D_Lotka_Volterra__II_.lzz",
+            "3D_Lotka_Volterra__I_.lzz",
+            "Coupled_Spring-Mass_System__II_.lzz",
+            "Longitudinal_Motion_of_an_Aircraft.lzz",
+            "Van_der_Pol_Fourth_Quadrant.lzz",
+            "Dumortier_Llibre_Artes_Ex._10_15_ii.lzz",
+            "Constraint-based_Example_8_Phytoplankton_Growth_.lzz",
+            "Collision_Avoidance_Maneuver__I_.lzz",
+            "Bhatia_Szego_Ex_2_4_page_68.lzz" # because of rank computation
         ]
 
-
-        long_tests_smt = ["Dumortier Llibre Artes Ex. 1_9b",
-                          "Dumortier Llibre Artes Ex. 10_15_i",
-                          "Ben Sassi Girard 20104 Moore-Greitzer Jet",
-                          "Strogatz Example 6_3_2"]
+        long_tests_smt = ["Dumortier_Llibre_Artes_Ex._1_9b.lzz",
+                          "Dumortier_Llibre_Artes_Ex._10_15_i.lzz",
+                          "Ben_Sassi_Girard_20104_Moore-Greitzer_Jet.lzz",
+                          "Ben_Sassi_Girard_Sankaranarayanan_2014_Fitzhugh-Nagumo.lzz",
+                          "Strogatz_Example_6_3_2.lzz"]
 
         long_tests_z3 = [] + long_tests_smt
         long_tests_msat = [] + long_tests_smt + [
-            "Stable Limit Cycle 2",
-            "Ben Sassi Girard Sankaranarayanan 2014 Fitzhugh-Nagumo",
-            "Strogatz Exercise 7_3_5",
-            "MIT astronautics Lyapunov",
-            "Unstable Unit Circle 2",
-            "Unstable Unit Circle 1",
-            "Arrowsmith Place Fig_3_1 page 72"]
+            "Stable_Limit_Cycle_2.lzz",
+            "Ben_Sassi_Girard_Sankaranarayanan_2014_Fitzhugh-Nagumo.lzz",
+            "Strogatz_Exercise_7_3_5.lzz",
+            "MIT_astronautics_Lyapunov.lzz",
+            "Unstable_Unit_Circle_2.lzz",
+            "Unstable_Unit_Circle_1.lzz",
+            "Arrowsmith_Place_Fig_3_1_page_72.lzz",
+            "Man_Maccallum_Goriely_Page_57.lzz"]
 
-        long_tests_mathematica = ["Strogatz Exercise 7_3_5",
-                                  "Nonlinear Circuit Example 3",
-                                  "Nonlinear Circuit Example 4"]
+        long_tests_mathematica = ["Strogatz_Exercise_7_3_5.lzz",
+                                  "Nonlinear_Circuit_Example_3.lzz",
+                                  "Nonlinear_Circuit_Example_4.lzz",
+                                  "Constraint-based_Example_8__Phytoplankton_Growth_.lzz",
+                                  "Liu_Zhan_Zhao_Emsoft11_Example_25.lzz",
+                                  "Hybrid_Controller_Mode_2.lzz",
+                                  "Hybrid_Controller_Mode_1.lzz"]
 
         # Ignore checks with ghost variables in the invariant
         # We do not support that.
         not_supported = [
             # has ghost variables
-            "Looping Particle",
+            "Looping_Particle.lzz",
             # has function symbols
-            "Nonlinear Circuit Example 1+2 (Tunnel Diode Oscillator)",
+            "Nonlinear_Circuit_Example_1_2__Tunnel_Diode_Oscillator_.lzz",
             # contains old operator (old(v) refers to the value of v before time elapse)
-            "Collision Avoidance Maneuver (II)",
-            "Collision Avoidance Maneuver (III)"]
-
-        all_solvers = [
-            ("msathsat-smtlib",partial(get_mathsat_smtlib,env=get_env())),
-            ("z3", partial(Solver,
-                           logic=QF_NRA,
-                           name="z3")),
-            ("mathematica", partial(get_mathematica,
-                                    env=get_env(),
-                                    budget_time=0))
-        ]
+            "Collision_Avoidance_Maneuver__II_.lzz",
+            "Collision_Avoidance_Maneuver__III_.lzz"]
 
 
-        solvers = []
-        for (name, f) in all_solvers:
-            try:
-                solver_instance = f()
-                solver_instance.is_sat(TRUE())
-                solvers.append((name,f))
-            except Exception:
-                logging.debug("Skipping not found solver %s..." % name)
-                pass
+        if (solver_name == "msathsat-smtlib"):
+            to_ignore = long_tests + not_supported + long_tests_msat
+        elif (solver_name == "z3"):
+            to_ignore = long_tests + not_supported + long_tests_z3
+        elif (solver_name == "mathematica"):
+            to_ignore = long_tests + not_supported + long_tests_mathematica
 
-        for (solver_name, solver_init) in solvers:
+        lzz_problems = []
+        for lzz_file in os.listdir(input_path):
+            if not lzz_file.endswith(".lzz"):
+                continue
+            if not (os.path.basename(lzz_file) in to_ignore):
+                lzz_problems.append(lzz_file)
+
+        return lzz_problems
+
+    def _run_lzz_solver(self, solver_name, solver_init):
+        input_path = self.get_from_path("lzz_inputs")
+        env = get_env()
+
+        try:
+            solver_instance = solver_init()
+            solver_instance.is_sat(TRUE())
+
             print("Running solver %s..." % solver_name)
 
-            for lzz_file in os.listdir(input_path):
-                if not lzz_file.endswith(".lzz"):
-                    continue
+            lzz_files = self.get_lzz_problems(input_path, solver_name)
+            for lzz_file in lzz_files:
                 with open(os.path.join(input_path, lzz_file), "r") as f:
                     lzz_problem = importLzz(f, env)
 
+                for opt in get_lzz_opts():
                     solver = solver_init()
                     assert(not solver is None)
 
-                    if (solver_name == "msathsat-smtlib"):
-                        to_ignore = long_tests + not_supported + long_tests_msat
-                    elif (solver_name == "z3"):
-                        to_ignore = long_tests + not_supported + long_tests_z3
-                    elif (solver_name == "mathematica"):
-                        to_ignore = long_tests + not_supported + long_tests_mathematica
-
-                    if (not lzz_problem[0] in to_ignore):
-                        print("Running LZZ problem from %s (%s)..." % (lzz_file, lzz_problem[0]))
-                        is_invar = run_lzz(lzz_problem, env, solver)
-                        self.assertTrue(is_invar)
+                    print("Running LZZ problem from %s (%s)..." % (lzz_file, lzz_problem[0]))
+                    is_invar = run_lzz(opt, lzz_problem, env, solver)
+                    self.assertTrue(is_invar)
 
                     solver.exit()
                     solver = None
+        finally:
+            MathematicaSession.terminate_session()
+
+
+    @attr('long')
+    def test_battery_z3(self):
+        self._run_lzz_solver("z3", partial(Solver, logic=QF_NRA, name="z3"))
+
+    @attr('long')
+    def test_battery_mathsat(self):
+        self._run_lzz_solver("msathsat-smtlib", partial(get_mathsat_smtlib,env=get_env()))
+
+    @attr('long')
+    @attr('mathematica')
+    @skipIfMathematicaIsNotAvailable()
+    def test_battery_mathematica(self):
+        self._run_lzz_solver("mathematica", partial(get_mathematica, env=get_env(),budget_time=0))
+
 
     def test_models_with_div(self):
         env = get_env()
@@ -350,8 +355,6 @@ class TestLzz(TestCase):
                 p= importLzz(json_stream, env)
 
                 (name, candidate, dyn_sys, invar) = p
-
-                print(name)
 
                 div_candidate = has_vars_in_divisor(candidate)
                 div_invar = has_vars_in_divisor(invar)
