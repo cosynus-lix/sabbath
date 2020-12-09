@@ -33,7 +33,7 @@ from pysmt.exceptions import SolverAPINotFound
 from barrier.test import TestCase, skipIfMSaticIsNotAvailable
 from barrier.system import DynSystem
 from barrier.utils import get_range_from_int, get_mathsat_smtlib
-from barrier.lzz.serialization import importInvar
+from barrier.serialization.invar_serialization import importInvarVer
 
 from barrier.formula_utils import FormulaHelper
 
@@ -135,7 +135,7 @@ class TestDecompositionEncoding(TestCase):
         input_path = os.path.join(current_path, "invar_inputs")
         problem_file = os.path.join(input_path, "Constraint-based_Example_7__Human_Blood_Glucose_Metabolism_.invar")
         with open(problem_file, "r") as json_stream:
-            problem_list = importInvar(json_stream, env)
+            problem_list = importInvarVer(json_stream, env)
 
         (problem_name, init, safe, dyn_sys, invariants, predicates) = problem_list[0]
 
@@ -162,7 +162,7 @@ class TestDecompositionEncoding(TestCase):
         print("Reading input...")
         env = get_env()
         with open(test_case, "r") as f:
-            problem_list = importInvar(f, env)
+            problem_list = importInvarVer(f, env)
             assert(len(problem_list) == 1)
 
         (problem_name, ant, cons, dyn_sys, invar, predicates) = problem_list[0]

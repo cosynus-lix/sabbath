@@ -17,7 +17,7 @@ from pysmt.shortcuts import (
     get_env, Solver
 )
 
-from barrier.lzz.serialization import importInvar
+from barrier.serialization.invar_serialization import importInvarVer
 from barrier.lzz.lzz import LzzOpt
 from barrier.decomposition.explicit import (
     Result,
@@ -86,7 +86,7 @@ def main():
     print("Parsing problem...")
     env = get_env()
     with open(args.problem, "r") as json_stream:
-        problem_list = importInvar(json_stream, env)
+        problem_list = importInvarVer(json_stream, env)
     assert(len(problem_list) == 1)
     (problem_name, init, safe, dyn_sys, invariants, predicates) = problem_list[0]
     print("parsed problem...")

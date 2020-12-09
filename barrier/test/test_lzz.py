@@ -43,7 +43,7 @@ from barrier.lzz.lzz import (
 )
 
 from barrier.lie import Derivator
-from barrier.lzz.serialization import importLzz, importInvar
+from barrier.serialization.invar_serialization import importInvarCheck
 from barrier.lzz.dnf import DNFConverter
 
 
@@ -312,7 +312,7 @@ class TestLzz(TestCase):
             lzz_files = self.get_lzz_problems(input_path, solver_name)
             for lzz_file in lzz_files:
                 with open(os.path.join(input_path, lzz_file), "r") as f:
-                    lzz_problem = importLzz(f, env)
+                    lzz_problem = importInvarCheck(f, env)
 
                 for opt in get_lzz_opts():
                     solver = solver_init()
@@ -352,7 +352,7 @@ class TestLzz(TestCase):
                 continue
 
             with open(os.path.join(input_path, lzz_file), "r") as json_stream:
-                p= importLzz(json_stream, env)
+                p= importInvarCheck(json_stream, env)
 
                 (name, candidate, dyn_sys, invar) = p
 

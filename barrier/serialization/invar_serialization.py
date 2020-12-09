@@ -65,7 +65,7 @@ def readVar(parser, var_decl, all_vars):
         elif cmd.name == smtcmd.DEFINE_FUN:
             (var, formals, typename, body) = cmd.args
 
-def parse_dyn_sys(env, problem_json, is_lzz = False):
+def parse_dyn_sys(env, problem_json, is_check_problem = False):
     parser = SmtLibParser(env)
 
     # Read all the variables
@@ -80,7 +80,7 @@ def parse_dyn_sys(env, problem_json, is_lzz = False):
     for var_decl in problem_json["contVars"]:
         readVar(parser, var_decl, cont_vars)
 
-    if (not is_lzz):
+    if (not is_check_problem):
         # Antecedent
         antecedent = fromStringFormula(parser, vars_decl_str, problem_json["antecedent"])
         # Consequent
@@ -114,17 +114,17 @@ def parse_dyn_sys(env, problem_json, is_lzz = False):
 
     dyn_sys = DynSystem(cont_vars, input_vars, [], odes, {}, False)
 
-    if (not is_lzz):
+    if (not is_check_problem):
         return (dyn_sys, invar, antecedent, consequent, predicates)
     else:
         return (dyn_sys, invar, candidate)
 
-def importLzz(json_stream, env):
+def importInvarCheck(json_stream, env):
     problem_json = json.load(json_stream)
     (dyn_sys, invar, candidate) = parse_dyn_sys(env, problem_json, True)
     return (problem_json["name"], candidate, dyn_sys, invar)
 
-def importInvar(json_stream, env):
+def importInvarVer(json_stream, env):
     problem_json_list = json.load(json_stream)
 
     results = []
