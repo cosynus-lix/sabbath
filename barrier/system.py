@@ -10,13 +10,19 @@ try:
 except ImportError:
     from io import StringIO
 
+from collections import namedtuple
+
 from functools import reduce
+
 
 import pysmt
 from pysmt.shortcuts import *
 from pysmt.typing import REAL
 
 from barrier.lie import get_inverse_odes, Derivator
+
+from barrier.ts import TS
+
 
 class MalformedSystem(Exception):
     pass
@@ -255,9 +261,49 @@ class DynSystem(object):
             len(self._dist_constraints) == len(self._disturbances) and
             # all dist are predicates from set vars
             reduce(lambda acc, expr: acc and _check_dist(expr),
-                   self._dist_constraints.values(), True)
+                   self._dist_constraints.values(), True) and
 
+            True
         )
 
 
 
+class HybridAutomaton(object):
+    """
+    Explicit hybrid automata representation (locations and edges are explicit).
+    """
+
+    Location = namedtuple("Location", "invar vector_field")
+    Edge = namedtuple("Edge", "dst trans")
+
+    def __init__(self, disc_vars, cont_vars, init, locations, edges):
+        # Discrete variables of the automaton
+        self._disc_vars = list(disc_vars)
+        self._cont_vars = list(cont_vars)
+
+        # Initial condition
+        self._init = {}
+        for (loc_name, data) in init.items():
+            self._init[loc_name] = data
+
+        # List of locations
+        self._locations = {}
+        for (loc_name, data) in locations.items():
+            self._locations[loc_name] = data
+
+        # Adjacency lists for edges
+        self._edges = {}
+        for loc_name, data  in edges.items():
+            dst_list = [l for l in data]
+            self._edges[loc_name] = dst_list
+
+
+    # def to_str(self):
+    #     print(self._disc_vars)
+    #     print(self._cont_vars)
+    #     print("Init:")
+    #     for k,v in self._init.items():
+    #         print("  %s: %s" % (k,v))
+    #     print("Locations")
+    #     for k,v in self._locations.items():
+    #         print("  %s: %s" % (k, v.invar))
