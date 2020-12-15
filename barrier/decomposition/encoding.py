@@ -12,7 +12,8 @@ from pysmt.shortcuts import (
     Equals, GE, GT, LT, LE,
     Exists,
     Symbol,
-    get_atoms
+    get_atoms,
+    ExactlyOne
 )
 
 from pysmt.typing import BOOL, REAL
@@ -334,25 +335,38 @@ class DecompositionEncoder:
                 new_prop)
 
     def _get_trans_enc(self):
+        return DecompositionEncoder._get_dyn_sys_enc(self.dyn_sys,
+                                                     self.next_f, self.lzz_f,
+                                                     self.poly, self.preds,
+                                                     self.invar,
+                                                     self.options,
+                                                     self.stats_stream)
+
+    @staticmethod
+    def _get_dyn_sys_enc(dyn_sys,next_f,lzz_f,poly,preds,invar,
+                         options,stats_stream):
+        """
+        sys: dynamical system
+        """
         logger = logging.getLogger(__name__)
         logger.debug("Encoding transition using lzz...")
 
-        sys = self.dyn_sys.get_renamed(self.lzz_f)
+        sys = dyn_sys.get_renamed(lzz_f)
 
         derivator = sys.get_derivator()
         # Not needed
-        # sort_poly_by_degree(derivator, self.poly)
+        # sort_poly_by_degree(derivator, poly)
 
-        if (not self.stats_stream is None):
-            print_abs_stats(self.stats_stream, derivator, self.poly)
+        if (not stats_stream is None):
+            print_abs_stats(stats_stream, derivator, poly)
 
-        if (len(self.preds) > 0):
-            if (not self.options.explicit_encoding):
-                lzz_in = _get_lzz_in(self.options.lzz_opt, derivator, self.preds,
-                                     self.next_f, self.lzz_f)
+        if (len(preds) > 0):
+            if (not options.explicit_encoding):
+                lzz_in = _get_lzz_in(options.lzz_opt, derivator, preds,
+                                     next_f, lzz_f)
 
-                lzz_out = _get_lzz_out(self.options.lzz_opt, derivator, self.preds,
-                                       self.next_f, self.lzz_f)
+                lzz_out = _get_lzz_out(options.lzz_opt, derivator, preds,
+                                       next_f, lzz_f)
 
 #                 # DEBUG
 #                 print("Checking trans is sat")
@@ -372,23 +386,23 @@ class DecompositionEncoder:
                 lzz_encoding = Or(lzz_in, lzz_out)
             else:
                 lzz_encoding = _get_explicit_encoding(derivator,
-                                                      self.poly,
-                                                      self.next_f,
-                                                      self.lzz_f)
+                                                      poly,
+                                                      next_f,
+                                                      lzz_f)
         else:
             # corner case
             lzz_encoding = TRUE()
 
         # frame condition for the time-independent parameters
-        fc_list = [Equals(var, self.next_f(var)) for var in sys.inputs()]
+        fc_list = [Equals(var, next_f(var)) for var in sys.inputs()]
         if (len(fc_list) == 0):
             fc = TRUE()
         else:
             fc = And(fc_list)
 
-        res = And([_get_neigh_encoding(self.poly, self.next_f),
-                   self.invar,
-                   self.next_f(self.invar),
+        res = And([_get_neigh_encoding(poly, next_f),
+                   invar,
+                   next_f(invar),
                    fc,
                    lzz_encoding])
 
@@ -398,3 +412,105 @@ class DecompositionEncoder:
         return res
 
 # EOC DecompositionEncoder
+
+class DecompositionEncoderHA:
+
+    def __init__(self, env, ha, poly, safe,
+                 options = DecompositionOptions(),
+                 stats_stream = None):
+        logger = logging.getLogger(__name__)
+
+        self.env = env
+        self.ha = ha
+        self.options = options
+
+        # TODO: add implementation for initial predicates
+        self.poly = poly
+        self.poly = get_unique_poly_list(self.poly)
+        logger.debug("Total of polynomials %d" % len(self.poly))
+
+        self.preds = _get_preds_list(self.poly)
+
+        self.safe = safe
+        self.stats_stream = stats_stream
+
+        # Declare the variables
+        def _get_locs(env, ha):
+            loc_vars = {}
+            for loc in ha._locations:
+                loc_name = "loc_%s" % str(loc)
+                loc_var = FormulaHelper.get_fresh_var_name(env.formula_manager, loc_name)
+                loc_vars[loc] = loc_var
+            return loc_vars
+
+        self.loc_vars_map = _get_locs(env, ha)
+        self.disc_vars = [var for var in ha._disc_vars]
+        self.disc_vars += [v for (k,v) in self.loc_vars_map.items()]
+        self.cont_vars = [var for var in ha._cont_vars]
+        self.vars = self.disc_vars + self.cont_vars
+
+        self.next_f = lambda x : partial(FormulaHelper.rename_formula,
+                                         env = env,
+                                         vars = self.vars,
+                                         suffix = "_next")(formula=x)
+        self.lzz_f = lambda x : partial(FormulaHelper.rename_formula,
+                                        env = env,
+                                        vars = self.cont_vars,
+                                        suffix = "_lzz")(formula=x)
+
+
+    def get_ts_ia(self):
+        one_loc = ExactlyOne([v for (k,v) in self.loc_vars_map.items()])
+
+        new_invar = one_loc
+        for (q,loc) in self.ha._locations.items():
+            new_invar = And(new_invar,
+                            Implies(self.loc_vars_map[q], loc.invar))
+
+        new_init = new_invar
+        for q,init in self.ha._init.items():
+            new_init = And(new_init, Implies(self.loc_vars_map[q], init))
+
+        trans_disc = And(new_invar, self.next_f(new_invar))
+        q_trans = FALSE()
+        for q, edges in self.ha._edges.items():
+            for edge in edges:
+                q_trans = Or(q_trans, And([self.loc_vars_map[q],
+                                           self.next_f(self.loc_vars_map[edge.dst]),
+                                           edge.trans]))
+        trans_disc = And(trans_disc, q_trans)
+
+        cont_trans = TRUE()
+        for q, loc in self.ha._locations.items():
+            lzz_loc = DecompositionEncoder._get_dyn_sys_enc(loc.vector_field,
+                                                            self.next_f,
+                                                            self.lzz_f,
+                                                            self.poly,
+                                                            self.preds,
+                                                            self.safe,
+                                                            self.options,
+                                                            self.stats_stream)
+            cont_trans = And(Implies(self.loc_vars_map[q],
+                                     lzz_loc))
+
+
+        new_trans = And(trans_disc, cont_trans)
+
+
+        ts = TS(self.env, self.vars, self.next_f, new_init, new_trans)
+
+        preds_for_ia = _get_preds_ia_list(self.poly)
+        enc = ImplicitAbstractionEncoder(ts,
+                                         self.safe,
+                                         preds_for_ia,
+                                         self.env,
+                                         self.options.rewrite_init,
+                                         self.options.rewrite_property,
+                                         self.options.add_init_prop_predicates)
+        ts = enc.get_ts_abstract()
+        new_prop = enc.get_prop_abstract()
+        preds_for_ia = enc.get_predicates()
+        return (ts, new_prop, preds_for_ia)
+
+
+# EOC DecompositionEncoderHA

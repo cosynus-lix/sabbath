@@ -33,7 +33,9 @@ from pysmt.exceptions import SolverAPINotFound
 from barrier.test import TestCase, skipIfMSaticIsNotAvailable
 from barrier.system import DynSystem
 from barrier.utils import get_range_from_int, get_mathsat_smtlib
+
 from barrier.serialization.invar_serialization import importInvarVer
+from barrier.serialization.hybrid_serialization import importHSVer, serializeHS
 
 from barrier.formula_utils import FormulaHelper
 
@@ -42,7 +44,8 @@ from barrier.msatic3 import MSatic3
 
 from barrier.decomposition.encoding import (
     DecompositionEncoder, DecompositionOptions,
-    _get_neigh_encoding
+    _get_neigh_encoding,
+    DecompositionEncoderHA
 )
 
 
@@ -201,3 +204,19 @@ class TestDecompositionEncoding(TestCase):
                                         options)
         (ts, p, predicates) = encoder.get_ts_ia()
         self.assertTrue(self._prove_ts(ts, p) == MSatic3.Result.SAFE)
+
+
+    @attr('msatic3')
+    @skipIfMSaticIsNotAvailable()
+    def test_hs(self):
+        input_path = self.get_from_path("hybrid_inputs")
+        env = get_env()
+
+        with open(os.path.join(input_path, "disc.hyb"), "r") as f:
+            (name, ha, prop) = importHSVer(f, env)
+
+            options = DecompositionOptions(False, False, False, False)
+            encoder = DecompositionEncoderHA(env, ha, [], prop,
+                                             options, None)
+            (ts, p, predicates) = encoder.get_ts_ia()
+            self.assertTrue(self._prove_ts(ts, p) == MSatic3.Result.SAFE)
