@@ -106,11 +106,19 @@ class TestSystem(TestCase):
                 logging.debug("MSatic3 not found...")
                 continue
 
+
+            print("\n---\nChecking encodings\n---\n")
+
             enc_1 = ImplicitAbstractionEncoder(ts, safe, predicates, env, True, True, False)
             enc_2 = ImplicitAbstractionEncoder(ts, safe, predicates, env, False, False, True)
             enc_3 = ImplicitAbstractionEncoder(ts, safe, predicates, env, False, False, False)
 
-            for enc in [enc_1, enc_2, enc_3]:
+            enc_4 = ImplicitAbstractionEncoder(ts, safe, predicates, env, True, True, False, True)
+            enc_5 = ImplicitAbstractionEncoder(ts, safe, predicates, env, False, False, True, True)
+            enc_6 = ImplicitAbstractionEncoder(ts, safe, predicates, env, False, False, False, True)
+
+            for enc in [enc_1, enc_2, enc_3,,
+                        enc_4, enc_5, enc_6]:
                 ts_abs = enc.get_ts_abstract()
                 safe_abs = enc.get_prop_abstract()
 

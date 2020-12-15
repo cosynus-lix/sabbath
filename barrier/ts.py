@@ -273,7 +273,8 @@ class ImplicitAbstractionEncoder():
     """
     def __init__(self, ts_concrete, prop, predicates, env = get_env(),
                  rewrite_init=False, rewrite_prop=False,
-                 add_init_prop_predicates = False):
+                 add_init_prop_predicates = False,
+                 use_simplified_encoding = False):
         self.env = env
         self.ts_concrete = ts_concrete.copy_ts()
         self.prop = prop
@@ -312,6 +313,16 @@ class ImplicitAbstractionEncoder():
         return (prop, predicates)
 
 
+    @staticmethod
+    def get_eq(abs_f_map, predicates):
+        """ EQ(V,V_abs) := \bigwedge_{p \in predicates}{p(V) <-> p(V_abs)}
+        """
+        iffs = []
+        for p in predicates:
+            iffs.append(Iff(p, p.substitute(abs_f_map)))
+        return And(iffs)
+
+
     def _build_ts_abstract(self, ts_concrete, prop, predicates,
                            rewrite_init, rewrite_prop,
                            add_init_prop_predicates):
@@ -330,14 +341,6 @@ class ImplicitAbstractionEncoder():
 
         P_abs := P(V_abs)
         """
-
-        def get_eq(abs_f_map, predicates):
-            """ EQ(V,V_abs) := \bigwedge_{p \in predicates}{p(V) <-> p(V_abs)}
-            """
-            iffs = []
-            for p in predicates:
-                iffs.append(Iff(p, p.substitute(abs_f_map)))
-            return And(iffs)
 
         (prop, predicates) = (
             ImplicitAbstractionEncoder._init_and_prop_pred_handling(self.env,
@@ -375,7 +378,7 @@ class ImplicitAbstractionEncoder():
                                     subs = next_map)(formula = x)
         abs_concrete_map_next = {next_f(v) : abs_map[next_f(v)] for v in vars_concrete}
 
-        eq_pred = get_eq(abs_map, predicates)
+        eq_pred = ImplicitAbstractionEncoder.get_eq(abs_map, predicates)
 
         # Init(V) \land EQ(V,V_abs)
         init_abs = And(eq_pred, ts_concrete.init)
@@ -401,6 +404,80 @@ class ImplicitAbstractionEncoder():
         # print("END ABS ENCODING")
 
         return (ts_abstract, prop_abstract)
+
+
+    def _build_ts_abstract_simple(self,
+                                  ts_concrete,
+                                  prop,
+                                  predicates,
+                                  rewrite_init,
+                                  rewrite_prop,
+                                  add_init_prop_predicates):
+        """
+        TS := (V, Init(V), Trans(V,V'))
+        P(V)
+        predicates expressed over variables V
+
+        The of the abstract system is:
+        TS_abs := (V \cup V_abs,
+                   Init(V),
+                   EQ(V,V_abs) \land
+                   Trans(V_abs,V') \land
+                  )
+        P_abs := P(V)
+        """
+
+        (prop, predicates) = (
+            ImplicitAbstractionEncoder._init_and_prop_pred_handling(self.env,
+                                                                    ts_concrete,
+                                                                    prop,
+                                                                    predicates,
+                                                                    rewrite_init = rewrite_init,
+                                                                    rewrite_property = rewrite_prop,
+                                                                    add_init_prop_predicates = add_init_prop_predicates)
+        )
+        vars_concrete = list(ts_concrete.state_vars)
+
+        # define the abstract variables
+        # here they're used only as input, so no next
+        # abs(v) = v_abs
+        abs_map = {}
+        for var in vars_concrete:
+            for symb in [var, ts_concrete.next_f(var)]:
+                abs_symb = FormulaHelper.get_fresh_var_name(self.env.formula_manager,
+                                                            "%s_abs" % symb.symbol_name(),
+                                                            symb.symbol_type())
+                abs_map[symb] = abs_symb
+        abs_concrete_map = {v : abs_map[v] for v in vars_concrete}
+        vars_abstract = [abs_map[v] for v in vars_concrete]
+        state_vars = vars_concrete + vars_abstract
+
+        # next(v) = v_next
+        # No need for next of v_abs
+        next_map = {}
+        for v in vars_concrete:
+            next_map[v] = ts_concrete.next_f(v)
+            next_map[abs_map[v]] = abs_map[ts_concrete.next_f(v)]
+        next_f = lambda x : partial(substitute,
+                                    subs = next_map)(formula = x)
+
+        # EQ(V,V_abs) \land EQ(V_abs',V') \land Trans(V_abs,V')
+        eq_pred = ImplicitAbstractionEncoder.get_eq(abs_map, predicates)
+
+        # Init(V)
+        init_abs = ts_concrete.init
+
+        # From T(V,V') to T(V_abs,V')
+        trans_renamed = substitute(ts_concrete.trans, abs_concrete_map)
+        trans_abs = trans_renamed
+
+        ts_abstract = TS(self.env, state_vars, next_f, init_abs, trans_abs)
+
+        # Use the concrete prop
+        prop_abstract = prop
+
+        return (ts_abstract, prop_abstract)
+
 
     def get_ts_abstract(self):
         return self._ts_abstract
