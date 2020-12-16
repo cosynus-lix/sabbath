@@ -16,7 +16,7 @@ from nose.plugins.attrib import attr
 from pysmt.typing import BOOL
 from pysmt.shortcuts import Symbol, TRUE, FALSE, get_env, GE, Real
 from pysmt.shortcuts import Not, And, Or, Implies, Iff, ExactlyOne
-from pysmt.shortcuts import is_valid
+from pysmt.shortcuts import is_valid, is_sat
 from pysmt.typing import REAL
 from pysmt.exceptions import SolverAPINotFound
 
@@ -88,6 +88,11 @@ class TestSystem(TestCase):
                 print("Skipping long test %s" % smtfile)
                 continue
 
+            # DEBUG
+            # print(base)
+            # if (base != "bist_cell"):
+            #     continue
+
             with open(smtfile, "r") as f:
                 print("Reading %s" % smtfile)
                 (ts, safe) = TS.from_vmt(f, env)
@@ -117,8 +122,8 @@ class TestSystem(TestCase):
             enc_5 = ImplicitAbstractionEncoder(ts, safe, predicates, env, False, False, True, True)
             enc_6 = ImplicitAbstractionEncoder(ts, safe, predicates, env, False, False, False, True)
 
-            for enc in [enc_1, enc_2, enc_3,,
-                        enc_4, enc_5, enc_6]:
+            for enc in [enc_1, enc_2, enc_3]:
+            # for enc in [enc_4, enc_5, enc_6]:
                 ts_abs = enc.get_ts_abstract()
                 safe_abs = enc.get_prop_abstract()
 

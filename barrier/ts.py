@@ -287,12 +287,20 @@ class ImplicitAbstractionEncoder():
         self._ts_abstract = None
         self._prop_abstract = None
 
-        (self._ts_abstract, self._prop_abstract) = self._build_ts_abstract(self.ts_concrete,
-                                                                           self.prop,
-                                                                           self.predicates,
-                                                                           self.rewrite_init,
-                                                                           self.rewrite_prop,
-                                                                           self.add_init_prop_predicates)
+        if (not use_simplified_encoding):
+            (self._ts_abstract, self._prop_abstract) = self._build_ts_abstract(self.ts_concrete,
+                                                                               self.prop,
+                                                                               self.predicates,
+                                                                               self.rewrite_init,
+                                                                               self.rewrite_prop,
+                                                                               self.add_init_prop_predicates)
+        else:
+            (self._ts_abstract, self._prop_abstract) = self._build_ts_abstract_simple(self.ts_concrete,
+                                                                                      self.prop,
+                                                                                      self.predicates,
+                                                                                      self.rewrite_init,
+                                                                                      self.rewrite_prop,
+                                                                                      self.add_init_prop_predicates)
 
 
     @staticmethod
@@ -443,33 +451,32 @@ class ImplicitAbstractionEncoder():
         # abs(v) = v_abs
         abs_map = {}
         for var in vars_concrete:
-            for symb in [var, ts_concrete.next_f(var)]:
+            for symb in [var]:
                 abs_symb = FormulaHelper.get_fresh_var_name(self.env.formula_manager,
                                                             "%s_abs" % symb.symbol_name(),
                                                             symb.symbol_type())
                 abs_map[symb] = abs_symb
-        abs_concrete_map = {v : abs_map[v] for v in vars_concrete}
-        vars_abstract = [abs_map[v] for v in vars_concrete]
-        state_vars = vars_concrete + vars_abstract
+
+        state_vars = vars_concrete
 
         # next(v) = v_next
         # No need for next of v_abs
         next_map = {}
         for v in vars_concrete:
             next_map[v] = ts_concrete.next_f(v)
-            next_map[abs_map[v]] = abs_map[ts_concrete.next_f(v)]
         next_f = lambda x : partial(substitute,
                                     subs = next_map)(formula = x)
 
-        # EQ(V,V_abs) \land EQ(V_abs',V') \land Trans(V_abs,V')
+        # EQ(V,V_abs)
         eq_pred = ImplicitAbstractionEncoder.get_eq(abs_map, predicates)
 
         # Init(V)
         init_abs = ts_concrete.init
 
         # From T(V,V') to T(V_abs,V')
-        trans_renamed = substitute(ts_concrete.trans, abs_concrete_map)
-        trans_abs = trans_renamed
+        rename_map = {v : abs_map[v] for v in vars_concrete}
+        trans_renamed = substitute(ts_concrete.trans, rename_map)
+        trans_abs = And(eq_pred, trans_renamed)
 
         ts_abstract = TS(self.env, state_vars, next_f, init_abs, trans_abs)
 
