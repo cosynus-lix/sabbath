@@ -70,6 +70,12 @@ def main():
                         default="false",
                         help="Use the direct encoding (must be used in IC3-IA)")
 
+    parser.add_argument("--simplified_ia_encoding",
+                        choices=["true","false"],
+                        default="false",
+                        help="Use simplified IA encoding (with input variables)")
+
+
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG)
@@ -173,6 +179,13 @@ def main():
         else:
             assert args.direct_encoding == "false"
             direct_encoding = False
+
+        simplified_encoding = False
+        if (args.simplified_encoding == "true"):
+            simplified_encoding = True
+        else:
+            assert args.simplified_encoding == "false"
+            simplified_encoding = False
 
         print("Re-encoding init and prop? %d" % encode_init_and_prop)
 
