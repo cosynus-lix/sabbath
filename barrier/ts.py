@@ -15,7 +15,8 @@ from pysmt.smtlib.annotations import Annotations
 from pysmt.smtlib.printers import SmtPrinter, SmtDagPrinter, quote
 from pysmt.smtlib.parser import SmtLibParser, get_formula
 from pysmt.shortcuts import (
-    TRUE, Iff, And, Or, Not,
+    TRUE, FALSE, Iff, And, Or, Not,
+    EqualsOrIff,
     Symbol, substitute,
 )
 
@@ -274,7 +275,8 @@ class ImplicitAbstractionEncoder():
     def __init__(self, ts_concrete, prop, predicates, env = get_env(),
                  rewrite_init=False, rewrite_prop=False,
                  add_init_prop_predicates = False,
-                 use_simplified_encoding = False):
+                 use_simplified_encoding = False,
+                 ts_to_keep_concrete = None):
         self.env = env
         self.ts_concrete = ts_concrete.copy_ts()
         self.prop = prop
@@ -288,6 +290,7 @@ class ImplicitAbstractionEncoder():
         self._prop_abstract = None
 
         if (not use_simplified_encoding):
+            assert (ts_to_keep_concrete is None)
             (self._ts_abstract, self._prop_abstract) = self._build_ts_abstract(self.ts_concrete,
                                                                                self.prop,
                                                                                self.predicates,
@@ -296,6 +299,7 @@ class ImplicitAbstractionEncoder():
                                                                                self.add_init_prop_predicates)
         else:
             (self._ts_abstract, self._prop_abstract) = self._build_ts_abstract_simple(self.ts_concrete,
+                                                                                      FALSE() if ts_to_keep_concrete is None else ts_to_keep_concrete,
                                                                                       self.prop,
                                                                                       self.predicates,
                                                                                       self.rewrite_init,
@@ -327,7 +331,7 @@ class ImplicitAbstractionEncoder():
         """
         iffs = []
         for p in predicates:
-            iffs.append(Iff(p, p.substitute(abs_f_map)))
+            iffs.append(EqualsOrIff(p, p.substitute(abs_f_map)))
         return And(iffs)
 
 
@@ -416,6 +420,7 @@ class ImplicitAbstractionEncoder():
 
     def _build_ts_abstract_simple(self,
                                   ts_concrete,
+                                  ts_to_keep_concrete,
                                   prop,
                                   predicates,
                                   rewrite_init,
@@ -476,8 +481,7 @@ class ImplicitAbstractionEncoder():
         # From T(V,V') to T(V_abs,V')
         rename_map = {v : abs_map[v] for v in vars_concrete}
         trans_renamed = substitute(ts_concrete.trans, rename_map)
-        trans_abs = And(eq_pred, trans_renamed)
-
+        trans_abs = Or(ts_to_keep_concrete, And(eq_pred, trans_renamed))
         ts_abstract = TS(self.env, state_vars, next_f, init_abs, trans_abs)
 
         # Use the concrete prop

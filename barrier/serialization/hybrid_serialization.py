@@ -107,14 +107,22 @@ def parse_hs(env, problem_json):
             loc_edges.append(ha_edge)
         edges[loc] = loc_edges
 
+    # read predicates
+    predicates = []
+    if "predicates" in problem_json:
+        for pred_json in problem_json["predicates"]:
+            pred_eq_0 = fromStringFormula(parser, vars_decl_str, pred_json)
+            pred = pred_eq_0.args()[0]
+            predicates.append(pred)
+
     # read property
     prop = fromStringFormula(parser, vars_decl_str, problem_json["property"])
 
     ha = HybridAutomaton(input_vars, cont_vars, init, locations, edges)
 
-    return (name, ha, prop)
+    return (name, ha, prop, predicates)
 
-def serializeHS(outstream, name, ha, prop, env):
+def serializeHS(outstream, name, ha, prop, predicates, env):
     cont_vars_smt = [get_smt_vars(v, env) for v in ha._cont_vars]
     disc_vars_smt = [get_smt_vars(v, env) for v in ha._disc_vars]
 
@@ -151,11 +159,12 @@ def serializeHS(outstream, name, ha, prop, env):
         "init" : build_init(ha._init.items()),
         "locations" : build_locations(ha._locations.items()),
         "edges" : build_edges(ha._edges.items()),
+        "predicates" : [get_smt_formula_pred(p, env) for p in predicates],
         "property" : get_smt_formula(prop, env)
     }
     json.dump(ha_json, outstream)
 
 def importHSVer(json_stream, env):
     problem_json = json.load(json_stream)
-    (name, ha, invar) = parse_hs(env, problem_json)
-    return (name, ha, invar)
+    (name, ha, invar, predicates) = parse_hs(env, problem_json)
+    return (name, ha, invar, predicates)

@@ -5,6 +5,7 @@ import logging
 import unittest
 import os
 import sys
+from io import StringIO
 import tempfile
 from fractions import Fraction
 from nose.plugins.attrib import attr
@@ -212,11 +213,38 @@ class TestDecompositionEncoding(TestCase):
         input_path = self.get_from_path("hybrid_inputs")
         env = get_env()
 
-        with open(os.path.join(input_path, "disc.hyb"), "r") as f:
-            (name, ha, prop) = importHSVer(f, env)
+        models = [
+            ("disc1.hyb", MSatic3.Result.SAFE),
+            ("disc2.hyb", MSatic3.Result.UNSAFE),
+            ("disc3.hyb", MSatic3.Result.UNSAFE),
+            ("disc4.hyb", MSatic3.Result.SAFE),
+            ("disc5.hyb", MSatic3.Result.SAFE),
+            ("disc6.hyb", MSatic3.Result.SAFE),
+            ("disc7.hyb", MSatic3.Result.UNSAFE),
+            ("disc8.hyb", MSatic3.Result.SAFE),
+            ("cont1.hyb", MSatic3.Result.UNSAFE),
+            ("cont2.hyb", MSatic3.Result.SAFE),
+        ]
 
-            options = DecompositionOptions(False, False, False, False)
-            encoder = DecompositionEncoderHA(env, ha, [], prop,
-                                             options, None)
-            (ts, p, predicates) = encoder.get_ts_ia()
-            self.assertTrue(self._prove_ts(ts, p) == MSatic3.Result.SAFE)
+        for (m,expected) in models:
+            print("Processing %s" % m)
+            with open(os.path.join(input_path, m), "r") as f:
+                (name, ha, prop, predicates) = importHSVer(f, env)
+
+                options = DecompositionOptions(False, False, False, False)
+                encoder = DecompositionEncoderHA(env, ha, predicates, prop,
+                                                 options, None)
+                (ts, p, predicates) = encoder.get_ts_ia()
+
+                # print("Final trans")
+                # print(ts.trans.serialize())
+                # # Debug
+                # outstream = StringIO()
+                # with open("/tmp/app.smt2", "w") as f:
+                #     ts.to_vmt(f, p)
+                # print(outstream.getvalue())
+                # print(ts.trans.serialize())
+
+                self.assertTrue(self._prove_ts(ts, p) == expected)
+
+

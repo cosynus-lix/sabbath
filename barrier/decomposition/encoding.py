@@ -361,7 +361,7 @@ class DecompositionEncoder:
         if (not stats_stream is None):
             print_abs_stats(stats_stream, derivator, poly)
 
-        if (len(preds) > 0):
+        if (len(preds) > 0 and len(sys._states) > 0):
             if (not options.explicit_encoding):
                 lzz_in = _get_lzz_in(options.lzz_opt, derivator, preds,
                                      next_f, lzz_f)
@@ -396,6 +396,7 @@ class DecompositionEncoder:
 
         # frame condition for the time-independent parameters
         fc_list = [Equals(var, next_f(var)) for var in sys.inputs()]
+
         if (len(fc_list) == 0):
             fc = TRUE()
         else:
@@ -461,53 +462,80 @@ class DecompositionEncoderHA:
 
 
     def get_ts_ia(self):
-        one_loc = ExactlyOne([v for (k,v) in self.loc_vars_map.items()])
+        """
+        Get the implicit abstraction encoding for the hybrid automaton.
+        """
 
+        # Invar
+        # - exactly one location
+        # - invar for every location
+        one_loc = ExactlyOne([v for (k,v) in self.loc_vars_map.items()])
         new_invar = one_loc
         for (q,loc) in self.ha._locations.items():
             new_invar = And(new_invar,
                             Implies(self.loc_vars_map[q], loc.invar))
 
+        # Init
+        # - init for every location
         new_init = new_invar
         for q,init in self.ha._init.items():
             new_init = And(new_init, Implies(self.loc_vars_map[q], init))
 
-        trans_disc = And(new_invar, self.next_f(new_invar))
-        q_trans = FALSE()
+        # Trans_disc
+        trans_list_disc = []
         for q, edges in self.ha._edges.items():
             for edge in edges:
-                q_trans = Or(q_trans, And([self.loc_vars_map[q],
-                                           self.next_f(self.loc_vars_map[edge.dst]),
-                                           edge.trans]))
-        trans_disc = And(trans_disc, q_trans)
+                trans_list_disc.append(And([self.loc_vars_map[q],
+                                            self.next_f(self.loc_vars_map[edge.dst]),
+                                            edge.trans]))
 
-        cont_trans = TRUE()
+        # Cont_trans
+        trans_list_cont = []
         for q, loc in self.ha._locations.items():
+
+            loc_invar = self.ha._locations[q].invar
             lzz_loc = DecompositionEncoder._get_dyn_sys_enc(loc.vector_field,
                                                             self.next_f,
                                                             self.lzz_f,
                                                             self.poly,
                                                             self.preds,
-                                                            self.safe,
+                                                            loc_invar,
                                                             self.options,
                                                             self.stats_stream)
-            cont_trans = And(Implies(self.loc_vars_map[q],
-                                     lzz_loc))
+
+            trans_list_cont.append(And([self.loc_vars_map[q],
+                                        self.next_f(self.loc_vars_map[q]),
+                                        lzz_loc]))
 
 
-        new_trans = And(trans_disc, cont_trans)
 
+        # keep te discrete transition relation concrete
+        invar_trans = And(new_invar, self.next_f(new_invar))
+        fc_loc = And([Iff(v, self.next_f(v)) for (k,v) in self.loc_vars_map.items()])
+        ts_disc = And(invar_trans, Or(trans_list_disc))
+        ts = TS(self.env, self.vars, self.next_f, new_init,
+                And([invar_trans,
+                     fc_loc,
+                     Or(trans_list_cont)]))
 
-        ts = TS(self.env, self.vars, self.next_f, new_init, new_trans)
+        # # print("DEBUG")
+        # print(ts.trans.serialize())
+        # print(ts_disc.serialize())
 
         preds_for_ia = _get_preds_ia_list(self.poly)
+        # Make the discrete state concrete
+        for var in self.ha._disc_vars:
+            preds_for_ia.append(var)
+
         enc = ImplicitAbstractionEncoder(ts,
                                          self.safe,
                                          preds_for_ia,
                                          self.env,
                                          self.options.rewrite_init,
                                          self.options.rewrite_property,
-                                         self.options.add_init_prop_predicates)
+                                         self.options.add_init_prop_predicates,
+                                         True,
+                                         ts_disc)
         ts = enc.get_ts_abstract()
         new_prop = enc.get_prop_abstract()
         preds_for_ia = enc.get_predicates()
