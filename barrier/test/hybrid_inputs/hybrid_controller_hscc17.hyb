@@ -1,0 +1,31 @@
+{
+  "name" : "hybrid_controller_hscc2017",
+  "contVars": ["(declare-fun x () Real)", "(declare-fun y () Real)"],
+  "varsDecl": ["(declare-fun x () Real)", "(declare-fun y () Real)"],
+  "init" : {
+    "1" : "(<= (+ (* (+ (- x) 9) (+ (- x) 9)) (* (+ y (- 20)) (+ y (- 20)) )) 4)",
+    "2" : "false"
+  },
+  "locations" : {
+    "1" : {
+      "invar" : "(and (<= 5 x) (<= x 35))",
+      "vectorField": [
+           "(= (+ (* y y ) (+ (* 10 y) 25)) 0)",
+           "(= (+ (* 2 (* x y)) (+ (* 10 x) (+ (+ (- 40) y) (- 200) ) )) 0)"
+      ]
+    },
+    "2" : {
+      "invar" : "(and (<= 5 x) (<= x 35))",
+      "vectorField": [
+           "(= (+ (- (* y y )) (- (* (- 10) y) 25)) 0)",
+           "(= (+ (* 8 (* x y)) (+ (* 40 x) (+ (+ (- 160) y) (- 800) ) )) 0)"
+      ]
+    }
+  },
+  "edges" : {
+    "1" : [{"dst" : "2", "trans" : "(and (= x 35) (= x x_next))"}],
+    "2" : [{"dst" : "1", "trans" : "(and (= x 5) (= x x_next))"}]
+  },
+  "property" : "(<= y 48)"
+}
+

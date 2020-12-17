@@ -38,6 +38,9 @@ from barrier.utils import get_range_from_int, get_mathsat_smtlib
 from barrier.serialization.invar_serialization import importInvarVer
 from barrier.serialization.hybrid_serialization import importHSVer, serializeHS
 
+from barrier.decomposition.predicates import AbsPredsTypes, get_predicates
+from barrier.lzz.lzz import LzzOpt
+
 from barrier.formula_utils import FormulaHelper
 
 from barrier.ts import TS
@@ -248,3 +251,34 @@ class TestDecompositionEncoding(TestCase):
                 self.assertTrue(self._prove_ts(ts, p) == expected)
 
 
+    def test_hs_hscc(self):
+        input_path = self.get_from_path("hybrid_inputs")
+        env = get_env()
+
+        with open(os.path.join(input_path, "hybrid_controller_hscc17.hyb"), "r") as f:
+            (name, ha, prop, predicates) = importHSVer(f, env)
+
+
+            for q,loc in ha._locations.items():
+                abs_type = (AbsPredsTypes.FACTORS.value
+#                            AbsPredsTypes.LIE.value |
+                            #                            AbsPredsTypes.INVAR.value
+)
+                new_prob = (q, TRUE(), TRUE(),
+                            loc.vector_field,
+                            loc.invar,
+                            [])
+                new_predicates = get_predicates(new_prob, abs_type)
+                predicates += new_predicates
+
+
+                for p in new_predicates:
+                    print(p)
+
+
+            lzz_opt = LzzOpt(True, True)
+            options = DecompositionOptions(False, False, False, False, lzz_opt)
+            encoder = DecompositionEncoderHA(env, ha, predicates, prop,
+                                             options, None)
+            (ts, p, predicates) = encoder.get_ts_ia()
+            self.assertTrue(self._prove_ts(ts, p) == MSatic3.Result.SAFE)
