@@ -256,7 +256,7 @@ class DecompositionEncoder:
             self.pred_vars_f = lambda x : self.pred_map[x]
 
 
-    def get_ts_ia(self):
+    def get_ts_ia(self, use_simplified_ia=False):
         """
         Output:
         - TS a symbolic transition system,
@@ -279,7 +279,8 @@ class DecompositionEncoder:
                                          self.env,
                                          self.options.rewrite_init,
                                          self.options.rewrite_property,
-                                         self.options.add_init_prop_predicates)
+                                         self.options.add_init_prop_predicates,
+                                         use_simplified_ia)
 
         ts = enc.get_ts_abstract()
         new_prop = enc.get_prop_abstract()
