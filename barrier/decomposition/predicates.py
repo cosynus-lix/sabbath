@@ -13,7 +13,7 @@ from pysmt.shortcuts import get_env
 
 from barrier.formula_utils import PredicateExtractor
 from barrier.lie import Derivator
-from barrier.decomposition.utils import get_poly_from_pred
+from barrier.decomposition.utils import get_poly_from_pred, get_unique_poly_list, get_poly_from_pred
 
 
 
@@ -21,6 +21,7 @@ class AbsPredsTypes(Enum):
     """
     Types of predicates to extract from the verification problem
     """
+    NONE = 0
     FACTORS = 1
     LIE = 2
     INVAR = 4
@@ -77,4 +78,50 @@ def get_predicates(invar_problem, preds_types):
         add_lie(derivator, invar_problem, new_predicates)
 
     return new_predicates
+
+def get_polynomials_ha(ha, prop, preds_types, env):
+    # Get the polynomials to use for the abstraction
+
+    new_polynomials = set()
+
+    # Get the polynomial of the property
+    prop_polynomials = set()
+    if (preds_types & AbsPredsTypes.INVAR.value):
+        prop_predicates = PredicateExtractor.extract_predicates(prop, env)
+        for p in prop_predicates:
+            poly = get_poly_from_pred(p)[0]
+            if (ha.is_pred_cont(poly)):
+                derivator.add_poly_factors(poly, prop_polynomials)
+
+    # Get the factors of:
+    # - the RHS of the ODEs in all the modes
+    # - get poly from the invar
+    loc_polynomials = set()
+    if (preds_types & AbsPredsTypes.FACTORS.value):
+        for q,loc in ha._locations.items():
+            derivator = loc.vector_field.get_derivator()
+
+            # Add the polynomials from the RHS of the odes
+            for v in loc.vector_field.states():
+                ode = loc.vector_field.get_ode(v)
+                derivator.add_poly_factors(ode, loc_polynomials)
+
+            # Add the polynomials from the factors of the invariant condition
+            invar_predicates = PredicateExtractor.extract_predicates(loc.invar, env)
+            for p in invar_predicates:
+                poly = get_poly_from_pred(p)[0]
+                if (ha.is_pred_cont(poly)):
+                    derivator.add_poly_factors(poly, loc_polynomials)
+
+            # Add the lie derivative for the polynomials from the property
+            if (preds_types & AbsPredsTypes.LIE.value):
+                for poly in prop_polynomials:
+                    derivator.add_poly_factors(poly, loc_polynomials)
+
+    new_polynomials = prop_polynomials.union(loc_polynomials)
+    new_polynomials = get_unique_poly_list(new_polynomials)
+
+    return new_polynomials
+
+
 

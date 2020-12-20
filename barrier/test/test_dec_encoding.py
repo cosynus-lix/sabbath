@@ -38,7 +38,7 @@ from barrier.utils import get_range_from_int, get_mathsat_smtlib
 from barrier.serialization.invar_serialization import importInvarVer
 from barrier.serialization.hybrid_serialization import importHSVer, serializeHS
 
-from barrier.decomposition.predicates import AbsPredsTypes, get_predicates
+from barrier.decomposition.predicates import AbsPredsTypes, get_predicates, get_polynomials_ha
 from barrier.lzz.lzz import LzzOpt
 
 from barrier.formula_utils import FormulaHelper
@@ -258,27 +258,19 @@ class TestDecompositionEncoding(TestCase):
         with open(os.path.join(input_path, "hybrid_controller_hscc17.hyb"), "r") as f:
             (name, ha, prop, predicates) = importHSVer(f, env)
 
-
-            for q,loc in ha._locations.items():
-                abs_type = (AbsPredsTypes.FACTORS.value
-#                            AbsPredsTypes.LIE.value |
-                            #                            AbsPredsTypes.INVAR.value
-)
-                new_prob = (q, TRUE(), TRUE(),
-                            loc.vector_field,
-                            loc.invar,
-                            [])
-                new_predicates = get_predicates(new_prob, abs_type)
-                predicates += new_predicates
-
-
-                for p in new_predicates:
-                    print(p)
-
+            abs_type = (AbsPredsTypes.FACTORS.value)
+            polynomials = get_polynomials_ha(ha, prop, preds_types)
 
             lzz_opt = LzzOpt(True, True)
             options = DecompositionOptions(False, False, False, False, lzz_opt)
-            encoder = DecompositionEncoderHA(env, ha, predicates, prop,
+            encoder = DecompositionEncoderHA(env, ha, polynomials, prop,
                                              options, None)
             (ts, p, predicates) = encoder.get_ts_ia()
+
+            with open("/tmp/hscc2017.smt2", "w") as f:
+                ts.to_vmt(f, p)
+
+            with open("/tmp/hscc2017.preds", "w") as outstream:
+                ts.dump_predicates(outstream, predicates)
+
             self.assertTrue(self._prove_ts(ts, p) == MSatic3.Result.SAFE)

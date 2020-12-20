@@ -297,6 +297,11 @@ class HybridAutomaton(object):
             dst_list = [l for l in data]
             self._edges[loc_name] = dst_list
 
+    def is_pred_cont(self, pred):
+        for v in pred.get_free_variables():
+            if v in self._cont_vars:
+                return True
+        return False
 
     # def to_str(self):
     #     print(self._disc_vars)
