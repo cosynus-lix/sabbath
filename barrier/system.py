@@ -312,3 +312,7 @@ class HybridAutomaton(object):
     #     print("Locations")
     #     for k,v in self._locations.items():
     #         print("  %s: %s" % (k, v.invar))
+
+HaProp = namedtuple("HaProp", "global_prop prop_by_loc")
+HaVerProblem = namedtuple("HaVerProblem", "name ha prop predicates")
+

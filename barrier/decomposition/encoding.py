@@ -9,6 +9,7 @@ from pysmt.shortcuts import (
     Real,
     Minus,
     Not, And, Or, Implies, Iff, Equals,
+    EqualsOrIff,
     Equals, GE, GT, LT, LE,
     Exists,
     Symbol,
@@ -525,7 +526,9 @@ class DecompositionEncoderHA:
 
         # keep te discrete transition relation concrete
         invar_trans = And(new_invar, self.next_f(new_invar))
-        fc_loc = And([Iff(v, self.next_f(v)) for (k,v) in self.loc_vars_map.items()])
+        # fc_loc = And([Iff(v, self.next_f(v)) for (k,v) in self.loc_vars_map.items()])
+        fc_loc = And([EqualsOrIff(v, self.next_f(v)) for v in self.disc_vars])
+
         ts_disc = And(invar_trans, Or(trans_list_disc))
         ts = TS(self.env, self.vars, self.next_f, new_init,
                 And([invar_trans,

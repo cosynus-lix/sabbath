@@ -21,7 +21,10 @@
     "1" : [{"dst" : "2", "trans" : "(& (= x 10) (= x_next 10))"}],
     "2" : [{"dst" : "1", "trans" : "(& (= x 0) (= x_next 0))"}]
   },
-  "property" : "(& (>= x 0) (<= x 10))"
+  "property" : "(& (>= x 0) (<= x 10))",
+  "property_by_loc" : {
+    "1" : "true"
+  }
 }
 """
 
@@ -36,7 +39,11 @@ import pysmt.smtlib.commands as smtcmd
 from pysmt.smtlib.printers import SmtDagPrinter
 from pysmt.smtlib.script import SmtLibScript, SmtLibCommand
 
-from barrier.system import DynSystem, HybridAutomaton
+from barrier.system import (
+    DynSystem, HybridAutomaton,
+    HaProp,
+    HaVerProblem,
+)
 from barrier.serialization.invar_serialization import (
     readVar, fromStringFormula,
     get_smt_formula, get_smt_formula_pred, get_smt_vars
@@ -117,6 +124,10 @@ def parse_hs(env, problem_json):
 
     # read property
     prop = fromStringFormula(parser, vars_decl_str, problem_json["property"])
+
+    if "property_by_loc" in problem_json:
+        for loc, prop_json in problem_json["property_by_loc"].items():
+            prop_loc = fromStringFormula(parser, vars_decl_str, prop_json)
 
     ha = HybridAutomaton(input_vars, cont_vars, init, locations, edges)
 

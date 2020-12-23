@@ -8,11 +8,11 @@
   "locations" : {
     "1" : {
       "invar" : "true",
-      "vectorField": ["(= (- y) 0)","(= (- x) 0)"]
+      "vectorField": ["(= (- y) 0)","(= x 0)"]
     }
   },
   "edges" : {
   },
-  "predicates": ["(= (+ (* x x) (* y y)) 1)"],
+  "predicates": ["(= (- (+ (* x x) (* y y)) 1) 0)"],
   "property" : "(= (+ (* x x) (* y y)) 1)"
 }

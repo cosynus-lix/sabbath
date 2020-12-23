@@ -27,7 +27,7 @@ def main():
     parser.add_argument("problem",help="Verification problem file")
 
     parser.add_argument("--abstraction",
-                        choices=["factors","lie","invar","prop"],
+                        choices=["factors","lie","invar","prop","preds_from_model"],
                         action='append', nargs='+',
                         help="Polynomials to use in the abstraction")
 
@@ -38,6 +38,7 @@ def main():
 
     logging.basicConfig(level=logging.DEBUG)
 
+    preds_from_model = False
     abs_type = AbsPredsTypes.NONE.value
     if args.abstraction:
         for l in args.abstraction:
@@ -50,6 +51,8 @@ def main():
                     abs_type = abs_type | AbsPredsTypes.LIE.value
                 elif t == "invar":
                     abs_type = abs_type | AbsPredsTypes.INVAR.value
+                elif t == "preds_from_model":
+                    preds_from_model = True
                 else:
                     raise Exception("Unknown abstraction type %s " % t)
 
@@ -61,7 +64,12 @@ def main():
 
     # Get the polynomials for the abstraction
     poly_from_ha = get_polynomials_ha(ha, prop, abs_type, env)
-    polynomials = polynomials + poly_from_ha
+
+    if (not preds_from_model):
+        polynomials = poly_from_ha
+    else:
+        polynomials = set(polynomials)
+        polynomials.update(poly_from_ha)
     polynomials = get_unique_poly_list(polynomials)
 
     print("List of polynomials")
