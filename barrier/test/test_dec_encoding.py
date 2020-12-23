@@ -217,16 +217,17 @@ class TestDecompositionEncoding(TestCase):
         env = get_env()
 
         models = [
-            ("disc1.hyb", MSatic3.Result.SAFE),
-            ("disc2.hyb", MSatic3.Result.UNSAFE),
-            ("disc3.hyb", MSatic3.Result.UNSAFE),
-            ("disc4.hyb", MSatic3.Result.SAFE),
-            ("disc5.hyb", MSatic3.Result.SAFE),
-            ("disc6.hyb", MSatic3.Result.SAFE),
-            ("disc7.hyb", MSatic3.Result.UNSAFE),
-            ("disc8.hyb", MSatic3.Result.SAFE),
-            ("cont1.hyb", MSatic3.Result.UNSAFE),
-            ("cont2.hyb", MSatic3.Result.SAFE),
+            # ("disc1.hyb", MSatic3.Result.SAFE),
+            # ("disc2.hyb", MSatic3.Result.UNSAFE),
+            # ("disc3.hyb", MSatic3.Result.UNSAFE),
+            # ("disc4.hyb", MSatic3.Result.SAFE),
+            # ("disc5.hyb", MSatic3.Result.SAFE),
+            # ("disc6.hyb", MSatic3.Result.SAFE),
+            # ("disc7.hyb", MSatic3.Result.UNSAFE),
+            # ("disc8.hyb", MSatic3.Result.SAFE),
+            # ("cont1.hyb", MSatic3.Result.UNSAFE),
+            # ("cont2.hyb", MSatic3.Result.SAFE),
+            ("hyb_fc.hyb", MSatic3.Result.SAFE)
         ]
 
         for (m,expected) in models:

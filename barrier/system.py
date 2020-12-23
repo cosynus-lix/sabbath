@@ -118,7 +118,7 @@ class DynSystem(object):
                             False)
         return inverse
 
-    def get_derivator(self):
+    def get_derivator(self, pysmt2sympy= None, sympy2pysmt = None):
         """ Return the derivator object for the
         dynamical system.
         """
@@ -131,7 +131,7 @@ class DynSystem(object):
             for var, ode in self._odes.items():
                 vector_field[var] = ode
 
-            derivator = Derivator(vector_field)
+            derivator = Derivator(vector_field, pysmt2sympy, sympy2pysmt)
             self._derivator = derivator
 
         return self._derivator

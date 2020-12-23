@@ -27,7 +27,7 @@ def main():
     parser.add_argument("problem",help="Verification problem file")
 
     parser.add_argument("--abstraction",
-                        choices=["factors","prop","lie"],
+                        choices=["factors","lie","invar","prop"],
                         action='append', nargs='+',
                         help="Polynomials to use in the abstraction")
 
@@ -45,9 +45,11 @@ def main():
                 if t == "factors":
                     abs_type = abs_type | AbsPredsTypes.FACTORS.value
                 elif t == "prop":
-                    abs_type = abs_type | AbsPredsTypes.INVAR.value
+                    abs_type = abs_type | AbsPredsTypes.PROP.value
                 elif t == "lie":
                     abs_type = abs_type | AbsPredsTypes.LIE.value
+                elif t == "invar":
+                    abs_type = abs_type | AbsPredsTypes.INVAR.value
                 else:
                     raise Exception("Unknown abstraction type %s " % t)
 
@@ -71,6 +73,12 @@ def main():
     encoder = DecompositionEncoderHA(env, ha, polynomials, prop, options, None)
 
     (ts, p, predicates) = encoder.get_ts_ia()
+
+    # DEBUG
+    with open("/tmp/init.txt", "w") as f:
+        f.write(ts.init.serialize())
+    with open("/tmp/trans.txt", "w") as f:
+        f.write(ts.trans.serialize())
 
     with open(args.outvmt, "w") as f:
         ts.to_vmt(f, p)

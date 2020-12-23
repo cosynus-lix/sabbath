@@ -488,7 +488,6 @@ class DecompositionEncoderHA:
                 trans_list_disc.append(And([self.loc_vars_map[q],
                                             self.next_f(self.loc_vars_map[edge.dst]),
                                             edge.trans]))
-
         # Cont_trans
         trans_list_cont = []
         for q, loc in self.ha._locations.items():
@@ -507,7 +506,22 @@ class DecompositionEncoderHA:
                                         self.next_f(self.loc_vars_map[q]),
                                         lzz_loc]))
 
-
+        # Add the self transition in the abstract space
+        #
+        # The semialgebraic decomposition encodes a transition system without a self
+        # transition ("s1 -> [x' = f(x) & (s1 | s1)] s1" always holds)
+        #
+        # This is not a problem when we prove invariance of a dynamical system, but
+        # we need the self transition in the encoding of the hybrid automaton.
+        #
+        # This is because we need to check what happens in the whole abstract state
+        # s1 due to the continuous transition.
+        #
+        # fc_p = for p in preds. p(x) & p(x')
+        # This is abstracted later
+        #
+        fc_p = And([Iff(p, self.next_f(p)) for p in _get_preds_ia_list(self.poly)])
+        trans_list_cont.append(fc_p)
 
         # keep te discrete transition relation concrete
         invar_trans = And(new_invar, self.next_f(new_invar))
@@ -518,13 +532,9 @@ class DecompositionEncoderHA:
                      fc_loc,
                      Or(trans_list_cont)]))
 
-        # # print("DEBUG")
-        # print(ts.trans.serialize())
-        # print(ts_disc.serialize())
-
         preds_for_ia = _get_preds_ia_list(self.poly)
         # Make the discrete state concrete
-        for var in self.ha._disc_vars:
+        for var in self.disc_vars:
             preds_for_ia.append(var)
 
         enc = ImplicitAbstractionEncoder(ts,

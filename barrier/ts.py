@@ -440,6 +440,17 @@ class ImplicitAbstractionEncoder():
         P_abs := P(V)
         """
 
+        # print("concrete")
+        # print(ts_concrete.trans.serialize())
+
+        # print("to keep concrete")
+        # print(ts_to_keep_concrete.serialize())
+
+        # print("predicates")
+        # print(predicates)
+
+
+
         (prop, predicates) = (
             ImplicitAbstractionEncoder._init_and_prop_pred_handling(self.env,
                                                                     ts_concrete,
@@ -481,6 +492,11 @@ class ImplicitAbstractionEncoder():
         # From T(V,V') to T(V_abs,V')
         rename_map = {v : abs_map[v] for v in vars_concrete}
         trans_renamed = substitute(ts_concrete.trans, rename_map)
+
+        # DEBUG
+        # print("Renamed")
+        # print(And(eq_pred, trans_renamed).serialize())
+
         trans_abs = Or(ts_to_keep_concrete, And(eq_pred, trans_renamed))
         ts_abstract = TS(self.env, state_vars, next_f, init_abs, trans_abs)
 
