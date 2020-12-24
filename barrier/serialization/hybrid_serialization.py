@@ -125,15 +125,26 @@ def parse_hs(env, problem_json):
     # read property
     prop = fromStringFormula(parser, vars_decl_str, problem_json["property"])
 
+    prop_by_loc = {}
     if "property_by_loc" in problem_json:
         for loc, prop_json in problem_json["property_by_loc"].items():
             prop_loc = fromStringFormula(parser, vars_decl_str, prop_json)
+            prop_by_loc[loc] = prop_loc
 
     ha = HybridAutomaton(input_vars, cont_vars, init, locations, edges)
+    ha_prop = HaProp(prop, prop_by_loc)
 
-    return (name, ha, prop, predicates)
+    problem = HaVerProblem(name, ha, ha_prop, predicates)
+    return problem
 
-def serializeHS(outstream, name, ha, prop, predicates, env):
+def serializeHS(outstream, problem, env):
+    # problem = HaVerProblem(name, ha, ha_prop, predicates)
+
+    name = problem.name
+    ha = problem.ha
+    predicates = problem.predicates
+    ha_prop = problem.prop
+
     cont_vars_smt = [get_smt_vars(v, env) for v in ha._cont_vars]
     disc_vars_smt = [get_smt_vars(v, env) for v in ha._disc_vars]
 
@@ -163,6 +174,13 @@ def serializeHS(outstream, name, ha, prop, predicates, env):
             edge_map[loc] = dst_edge_list
         return edge_map
 
+    def build_prop_loc(prop_by_loc, env):
+        prop_by_loc_text = {}
+        for (loc, loc_prop) in prop_by_loc.items():
+            prop_by_loc_text[loc] = get_smt_formula(loc_prop, env)
+        return prop_by_loc_text
+
+
     ha_json = {
         "name" : name,
         "contVars" : cont_vars_smt,
@@ -171,11 +189,13 @@ def serializeHS(outstream, name, ha, prop, predicates, env):
         "locations" : build_locations(ha._locations.items()),
         "edges" : build_edges(ha._edges.items()),
         "predicates" : [get_smt_formula_pred(p, env) for p in predicates],
-        "property" : get_smt_formula(prop, env)
+        "property" : get_smt_formula(ha_prop.global_prop, env),
+        "property_by_loc" : build_prop_loc(ha_prop.prop_by_loc, env)
     }
     json.dump(ha_json, outstream)
 
 def importHSVer(json_stream, env):
     problem_json = json.load(json_stream)
-    (name, ha, invar, predicates) = parse_hs(env, problem_json)
-    return (name, ha, invar, predicates)
+    problem = parse_hs(env, problem_json)
+
+    return problem

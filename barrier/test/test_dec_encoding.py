@@ -231,16 +231,15 @@ class TestDecompositionEncoding(TestCase):
         ]
 
         for (m,expected) in models:
-            print("Processing %s" % m)
             with open(os.path.join(input_path, m), "r") as f:
-                (name, ha, prop, predicates) = importHSVer(f, env)
+                problem = importHSVer(f, env)
+                ha = problem.ha
+                prop = problem.prop
+                predicates = problem.predicates
 
                 options = DecompositionOptions(False, False, False, False)
                 encoder = DecompositionEncoderHA(env, ha, predicates, prop,
                                                  options, None)
-                for p in predicates:
-                    print(p.serialize())
-
                 (ts, p, predicates) = encoder.get_ts_ia()
 
 
@@ -263,7 +262,10 @@ class TestDecompositionEncoding(TestCase):
         env = get_env()
 
         with open(os.path.join(input_path, "hybrid_controller_hscc17.hyb"), "r") as f:
-            (name, ha, prop, predicates) = importHSVer(f, env)
+            problem = importHSVer(f, env)
+            ha = problem.ha
+            prop = problem.prop
+            predicates = problem.predicates
 
             abs_type = (AbsPredsTypes.FACTORS.value)
             polynomials = get_polynomials_ha(ha, prop, abs_type, env)

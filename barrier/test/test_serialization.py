@@ -29,6 +29,15 @@ from barrier.test.test_system import TestHS
 
 class TestSerialization(TestCase):
     def testRead(self):
+        def _eq_prop_loc(problem1, problem2):
+            if len(problem1.prop.prop_by_loc) != len(problem2.prop.prop_by_loc):
+                return False
+            for (loc, val1) in problem1.prop.prop_by_loc.items():
+                val2 = problem2.prop.prop_by_loc[loc]
+                if not is_valid(Iff(val1, val2)):
+                    return False
+            return True
+
         input_path = self.get_from_path("hybrid_inputs")
         env = get_env()
 
@@ -40,14 +49,15 @@ class TestSerialization(TestCase):
 
         for fname in ha_files:
             with open(os.path.join(input_path, fname), "r") as f:
-                (name, ha, prop, predicates) = importHSVer(f, env)
+                problem = importHSVer(f, env)
 
                 outstream = StringIO()
-                serializeHS(outstream, name, ha, prop, predicates, env)
-                outstream.seek(0)
+                serializeHS(outstream, problem, env)
 
-                (name2, ha2, prop2, predicates2) = importHSVer(outstream, env)
-                self.assertTrue(name == name2 and
-                                is_valid(Iff(prop,prop2)),
-                                TestHS.ha_eq(ha, ha2))
+                outstream.seek(0)
+                problem2 = importHSVer(outstream, env)
+                self.assertTrue(problem.name == problem2.name and
+                                is_valid(Iff(problem.prop.global_prop,problem2.prop.global_prop)) and
+                                _eq_prop_loc(problem, problem2) and
+                                TestHS.ha_eq(problem.ha, problem2.ha))
 

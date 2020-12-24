@@ -82,7 +82,7 @@ def get_predicates(invar_problem, preds_types):
 
     return new_predicates
 
-def get_polynomials_ha(ha, prop, preds_types, env):
+def get_polynomials_ha(ha, ha_prop, preds_types, env):
     # Get the polynomials to use for the abstraction
 
     pysmt2sympy = Pysmt2Sympy()
@@ -92,7 +92,12 @@ def get_polynomials_ha(ha, prop, preds_types, env):
 
     # Get the polynomial of the property
     if (preds_types & AbsPredsTypes.PROP.value):
-        prop_predicates = PredicateExtractor.extract_predicates(prop, env)
+        prop_predicates = PredicateExtractor.extract_predicates(ha_prop.global_prop, env)
+
+        for loc, loc_prop in ha_prop.prop_by_loc:
+            loc_prop_preds = PredicateExtractor.extract_predicates(loc_prop, env)
+            prop_predicates.update(loc_prop_preds)
+
         for p in prop_predicates:
             poly = get_poly_from_pred(p)[0]
             if (ha.is_pred_cont(poly)):

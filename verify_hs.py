@@ -60,15 +60,15 @@ def main():
     print("Parsing problem...")
     env = get_env()
     with open(args.problem, "r") as f:
-        (name, ha, prop, polynomials) = importHSVer(f, env)
+        problem = importHSVer(f, env)
 
     # Get the polynomials for the abstraction
-    poly_from_ha = get_polynomials_ha(ha, prop, abs_type, env)
+    poly_from_ha = get_polynomials_ha(problem.ha, problem.prop, abs_type, env)
 
     if (not preds_from_model):
         polynomials = poly_from_ha
     else:
-        polynomials = set(polynomials)
+        polynomials = set(problem.predicates)
         polynomials.update(poly_from_ha)
     polynomials = get_unique_poly_list(polynomials)
 
@@ -78,7 +78,7 @@ def main():
     # Encoding
     lzz_opt = LzzOpt(False, False)
     options = DecompositionOptions(False, False, False, False, lzz_opt)
-    encoder = DecompositionEncoderHA(env, ha, polynomials, prop, options, None)
+    encoder = DecompositionEncoderHA(env, problem.ha, polynomials, problem.prop, options, None)
 
     (ts, p, predicates) = encoder.get_ts_ia()
 

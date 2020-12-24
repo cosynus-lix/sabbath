@@ -418,7 +418,7 @@ class DecompositionEncoder:
 
 class DecompositionEncoderHA:
 
-    def __init__(self, env, ha, poly, safe,
+    def __init__(self, env, ha, poly, ha_prop,
                  options = DecompositionOptions(),
                  stats_stream = None):
         logger = logging.getLogger(__name__)
@@ -434,7 +434,7 @@ class DecompositionEncoderHA:
 
         self.preds = _get_preds_list(self.poly)
 
-        self.safe = safe
+        self.ha_prop = ha_prop
         self.stats_stream = stats_stream
 
         # Declare the variables
@@ -466,6 +466,10 @@ class DecompositionEncoderHA:
         """
         Get the implicit abstraction encoding for the hybrid automaton.
         """
+
+        safe = self.ha_prop.global_prop
+        for loc, loc_prop in self.ha_prop.prop_by_loc.items():
+            safe = And(safe, Implies(self.loc_vars_map[loc], loc_prop))
 
         # Invar
         # - exactly one location
@@ -541,7 +545,7 @@ class DecompositionEncoderHA:
             preds_for_ia.append(var)
 
         enc = ImplicitAbstractionEncoder(ts,
-                                         self.safe,
+                                         safe,
                                          preds_for_ia,
                                          self.env,
                                          self.options.rewrite_init,
@@ -556,3 +560,4 @@ class DecompositionEncoderHA:
 
 
 # EOC DecompositionEncoderHA
+
