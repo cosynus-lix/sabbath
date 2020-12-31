@@ -131,7 +131,7 @@ def get_polynomials_ha(ha, ha_prop, preds_types, env):
         if (preds_types & AbsPredsTypes.INVAR.value):
             invar_predicates = PredicateExtractor.extract_predicates(loc.invar, env)
             for predicate in invar_predicates:
-                poly = get_poly_from_pred(predicatet)[0]
+                poly = get_poly_from_pred(predicate)[0]
                 if (ha.is_pred_cont(poly)):
                     loc_polynomials.add(poly)
                     add_poly_factors(pysmt2sympy, sympy2pysmt, ode, loc_polynomials)
