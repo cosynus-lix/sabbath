@@ -255,6 +255,9 @@ class Derivator(object):
         if (expr in self._remainder_memo):
             return self._remainder_memo[expr]
         else:
+
+            print(self.vector_field)
+
             (_expr, _vector_field, _domain) = self._get_sympy_problem(expr)
             remainders_sympy = _get_remainder_list_sympy(_expr, _vector_field, _domain)
             remainders = [self._get_pysmt_expr(e) for e in remainders_sympy]

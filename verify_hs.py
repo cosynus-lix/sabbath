@@ -76,7 +76,7 @@ def main():
     print(polynomials)
 
     # Encoding
-    lzz_opt = LzzOpt(False, False)
+    lzz_opt = LzzOpt(True, True) # always use the remainder
     options = DecompositionOptions(False, False, False, False, lzz_opt)
     encoder = DecompositionEncoderHA(env, problem.ha, polynomials, problem.prop, options, None)
 

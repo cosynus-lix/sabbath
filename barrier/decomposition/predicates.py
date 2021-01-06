@@ -27,7 +27,8 @@ class AbsPredsTypes(Enum):
     FACTORS = 1
     LIE = 2
     INVAR = 4
-    PROP = 8
+    GUARDS = 8
+    PROP = 16
 
 
 def add_factors(derivator, problem, predicates_set, env):
