@@ -19,6 +19,7 @@ from pysmt.shortcuts import (
     EqualsOrIff,
     Symbol, substitute,
 )
+from pysmt.typing import BOOL
 
 from barrier.formula_utils import FormulaHelper, PredicateExtractor
 
@@ -107,6 +108,76 @@ class TS:
         outstream.flush()
         return
 
+
+    def to_mcmt(self, outstream, safety_property):
+        """ Dump the transition system in MCMT format
+        """
+        def get_rename_map_trans():
+            def rename_var(var, prefix):
+                new_name = "%s.%s" % (prefix, var.symbol_name().replace(".","__"))
+                new_var = self.env.formula_manager.Symbol(new_name, var.symbol_type())
+                return new_var
+
+            rename_map = {}
+            for var in self.state_vars:
+                next_var = self.next_f(var)
+                new_var = rename_var(var, "state")
+                assert(new_var not in self.state_vars)
+                new_next_var = rename_var(var, "next")
+
+                rename_map[var] = new_var
+                rename_map[next_var] = new_next_var
+
+            return rename_map
+
+        def convert_formula_to_mcmt(formula, is_trans=False):
+            # Replace state variables with 
+            if (is_trans):
+                rename_map = get_rename_map_trans()
+                formula = self.env.substituter.substitute(formula, rename_map)
+
+            vmt_formula = formula.to_smtlib()
+            vmt_formula = vmt_formula.replace(".def","mcmt_def")
+            return vmt_formula
+
+        printer = SmtDagPrinter(outstream)
+
+        # Declare all variables as state variables
+        state_vars_name = "ST"
+        outstream.write(";; State variables\n(define-state-type %s (\n" % state_vars_name)
+        visited = set()
+        for formula in [self.init, self.trans]:
+            deps = formula.get_free_variables()
+            # Declare all variables
+            for symbol in deps:
+                if not symbol in visited:
+                    visited.add(symbol)
+                    assert symbol.is_symbol()
+                    if symbol in self.state_vars:
+                        outstream.write("  (%s %s)\n" % (symbol.to_smtlib(), symbol.symbol_type()))
+        outstream.write("))\n\n")
+
+        # INIT
+        outstream.write(";; Initial states\n(define-states INIT %s \n" % state_vars_name)
+        outstream.write(convert_formula_to_mcmt(self.init, False))
+        outstream.write(")\n\n")
+
+        # TRANS
+        outstream.write(";; Trans\n(define-transition TRANS %s \n" % state_vars_name)
+        outstream.write(convert_formula_to_mcmt(self.trans, True))
+        outstream.write(")\n\n")
+
+        # TRANSITION SYSTEM
+        outstream.write(";; Transition system\n(define-transition-system T %s\n" % state_vars_name)
+        outstream.write("  INIT\n  TRANS\n")
+        outstream.write(")\n\n")
+
+        # PROPERTY
+        outstream.write(";; Property\n(query T\n")
+        outstream.write(convert_formula_to_mcmt(safety_property, False))
+        outstream.write(")\n")
+
+
     def read_predicates(self, instream):
         """ read a list of predicates from an input stream
         """
@@ -155,10 +226,11 @@ class TS:
             next_vars_str_list = script.annotations.annotations(s)["next"]
             assert((not next_vars_str_list is None) and len(next_vars_str_list) == 1)
             next_var_str = next(iter(next_vars_str_list))
-            next_var = Symbol(next_var_str, s.symbol_type())
+            next_var = env.formula_manager.Symbol(next_var_str, s.symbol_type())
             next_f_map[s] = next_var
         next_f = lambda f : next_f_map[f]
 
+        # TODO: fix input variables (that may not have a next in the vmt format?)
 
         def get_formula(script, label):
             formula = script.annotations.all_annotated_formulae(label)
@@ -261,6 +333,14 @@ class TS:
         """
         printer = SmtDagPrinter(outstream)
         for p in predicates:
+
+            # skip non-boolean predicates
+            # we may have non-boolean variables in the predicate lists
+            # they are used to add concrete mirrors to the abstraction
+            # but they cannot be used as predicates for ic3ia.
+            if (p.get_type() != BOOL):
+                continue
+
             printer.printer(p)
             outstream.write("\n")
         outstream.flush()

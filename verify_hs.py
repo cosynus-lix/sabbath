@@ -73,7 +73,9 @@ def main():
     polynomials = get_unique_poly_list(polynomials)
 
     print("List of polynomials")
-    print(polynomials)
+    for p in polynomials:
+        print(p.serialize())
+    print("")
 
     # Encoding
     lzz_opt = LzzOpt(True, True) # always use the remainder
