@@ -95,7 +95,7 @@ def get_polynomials_ha(ha, ha_prop, preds_types, env):
     if (preds_types & AbsPredsTypes.PROP.value):
         prop_predicates = PredicateExtractor.extract_predicates(ha_prop.global_prop, env)
 
-        for loc, loc_prop in ha_prop.prop_by_loc:
+        for loc, loc_prop in ha_prop.prop_by_loc.items():
             loc_prop_preds = PredicateExtractor.extract_predicates(loc_prop, env)
             prop_predicates.update(loc_prop_preds)
 
@@ -135,7 +135,8 @@ def get_polynomials_ha(ha, ha_prop, preds_types, env):
                 poly = get_poly_from_pred(predicate)[0]
                 if (ha.is_pred_cont(poly)):
                     loc_polynomials.add(poly)
-                    add_poly_factors(pysmt2sympy, sympy2pysmt, ode, loc_polynomials)
+                    if (preds_types & AbsPredsTypes.FACTORS.value):
+                        add_poly_factors(pysmt2sympy, sympy2pysmt, ode, loc_polynomials)
 
     new_polynomials.update(loc_polynomials)
     new_polynomials = get_unique_poly_list(new_polynomials)

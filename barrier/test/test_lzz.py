@@ -369,3 +369,25 @@ class TestLzz(TestCase):
                                                                   div_invar,
                                                                   div_ode))
                 self.assertFalse(div_candidate or div_invar or div_ode)
+
+    def test_linear(self):
+        x, t = [Symbol(var, REAL) for var in ["x","t"]]
+        # der(x) = -2y, der(y) = x^2
+        dyn_sys = DynSystem([x, t], [], [],
+                            {x : x * Fraction(-1,2), t : Real(1)},
+                            {})
+        # 9 <= x & t = 0
+        init = And( LE(Real(9),x), Equals(t, Real(0)))
+        # t <= 1
+        invar = LE(t, Real(1))
+
+        # The formula is not a differential invariant
+        # 1 <= t | 5 <= x
+        candidate = Or( LE(Real(1),t), LE(Real(5), x))
+
+        solver = Solver(logic=QF_NRA, name="z3")
+
+        opt = LzzOpt()
+        is_invar = lzz(opt, solver, candidate, dyn_sys.get_derivator(), init, invar)
+        self.assertFalse(is_invar)
+
