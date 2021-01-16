@@ -244,12 +244,16 @@ def _get_invar_lazy_set(derivator, invar,
 
                 lzz_solver = get_solver()
 
+                lzz_invar_condition = And(
+                    Or(And(abs_state), And(neigh))
+                )
+
                 is_invar = lzz(lzz_opt=lzz_opt,
                                solver=lzz_solver,
                                candidate=And(abs_state),
                                derivator=derivator,
                                init=And(abs_state),
-                               invar=Or(And(abs_state), And(neigh)))
+                               invar=lzz_invar_condition)
 
                 if (not is_invar):
                     logger.debug("New trans from %s to %s" %
@@ -293,7 +297,6 @@ def _get_invar_lazy(derivator, invar, polynomials,
     from init and staying inside safe.
 
     """
-
     (res, reach_states) = _get_invar_lazy_set(derivator, invar,
                                               polynomials,
                                               init, safe,

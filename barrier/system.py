@@ -191,18 +191,19 @@ class DynSystem(object):
         def _is_expr(expr):
             if (expr.get_type() != REAL):
                 return False
-            # A real type term
-            elif expr.is_symbol():
+            elif expr.is_constant():
+                # a real type constant
                 return True
-            # Not real type term, not a symbol
+            elif expr.is_symbol():
+                # a real type expression
+                return True
             elif (expr.is_plus() or
                   expr.is_minus() or
-                  expr.is_times() or
-                  expr.is_pow() or
-                  expr.is_div()):
+                  expr.is_times()):
+                # a real type polynomial
                 return True
-            # A polynomial
             else:
+                # otherwise
                 return False
 
         def _check_ode(ode_expr):

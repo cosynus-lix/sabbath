@@ -47,7 +47,14 @@ def fromString(parser, string):
 
     output.write(string)
     output.seek(0)
-    script = parser.get_script(output)
+
+    try:
+        script = parser.get_script(output)
+    except Exception as e:
+        output.seek(0)
+        print("Error parsing the SMT expression %s" % output.getvalue())
+
+        raise e
     return script
 
 def fromStringFormula(parser, vars_decl_str, string):
