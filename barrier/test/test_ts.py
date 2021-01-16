@@ -55,12 +55,30 @@ class TestSystem(TestCase):
                     Iff(z, Not(next_x))))
         test_ts_impl(ts, TRUE())
 
-
         current_path = os.path.dirname(os.path.abspath(__file__))
         input_path = os.path.join(current_path, "vmt_models")
         for f in os.listdir(input_path):
             if f.endswith("smt2") or f.endswith("vmt"):
                 test_ts_file(os.path.join(input_path, f))
+
+
+
+    def test_serialize_to_mcmt(self):
+        current_path = os.path.dirname(os.path.abspath(__file__))
+        input_path = os.path.join(current_path, "vmt2mcmt_models")
+
+        #for f in os.listdir(input_path):
+        #    if f.endswith("smt2") or f.endswith("vmt"):
+
+        vmt_model_filename = os.path.join(input_path, "etcs.vmt")
+        with open(vmt_model_filename, "r") as f:
+            (ts, safe) = TS.from_vmt(f)
+
+            outstream = StringIO()
+            ts.to_mcmt(outstream, safe)
+            outstream.seek(0)
+
+            print(outstream.getvalue())
 
 
     @attr('msatic3')
