@@ -57,7 +57,7 @@ def add_lie(derivator, problem, predicates_set):
     for pred in predicates_set_copy:
         predicates_set.add(derivator.get_lie_der(pred))
 
-def add_invariants(derivator, problem, predicates):
+def add_pred_formula(formula, predicates):
     raise NotImplementedError()
 
 
@@ -82,6 +82,38 @@ def get_predicates(invar_problem, preds_types):
         add_lie(derivator, invar_problem, new_predicates)
 
     return new_predicates
+
+def get_polynomials_invar_problem(invar_problem, preds_types, env):
+    (problem_name, ant, cons, dyn_sys, invar, predicates) = invar_problem
+    derivator = dyn_sys.get_derivator()
+
+    new_polynomials = set()
+
+    if (preds_types & AbsPredsTypes.FACTORS.value):
+        add_factors(derivator, invar_problem, new_polynomials, env)
+
+    predicates = PredicateExtractor.extract_predicates(ant, env)
+    for p in predicates:
+        new_polynomials.add(get_poly_from_pred(p)[0])
+
+    if (preds_types & AbsPredsTypes.INVAR.value):
+        predicates = PredicateExtractor.extract_predicates(invar, env)
+        for p in predicates:
+            new_polynomials.add(get_poly_from_pred(p)[0])
+
+
+    if (preds_types & AbsPredsTypes.PROP.value):
+        predicates = PredicateExtractor.extract_predicates(cons, env)
+        for p in predicates:
+            new_polynomials.add(get_poly_from_pred(p)[0])
+
+    # Note: to call last --- uses the content of new_predicates
+    # to build the Lie derivatives
+    if (preds_types & AbsPredsTypes.LIE.value):
+        add_lie(derivator, invar_problem, new_polynomials)
+
+    return new_polynomials
+
 
 def get_polynomials_ha(ha, ha_prop, preds_types, env):
     # Get the polynomials to use for the abstraction

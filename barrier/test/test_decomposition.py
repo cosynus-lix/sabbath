@@ -368,7 +368,9 @@ class TestDecomposition(TestCase):
                       "Strogatz Example 6_8_3",
                       "Locally stable nonlinear system",
                       "Strogatz Example 6_3_2",
-                      "Dumortier Llibre Artes Ex. 5_2"]
+                      "Dumortier Llibre Artes Ex. 5_2",
+                      "Dumortier 10.7",
+                      "Liu Zhan Zhao Emsoft11 Example 25 new example"]
 
         long_tests_dwcl = ["Dai Gan Xia Zhan JSC14 Ex. 1"]
 

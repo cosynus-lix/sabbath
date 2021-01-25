@@ -16,7 +16,7 @@ from nose.plugins.attrib import attr
 from pysmt.typing import BOOL
 from pysmt.shortcuts import Symbol, TRUE, FALSE, get_env, GE, Real
 from pysmt.shortcuts import Not, And, Or, Implies, Iff, ExactlyOne
-from pysmt.shortcuts import is_valid, is_sat
+from pysmt.shortcuts import is_valid, is_sat, reset_env
 from pysmt.typing import REAL
 from pysmt.exceptions import SolverAPINotFound
 
@@ -25,6 +25,10 @@ from barrier.ts import TS, ImplicitAbstractionEncoder
 from barrier.msatic3 import MSatic3
 
 class TestSystem(TestCase):
+
+    def setUp(self):
+        print("SETUP")
+        self.env = reset_env()
 
     def test_ts(self):
         def test_ts_impl(ts, safe):

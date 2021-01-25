@@ -297,7 +297,7 @@ class DecompositionEncoder:
           - init: initial state expressed over the abstraction predicates
           - prop: property expressed over the abstraction predicates
           - trans: the transition relation
-        - List of abstraction polynomials
+          - List of abstraction polynomials (to be used in verification)
         """
         new_trans = self._get_trans_enc()
         new_init = And([self.init, self.invar])
@@ -354,10 +354,7 @@ class DecompositionEncoder:
         logger.debug("Encoding transition using lzz...")
 
         sys = dyn_sys.get_renamed(lzz_f)
-
         derivator = sys.get_derivator()
-        # Not needed
-        # sort_poly_by_degree(derivator, poly)
 
         if (not stats_stream is None):
             print_abs_stats(stats_stream, derivator, poly)
@@ -369,21 +366,6 @@ class DecompositionEncoder:
 
                 lzz_out = _get_lzz_out(options.lzz_opt, derivator, preds,
                                        next_f, lzz_f)
-
-#                 # DEBUG
-#                 print("Checking trans is sat")
-#                 from pysmt.shortcuts import Solver
-#                 from pysmt.logics import QF_NRA
-#                 from barrier.mathematica.mathematica import get_mathematica
-#                 from pysmt.shortcuts import get_env
-#                 solver = get_mathematica(get_env())
-#                 solver = Solver(logic=QF_NRA, name="z3")
-#                 print("check in...")
-#                 print(lzz_in.serialize())
-#                 assert(solver.is_sat(lzz_in))
-#                 print("check out...")
-#                 assert(solver.is_sat(lzz_out))
-#                 print("checked trans...")
 
                 lzz_encoding = Or(lzz_in, lzz_out)
             else:
