@@ -1,0 +1,58 @@
+{
+  "name" : "Rondabout air traffic control (A-2)",
+  "contVars":
+  [
+    "(declare-fun x1 () Real)", "(declare-fun y1 () Real)",
+    "(declare-fun d1 () Real)", "(declare-fun d2 () Real)",
+    "(declare-fun x2 () Real)", "(declare-fun y2 () Real)",
+    "(declare-fun e1 () Real)", "(declare-fun e2 () Real)"
+  ],
+  "varsDecl": [
+    "(declare-fun x1 () Real)","(declare-fun y1 () Real)",
+    "(declare-fun d1 () Real)", "(declare-fun d2 () Real)",
+    "(declare-fun x2 () Real)","(declare-fun y2 () Real)",
+    "(declare-fun e1 () Real)", "(declare-fun e2 () Real)",
+    "(declare-fun p () Real)",
+    "(declare-fun om () Real)",
+    "(declare-fun omy () Real)",
+    "(declare-fun c1 () Real)",
+    "(declare-fun c2 () Real)"
+  ],
+  "init" : {
+    "safe" : "(>= (+ (* (- x1 y1) (- x1 y1) ) (* (- x2 y2) (- x2 y2) ) ) (* p p) )",
+    "roundabout" : "false"
+  },
+  "locations" : {
+    "safe" : {
+      "invar" : "(>= (+ (* (- x1 y1) (- x1 y1) ) (* (- x2 y2) (- x2 y2) ) ) (* p p) )",
+      "vectorField": [
+      "(= d1 0)","(= d2 0)",
+      "(= (* (- 0 om) d2) 0)","(= (* om d1) 0)",
+      "(= e1 0)","(= e2 0)",
+      "(= (* (- 0 omy) e2) 0)","(= (* omy e1) 0)"
+      ]
+    },
+    "roundabout" : {
+      "invar" : "true",
+      "vectorField": [
+      "(= d1 0)","(= d2 0)",
+      "(= (* (- 0 om) d2) 0)","(= (* om d1) 0)",
+      "(= e1 0)","(= e2 0)",
+      "(= (* (- 0 om) e2) 0)","(= (* om e1) 0)"
+      ]
+    }
+  },
+  "edges" : {
+    "safe" : [
+      {"dst" : "safe", "trans" : "(and (= x1_next x1) (= y1_next y1) (= d1_next d1) (= d2_next d2) (= x2_next x2) (= y2_next y2) (= e1_next e1) (= e2_next e2) (= p_next p) (= c1_next c1) (= c2_next c2))"},
+      {"dst" : "roundabout", "trans" : "(and (= x1_next x1) (= y1_next y1) (= x2_next x2) (= y2_next y2) (= p_next p) (= omy_next omy) (= d1_next (* (- 0 om) (- x2 c2) )) (= d2_next (* om (- x1 c1) )) (= e1_next (* (- 0 om) (- y2 c2) )) (= e2_next (* om (- y1 c1) )))"}
+    ],
+    "roundabout" : [
+      {"dst" : "safe", "trans" : "(and (= x1_next x1) (= y1_next y1) (= d1_next d1) (= d2_next d2) (= x2_next x2) (= y2_next y2) (= e1_next e1) (= e2_next e2) (= p_next p) (= c1_next c1) (= c2_next c2))"}
+    ]
+  },
+  "predicates" : ["(* (- x1 y1) (- x1 y1))","(* (- x2 y2) (- x2 y2))", "(= (- d1 e1) (* (- 0 om) (- x2 y2) ))", "(= (- d2 e2) (* om (- x1 y1) ))"],
+  "property" : "(>= (+ (* (- x1 y1) (- x1 y1) ) (* (- x2 y2) (- x2 y2) ) ) (* p p) )",
+  "property_by_loc" : {
+  }
+}

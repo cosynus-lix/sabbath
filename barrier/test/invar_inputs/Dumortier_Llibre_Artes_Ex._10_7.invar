@@ -1,0 +1,27 @@
+[{
+  "antecedent": "(< (+ (* (- x1 1) (- x1 1)) (* x2 x2)) (/ 1 4) )",
+  "consequent": "(< (+ (* x1 x1) (* x2 x2) ) 8)",
+  "constraints": "true",
+  "contVars": ["(declare-fun x1 () Real)", "(declare-fun x2 () Real)"],
+  "varsDecl": ["(declare-fun x1 () Real)", "(declare-fun x2 () Real)"],
+  "name": "Dumortier 10.7",
+  "predicates": [
+"(= x1 0)",
+"(= (- (* x1 x1) 3) 0)",
+"(= (- (* 4 x1 x1) 3) 0)",
+"(= x2 0)",
+"(= (- (+ (* x1 x1) (* x2 x2) ) 8) 0)",
+"(= (+ (* x1 x1) (* 21 x2 x2) (- 12)) 0)",
+"(= (+ (* 35 x1 x1 x1 x1 x1 x1) (* 105 x2 x2 x1 x1 x1 x1) (* (- 315) x1 x1 x1 x1 ) (* (- 63) x2 x2 x2 x2 x1 x1) (* 378 x1 x1) (* 27 x2 x2 x2 x2 x2 x2) (* (- 189)  x2 x2 x2 x2) (* 378 x2 x2) (- 216)) 0)"],
+  "vectorField": [
+    "(= (* 2 x1 (- (* x1 x1) 3) (- (* 4 x1 x1) 3) (+ (* x1 x1) (* 21 x2 x2) (- 12) )  ) 0)",
+    "(= (* x2 (+ (* 35 x1 x1 x1 x1 x1 x1) (* 105 x2 x2 x1 x1 x1 x1) (* (- 315) x1 x1 x1 x1 ) (* (- 63) x2 x2 x2 x2 x1 x1) (* 378 x1 x1) (* 27 x2 x2 x2 x2 x2 x2) (* (- 189)  x2 x2 x2 x2) (* 378 x2 x2) (- 216))) 0)"
+  ]
+}]
+
+
+
+
+
+
+
