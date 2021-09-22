@@ -233,6 +233,13 @@ def main():
             assert args.direct_encoding == "false"
             direct_encoding = False
 
+        simplified_encoding = False
+        if (args.simplified_ia_encoding == "true"):
+            simplified_encoding = True
+        else:
+            assert args.simplified_ia_encoding == "false"
+            simplified_encoding = False
+
         print("Re-encoding init and prop? %d" % encode_init_and_prop)
 
         opt = DecompositionOptions(encode_init_and_prop,
