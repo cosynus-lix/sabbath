@@ -34,6 +34,8 @@ from barrier.mathematica.mathematica import (
 
 class TestConverter(TestCase):
 
+  @attr('mathematica')
+  @skipIfMathematicaIsNotAvailable()
   def test_allowed(self):
       env = Environment()
       convert = MathematicaConverter(env)
