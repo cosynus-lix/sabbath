@@ -192,7 +192,7 @@ def gen_template(dyn_sys, degree, min_degree=1):
 
 
 
-def synth_lyapunov(dyn_sys, degree):
+def synth_lyapunov(dyn_sys, degree, use_mathematica=False):
     (template, coefficients) = gen_template(dyn_sys, degree)
 
     # x1, x2, a, b = Symbol("x1", REAL), Symbol("x2", REAL), Symbol("a", REAL), Symbol("b", REAL)
@@ -202,7 +202,7 @@ def synth_lyapunov(dyn_sys, degree):
     derivator = dyn_sys.get_derivator()
     template_derivative = derivator.get_lie_der(template)
 
-    if (False):
+    if (not use_mathematica):
         get_new_inst = lambda : get_new(derivator)
 
         (res, lyapunov) = synth_lyapunov_sympy(
@@ -212,11 +212,15 @@ def synth_lyapunov(dyn_sys, degree):
             derivator._get_sympy_expr(template),
             derivator._get_sympy_expr(template_derivative),
             degree)
+        if not lyapunov is None:
+            lyapunov = derivator._get_pysmt_expr(lyapunov)
     else:
-      (res, lyapunov) = synth_lyapunov_mathematica([s for s in dyn_sys.states()],
-                                                   coefficients,
-                                                   template,
-                                                   template_derivative)
+        (res, lyapunov) = synth_lyapunov_mathematica([s for s in dyn_sys.states()],
+                                                     coefficients,
+                                                     template,
+                                                     template_derivative)
+
+    print(lyapunov)
     return (res, lyapunov)
 
 
