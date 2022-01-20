@@ -12,9 +12,11 @@ except:
   pass
 
 from pysmt.exceptions import SolverAPINotFound
-from pysmt.logics import QF_NRA
+from pysmt.logics import QF_NRA, QF_LRA, NRA, LRA
 from pysmt import typing as types
 from pysmt.solvers.solver import Solver, Converter, SolverOptions
+from pysmt.solvers.qelim import QuantifierEliminator
+
 from pysmt.solvers.eager import EagerModel
 from pysmt.walkers import DagWalker
 from pysmt.constants import Fraction, is_pysmt_fraction, is_pysmt_integer
@@ -23,7 +25,12 @@ from pysmt.decorators import clear_pending_pop, catch_conversion_error
 from pysmt.exceptions import (PysmtException, ConvertExpressionError,
                               PysmtValueError, PysmtTypeError)
 from pysmt.oracles import get_logic
-from pysmt.shortcuts import get_env
+from pysmt.typing import REAL
+from pysmt.shortcuts import (
+  get_env, TRUE, FALSE,
+  Real, Symbol
+)
+
 
 class OutOfTimeSolverError(PysmtException):
   def __init__(self, budget):
@@ -230,6 +237,11 @@ class MathematicaConverter(Converter, DagWalker):
   Does not implement the back conversion!
   """
 
+  @staticmethod
+  def powertotimes(term, args):
+    print("cavallo")
+    raise Exception("cavallo")
+
   def __init__(self, environment):
     DagWalker.__init__(self)
 
@@ -240,6 +252,115 @@ class MathematicaConverter(Converter, DagWalker):
     # todo: remember mapping of symbols
     # todo: implement back mapping
 
+    self.back_memoization = {}
+    self.back_fun = {
+      # wl.True
+      # mathsat.MSAT_TAG_TRUE: lambda term, args: self.mgr.TRUE(),
+      # mathsat.MSAT_TAG_FALSE:lambda term, args: self.mgr.FALSE(),
+
+      wl.Plus : self._back_adapter(self.mgr.Plus),
+      wl.Times : self._back_adapter(self.mgr.Times),
+      wl.Divide : self._back_adapter(self.mgr.Div),
+
+      wl.Equal : self._back_adapter(self.mgr.Equals),
+      wl.LessEqual : self._back_adapter(self.mgr.LE),
+      wl.Less : self._back_adapter(self.mgr.LT),
+
+      wl.GreaterEqual : lambda term, args: self.mgr.LE(args[1],args[0]),
+      wl.Greater : lambda term, args: self.mgr.LT(args[1], args[0]),
+
+      wl.And : self._back_adapter(self.mgr.And),
+      wl.Or : self._back_adapter(self.mgr.Or),
+      wl.Not : self._back_adapter(self.mgr.Not),
+      wl.Equivalent : self._back_adapter(self.mgr.Iff),
+      wl.Implies : self._back_adapter(self.mgr.Implies),
+
+      wl.Exists : lambda term, args: self.mgr.Exists(),
+      wl.ForAll : lambda term, args: self.mgr.ForAll() ,
+
+      wl.Power : lambda term, args: MathematicaConverter.powertotimes(term, args) ,
+
+      # # Symbols, Constants and UFs have TAG_UNKNOWN
+      # mathsat.MSAT_TAG_UNKNOWN: self._back_tag_unknown,
+    }
+
+    return
+
+  def back(self, expr):
+    return self._walk_back(expr, self.mgr)
+
+  def _back_adapter(self, op):
+    """Create a function that for the given op.
+      This is used in the construction of back_fun, to simplify the code.
+    """
+    def back_apply(term, args):
+      return op(*args)
+    return back_apply
+
+  def _back_single_term(self, term, mgr, args):
+    """Builds the pysmt formula given a term and the list of formulae
+    obtained by converting the term children.
+    :param term: The Mathematica term to be transformed in pysmt formulae
+    :type term: mathematica term
+    :param mgr: The formula manager to be sued to build the
+    formulae, it should allow for type unsafety.
+    :type mgr: Formula manager
+    :param args: List of the pysmt formulae obtained by converting
+    all the args (obtained by mathsat.msat_term_get_arg()) to
+    pysmt formulae
+    :type args: List of pysmt formulae
+    :returns The pysmt formula representing the given term
+    :rtype Pysmt formula
+    """
+
+    head = term.head
+
+    try:
+      return self.back_fun[head](term, args)
+    except KeyError:
+      raise ConvertExpressionError("Unsupported expression:",
+                                    repr(term))
+
+  def _walk_back(self, term, mgr):
+    stack = [term]
+    while len(stack) > 0:
+      current = stack.pop()
+
+      if (isinstance(current, bool)):
+        res = TRUE() if current else FALSE()
+        self.back_memoization[current] = res
+      elif (isinstance(current, int)):
+        res = Real(current)
+        self.back_memoization[current] = res
+      elif (isinstance(current, wolframclient.language.expression.WLSymbol)):
+        # Assume symbol is a real variable for now
+        name = current.name
+        prefix = 'Global`'
+        assert(name.startswith(prefix))
+        var_name = name[len(prefix):]
+        res = self.mgr.Symbol(var_name, REAL)
+        self.back_memoization[current] = res
+
+      elif (isinstance(current, wolframclient.language.expression.WLFunction) and
+            current.head == wl.Rational):
+        res = Real(Fraction(current.args[0],current.args[1]))
+        self.back_memoization[current] = res
+      else:
+        arity = len(current.args)
+        if current not in self.back_memoization:
+          self.back_memoization[current] = None
+          stack.append(current)
+          for i in range(arity):
+            son = current.args[i]
+            stack.append(son)
+        elif self.back_memoization[current] is None:
+          args = [self.back_memoization[current.args[i]] for i in range(arity)]
+          res = self._back_single_term(current, mgr, args)
+          self.back_memoization[current] = res
+        else:
+          # we already visited the node, nothing else to do
+          pass
+    return self.back_memoization[term]
 
   @catch_conversion_error
   def convert(self, formula):
@@ -387,3 +508,35 @@ def get_mathematica(env=get_env(), budget_time=0, exit_callback=None):
 
 
 
+
+class MathematicaQuantifierEliminator(QuantifierEliminator):
+
+  LOGICS = [LRA, NRA]
+
+  def __init__(self, environment, logic=None):
+    """
+    """
+    QuantifierEliminator.__init__(self)
+
+    self.mathematica_solver = get_mathematica(env=environment)
+    self.converter = self.mathematica_solver.converter
+    self.session = self.mathematica_solver.session
+    self.logic = logic
+
+
+  def eliminate_quantifiers(self, formula):
+    """Returns a quantifier-free equivalent formula of `formula`."""
+
+    mathematica_formula = self.converter.convert(formula)
+    reduce_cmd = wl.Reduce(mathematica_formula, wlexpr('Reals'))
+
+    # print(reduce_cmd)
+
+    result = self.session.evaluate(reduce_cmd)
+    result_pysmt = self.converter.back(result)
+
+    return result_pysmt
+
+
+  def _exit(self):
+      MathematicaSession.terminate_session()
