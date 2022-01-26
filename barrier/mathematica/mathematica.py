@@ -28,8 +28,9 @@ from pysmt.oracles import get_logic
 from pysmt.typing import REAL
 from pysmt.shortcuts import (
   get_env, TRUE, FALSE,
-  Real, Symbol
+  Real, Symbol, Pow
 )
+
 
 
 class OutOfTimeSolverError(PysmtException):
@@ -239,8 +240,15 @@ class MathematicaConverter(Converter, DagWalker):
 
   @staticmethod
   def powertotimes(term, args):
-    print("cavallo")
-    raise Exception("cavallo")
+    # issue - mathematica returns negative powers for variables
+    # we would need to pre-process mathematica result to
+    # - remove the variables from the denominators
+    # - add a condition forcing the denominator to be non-zero (a new conjunction)
+    #   - Mathematica usually already has such condition in the formula
+
+    raise NotImplementedError("Conversion of Pow operator from mathematica not supported ")
+
+    # return Pow(term, args[0])
 
   def __init__(self, environment):
     DagWalker.__init__(self)
@@ -526,13 +534,10 @@ class MathematicaQuantifierEliminator(QuantifierEliminator):
 
   def eliminate_quantifiers(self, formula):
     """Returns a quantifier-free equivalent formula of `formula`."""
-
     mathematica_formula = self.converter.convert(formula)
     reduce_cmd = wl.Reduce(mathematica_formula, wlexpr('Reals'))
-
-    # print(reduce_cmd)
-
     result = self.session.evaluate(reduce_cmd)
+
     result_pysmt = self.converter.back(result)
 
     return result_pysmt
