@@ -194,13 +194,15 @@ def gen_quadratic_template(vars_list):
     return (e1, coefficients)
 
 
-def synth_linear_lyapunov_smt(vars_list, coefficients, l, derivative):
+def synth_linear_lyapunov_smt(vars_list, coefficients, l, derivative, max_iter = -1):
     # find a quadratic lyapunov function for the linear system
     # L(X) = X^T P X
     # P = P^T, and P > 0 (means forall x. x != 0 => x^T P x > 0)
     #
     # Then forall x. d(L(X)) < 0
     #
+    # From Automated and Sound Synthesis of Lyapunov Functions with SMT Solvers,
+    # Abate et al, TACAS 2020
 
     DEBUG = False
 
@@ -209,7 +211,6 @@ def synth_linear_lyapunov_smt(vars_list, coefficients, l, derivative):
                             GT(l, Real(0))),
                     LE(derivative, Real(0)))
 
-    MAX_ITER = 100
     iteration = 0
 
     learner = Solver(logic=QF_LRA, name="z3")
@@ -221,7 +222,7 @@ def synth_linear_lyapunov_smt(vars_list, coefficients, l, derivative):
         to_subs[c] = Real(0)
 
     condition_blocking = condition
-    while (iteration < MAX_ITER):
+    while (max_iter < 0 or iteration < max_iter):
         if DEBUG: print("Iteration %d..." % iteration)
         if DEBUG: print("Lyapunov condition", condition_blocking.serialize())
 
@@ -305,7 +306,7 @@ def gen_template(dyn_sys, degree, min_degree=1):
 
 
 
-def synth_lyapunov(dyn_sys, degree, use_mathematica=False, use_smt = False):
+def synth_lyapunov(dyn_sys, degree, use_mathematica=False, use_smt = False, max_iter=-1):
     assert not (use_smt and use_mathematica)
 
     vars_list = [s for s in dyn_sys.states()]
@@ -329,7 +330,8 @@ def synth_lyapunov(dyn_sys, degree, use_mathematica=False, use_smt = False):
                                                      template_derivative)
     elif use_smt:
         (res, lyapunov) = synth_linear_lyapunov_smt(vars_list, coefficients,
-                                                    template, template_derivative)
+                                                    template, template_derivative,
+                                                    max_iter)
     else:
         get_new_inst = lambda : get_new(derivator)
 

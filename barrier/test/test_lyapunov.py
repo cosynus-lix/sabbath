@@ -59,7 +59,7 @@ class TestLyapunov(TestCase):
 
         # smt synthesis
         for (sys, expected) in systems:
-            (res, lyapunov) = synth_lyapunov(sys, 2, False, True)
+            (res, lyapunov) = synth_lyapunov(sys, 2, False, True, 20)
             self.assertTrue(res == expected)
             if (expected):
                 # correct by construction
