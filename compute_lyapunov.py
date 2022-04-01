@@ -1,12 +1,14 @@
 import sys
 import argparse
+import logging
+
 from fractions import Fraction
 
-from pysmt.shortcuts import Symbol, REAL
+from pysmt.shortcuts import Symbol, REAL, get_env
 
 from barrier.system import DynSystem
 from barrier.lyapunov import synth_lyapunov, validate_lyapunov
-
+from barrier.lzz.serialization import importInvar
 
 
 def main():
@@ -33,34 +35,14 @@ def main():
     args = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG)
 
+    env = get_env()
 
-    problem_list = importInvar(args.problem, env)
+    with open(args.problem, "r") as json_stream:
+        problem_list = importInvar(json_stream, env)
     assert(len(problem_list) == 1)
     for p in problem_list:
         (problem_name, init, safe, sys, invariants, predicates) = p
         break
-
-
-    x1, x2 = [Symbol("x%s" % (i+1), REAL) for i in range(2)]
-
-    sys = DynSystem([x1,x2], [], [],
-                    {
-                        x1 : -x1,
-                        x2 : x1 - x2
-                    },
-                    {})
-
-
-    sys = DynSystem([x1,x2], [], [],
-                    {
-                        x1 : -2 * x1,
-                        x2 : x1 - x2
-                    },
-                    {})
-
-
-
-
 
     mathematica = False
     smt = True

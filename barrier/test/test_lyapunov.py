@@ -71,7 +71,6 @@ class TestLyapunov(TestCase):
         # Test SOS formulation
         systems = TestLyapunov.get_test_cases()
         for (sys, expected) in systems:
-            print("a")
             (res, lyapunov) = synth_lyapunov(sys, 2, False, False)
             print(res, expected)
             # expected -> res (all the others cannot be checked)
