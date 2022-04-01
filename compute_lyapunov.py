@@ -1,4 +1,5 @@
 import sys
+import argparse
 from fractions import Fraction
 
 from pysmt.shortcuts import Symbol, REAL
@@ -21,6 +22,25 @@ def main():
     # feasible, lyap = test_lyapunov(factory, vector_field, vars_list, 4)
     # print(feasible, lyap)
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("problem",help="File containing the verification problem")
+
+    parser.add_argument("--solver",
+                        choices=["z3","mathsat","mathematica"],
+                        default="z3",
+                        help="SMT solver to use")
+
+    args = parser.parse_args()
+    logging.basicConfig(level=logging.DEBUG)
+
+
+    problem_list = importInvar(args.problem, env)
+    assert(len(problem_list) == 1)
+    for p in problem_list:
+        (problem_name, init, safe, sys, invariants, predicates) = p
+        break
+
+
     x1, x2 = [Symbol("x%s" % (i+1), REAL) for i in range(2)]
 
     sys = DynSystem([x1,x2], [], [],
@@ -37,6 +57,9 @@ def main():
                         x2 : x1 - x2
                     },
                     {})
+
+
+
 
 
     mathematica = False
