@@ -40,7 +40,10 @@ class OutOfTimeSolverError(PysmtException):
 
 
 def has_kernel():
-  return not (find_default_kernel_path() is None)
+  try:
+    return not (find_default_kernel_path() is None)
+  except:
+    return None
 
 def exit_callback_print_time(solver, outstream):
     if (not solver.session is None):
@@ -57,7 +60,7 @@ class MathematicaSession():
 
   @staticmethod
   def get_session():
-    if not has_kernel():
+    if has_kernel() is None or not has_kernel():
       raise SolverAPINotFound
 
     if MathematicaSession._session is None:

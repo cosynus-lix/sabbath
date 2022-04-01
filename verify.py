@@ -95,11 +95,10 @@ def main():
     assert(len(problem_list) == 1)
     (problem_name, init, safe, dyn_sys, invariants, predicates) = problem_list[0]
     print("parsed problem...")
-
-    # print(dyn_sys)
-    # print(invariants.serialize())
-    # print(init.serialize())
-    # print(safe.serialize())
+    print(dyn_sys)
+    print("Invariant ", invariants.serialize())
+    print("Init ", init.serialize())
+    print("Safe ", safe.serialize())
 
     if (args.lzz_use_remainders):
         lzz_opt = LzzOpt(True, True)
