@@ -14,12 +14,11 @@ from pysmt.shortcuts import (
 from pysmt.walkers import DagWalker
 from pysmt.typing import REAL
 
-from sympy import diff, sympify
-from sympy import symbols as sympy_symbols
-from sympy import total_degree, S
-
-
 from sympy import (
+    sympify,
+    linear_eq_to_matrix, linsolve,
+    degree as sympy_degree,
+    total_degree, S,
     diff as sympy_diff,
     symbols as sympy_symbols,
     Symbol as Symbol_sympy,
@@ -273,7 +272,6 @@ class Derivator(object):
 
         return degree
 
-
     def add_poly_factors(self, expr, factor_set):
         sympy_expr = self._get_sympy_expr(expr)
         factor_predicateslist = []
@@ -287,6 +285,33 @@ class Derivator(object):
         for (factor_sympy, power) in sympy_factors[1]:
             factor_set.add(self._get_pysmt_expr(factor_sympy))
 
+
+    def get_all_solutions_linear_system(self, equations, variables):
+        """ Returns all the numeric solution of a linear system.
+
+        WARNING: does not consider solution for underdetermined systems
+
+        To be moved in a sympy wrapper package
+        """
+
+        solutions = []
+
+        sympy_equations = [self._get_sympy_expr(expr) for expr in equations]
+        sympy_variables = [self._get_sympy_expr(var) for var in variables]
+
+        sys = linear_eq_to_matrix(sympy_equations, sympy_variables)
+        sympy_solutions = linsolve(sys, sympy_variables)
+        for sympy_sol in sympy_solutions:
+            assert(len(sympy_sol) == len(sympy_variables))
+
+            if reduce(lambda acc, res: acc and isinstance(res, Number_sympy),
+                      sympy_sol, True):
+                sol = {}
+                for value,var in zip(sympy_sol, variables):
+                    sol[var] = self._get_pysmt_expr(value)
+                solutions.append(sol)
+
+        return solutions
 
 # EOC Derivator
 

@@ -27,10 +27,25 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("problem",help="File containing the verification problem")
 
-    parser.add_argument("--solver",
-                        choices=["z3","mathsat","mathematica"],
-                        default="z3",
-                        help="SMT solver to use")
+    parser.add_argument("--synth_algorithm",
+                        choices=["sos","smt","quantifier_elimination"],
+                        default="sos",
+                        help="Technique used to synthesise the Lyapunov function.")
+
+    parser.add_argument("--validate",
+                        dest="validate", action='store_true',
+                        help="Validate the lyapunov function")
+
+    # parser.add_argument("--smt-synth",
+    #                     choices=["z3","mathsat","cvc5"],
+    #                     default="z3",
+    #                     help="SMT solver to use for synthesis (still not implemented)")
+
+    # parser.add_argument("--smt-validation",
+    #                     choices=["z3","mathsat","cvc5"],
+    #                     default="z3",
+    #                     help="SMT solver to use for validation (still not implemented)")
+
 
     args = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG)
@@ -44,20 +59,41 @@ def main():
         (problem_name, init, safe, sys, invariants, predicates) = p
         break
 
-    mathematica = False
-    smt = True
-    (res, lyapunov) = synth_lyapunov(sys, 2, mathematica, smt)
 
-    if (res is None):
-        print("Unknown!")
-    elif (res):
-        print("Found a Lyapunov function: ", lyapunov.serialize())
+    (mathematica, smt) = {
+        "sos" : (False,False),
+        "smt" : (False,True),
+        "quantifier_elimination" : (True,False),
+    }[args.synth_algorithm]
 
-        if (not mathematica and not smt):
-            is_valid = validate_lyapunov(sys, lyapunov)
-            print("Is valid: ", is_valid)
-    else:
-        print("Lyapunov function does not exist!")
+    # Pre-processing
+    assert (sys.is_linear)
+    rescaled_systems = sys.get_rescaled_by_equilibrium_point()
+    if len(rescaled_systems) != 1:
+        print("Found multiple equilibrium point")
+
+    for rescaled in rescaled_systems:
+        print("Start synthesis using ", args.synth_algorithm)
+        (res, lyapunov) = synth_lyapunov(rescaled, 2, mathematica, smt)
+
+        if (res is None):
+            print("Unknown!")
+        elif (res):
+            print("Found a Lyapunov function: ", lyapunov.serialize())
+
+            if (args.validate):
+                if (mathematica or smt):
+                    print("Skipping validation (correct by construction)")
+                else:
+                    print ("Validating the Lyapunov function...")
+                    is_valid = validate_lyapunov(rescaled, lyapunov)
+                    print("Is valid: ", is_valid)
+
+            else:
+                if (not (mathematica or smt)):
+                    print("WARNING: The Lyapunov function was obtained with numeric (unsound) methods")
+        else:
+            print("Cannot find a Lyapunov function")
 
 
 if __name__ == "__main__":

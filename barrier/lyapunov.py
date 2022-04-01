@@ -1,4 +1,8 @@
 """ Compute a Lyapunov function
+
+ASSUMPTIONS - now the functions deal only with systems with equilibrium point in 0 and possibly linear.
+Some methods could be easily extended to non-linear (e.g., SOS encodig) and different equilibrium points.
+
 """
 
 import sympy as sp
@@ -268,8 +272,6 @@ def synth_linear_lyapunov_smt(vars_list, coefficients, l, derivative, max_iter =
     return (None, None)
 
 
-
-
 def gen_template_sympy(get_new, vars_list, degree, min_degree):
     coefficients = []
     template = 0
@@ -303,9 +305,6 @@ def gen_template(dyn_sys, degree, min_degree=1):
             [derivator._get_pysmt_expr(c) for c in sympy_coeff])
 
 
-
-
-
 def synth_lyapunov(dyn_sys, degree, use_mathematica=False, use_smt = False, max_iter=-1):
     assert not (use_smt and use_mathematica)
 
@@ -329,6 +328,7 @@ def synth_lyapunov(dyn_sys, degree, use_mathematica=False, use_smt = False, max_
                                                      template,
                                                      template_derivative)
     elif use_smt:
+        assert (dyn_sys.is_linear())
         (res, lyapunov) = synth_linear_lyapunov_smt(vars_list, coefficients,
                                                     template, template_derivative,
                                                     max_iter)
