@@ -24,7 +24,7 @@ from pysmt.shortcuts import (
 from time import sleep
 from barrier.test import TestCase
 from barrier.system import DynSystem
-from barrier.compute import (is_barrier, barrier_generator)
+from barrier.compute_barrier import (is_barrier, barrier_generator)
 from barrier.utils import (
     get_range
 )

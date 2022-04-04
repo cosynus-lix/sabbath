@@ -6,7 +6,7 @@ from barrier.lzz.serialization import importLzz, importInvar
 from pysmt.shortcuts import get_env, Solver, Not
 from pysmt.logics import QF_NRA
 
-from barrier.lyapunov import synth_barrier
+from barrier.compute_barrier import synth_barrier
 
 
 
