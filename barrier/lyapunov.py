@@ -15,8 +15,10 @@ from sympy.polys.monomials import itermonomials
 import picos
 
 import sys
+import time
 from fractions import Fraction
 
+from pysmt.smtlib.script import smtlibscript_from_formula
 
 import pysmt.typing as types
 from pysmt.logics import QF_NRA, NRA, QF_LRA
@@ -25,7 +27,7 @@ from pysmt.shortcuts import (
     FreshSymbol, Symbol, REAL, Solver,
     Exists, ForAll,
     Or, NotEquals, And, Implies, Not, Equals,
-    GT, LE, GE, TRUE,
+    LT, GT, LE, GE, TRUE,
     Real,
     Times
 )
@@ -363,3 +365,69 @@ def validate_lyapunov(sys, lyapunov):
 
     return True
 
+
+def validate_lyapunov2(sys, lyapunov, solver):
+
+    formula1 = Implies (Or([ NotEquals(v, Real(0)) for v in sys.states() ]),
+                        GT(lyapunov, Real(0)))
+
+#    script1 = smtlibscript_from_formula(formula1)
+#    file1 = open("formula1.txt", "w", encoding="utf-8")
+#    script1.serialize(file1)
+
+    start = time.time()
+    cond1_ok = solver.is_valid(formula1)
+    end = time.time()
+    print("Condition 1 (Lyapunov function is positive) checked in %f sec" % (end - start))
+    if (not cond1_ok):
+        print("Condition 1 failure ")
+        return False
+
+#    start = time.time()
+#    cond2_ok = solver.is_valid( LE(sys.get_derivator().get_lie_der(lyapunov), Real(0)) )
+#    end = time.time()
+#    print("Condition 2 (Lie derivative is not increasing) checked in %f sec" % (end - start))
+#    if (not cond2_ok):
+#        print("Condition 2 failure")
+#        return False
+
+    formula2 = Implies (Or([ NotEquals(v, Real(0)) for v in sys.states() ]),
+                        LT(sys.get_derivator().get_lie_der(lyapunov), Real(0)))
+
+    start = time.time()
+    cond2_ok = solver.is_valid(formula2)
+    end = time.time()
+    print("Condition 2 (Lie derivative is decreasing) checked in %f sec" % (end - start))
+    if (not cond2_ok):
+        print("Condition 2 failure")
+        return False
+    return True
+
+def validate_lyapunov3(sys, lyapunov, eq_point, solver):
+
+    i = 0
+    eq_list = []
+    for v in list(sys.states()):
+        eq_list.append(NotEquals(v, Real(eq_point[i])))
+        i = i + 1
+    formula1 = Implies (Or(eq_list), GT(lyapunov, Real(0)))
+    
+    start = time.time()
+    cond1_ok = solver.is_valid(formula1)
+    end = time.time()
+    print("Condition 1 (Lyapunov function is positive) checked in %f sec" % (end - start))
+    if (not cond1_ok):
+        print("Condition 1 failure ")
+        return False
+
+    formula2 = Implies (Or(eq_list),
+                        LT(sys.get_derivator().get_lie_der(lyapunov), Real(0)))
+
+    start = time.time()
+    cond2_ok = solver.is_valid(formula2)
+    end = time.time()
+    print("Condition 2 (Lie derivative is decreasing) checked in %f sec" % (end - start))
+    if (not cond2_ok):
+        print("Condition 2 failure")
+        return False
+    return True
