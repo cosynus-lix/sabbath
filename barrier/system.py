@@ -169,6 +169,10 @@ class DynSystem(object):
         return rescaled_systems
 
 
+    def get_ode_matrix(self):
+        """ Return a matrix representation of the system """
+        self.pippo
+
     def get_derivator(self):
         """ Return the derivator object for the
         dynamical system.

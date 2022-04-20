@@ -81,3 +81,24 @@ class TestLyapunov(TestCase):
                     print("Lyapunov function is not valid: ", lyapunov.serialize())
                 self.assertTrue(is_valid)
 
+
+    @attr('sos')
+    @skipIfSOSIsNotAvailable()
+    def test_common_lyapunov(self):
+        # Test SOS formulation
+        systems = TestLyapunov.get_test_cases()
+        for (sys, expected) in systems:
+            (res, lyapunov) = synth_lyapunov(sys, 2, False, False)
+            print(res, expected)
+            # expected -> res (all the others cannot be checked)
+            self.assertTrue((not expected) or res)
+            if (res and expected):
+                is_valid = validate_lyapunov(sys, lyapunov)
+                if (not is_valid):
+                    print("Lyapunov function is not valid: ", lyapunov.serialize())
+                self.assertTrue(is_valid)
+
+
+
+
+    

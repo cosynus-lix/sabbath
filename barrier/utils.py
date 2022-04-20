@@ -145,3 +145,6 @@ def gen_quadratic_template(vars_list):
       e1 = e1 + app[j] * vars_list[j]
 
     return (e1, coefficients)
+
+
+

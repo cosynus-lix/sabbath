@@ -35,67 +35,9 @@ from pysmt.rewritings import nnf, conjunctive_partition
 
 from barrier.system import DynSystem
 from barrier.utils import gen_template, gen_quadratic_template, get_new
+from barrier.sympy_utils import make_positive_definite
 from barrier.mathematica.mathematica import MathematicaQuantifierEliminator
 
-
-def make_positive_definite(get_new, prob, p, vars_list):
-    def _make_positive_definite(get_new, p, vars_list):
-        """
-        Takes as input a polynomial p of degree 2*d and returns:
-        1. the polynomial p' := p - f
-
-        where f is a new polynomial: sum_{i = 1}^{n} sum_{j = 1}^{d} e_ij xi^2j
-        with e_ij a list of new coefficients
-
-        2. the list of polynomials g := [sum_{j = 1}^{d} e_1j - gamma, ..., sum_{j = 1}^{d} e_nj - gamma]
-        Each sum "sum_{j = 1}^{d} e_nj - gamma" must be positive
-
-        3. The list of coefficients E := [...eij...]
-        All coefficients must be non-negative
-
-        4. The coefficient gamma
-        Gamma must be positive
-        """
-
-        p_degreee = sp.Poly(p, vars_list).total_degree()
-        if (p_degreee % 2 != 0):
-            raise Exception("Polynomial degree should be divisible by 2")
-        p_degreee = int(p_degreee)
-        degree = int(p_degreee / 2)
-
-
-        # Generate the new polynomial, E, and the constraints on E
-        E_list = []
-        g_list = []
-        gamma = get_new()
-
-        f = 0
-        for v in vars_list:
-            c_v = 0
-            for j in range(degree):
-                j += 1
-
-                e = get_new()
-                E_list.append(e)
-
-                f += e * (v**(2*j))
-                c_v += e
-            c_v = c_v - gamma
-            g_list.append(c_v)
-        p_prime = p - f
-
-        return (p_prime, g_list, E_list, gamma)
-
-    (p_prime, g_list, E_list, gamma) = _make_positive_definite(get_new, p, vars_list)
-
-    prob.add_sos_constraint(p_prime, vars_list)
-    for g in g_list:
-        prob.add_sos_constraint(g, vars_list)
-    for e in E_list:
-        prob.add_sos_constraint(e, vars_list)
-    prob.add_sos_constraint(gamma, vars_list)
-
-    return (p_prime, g_list, E_list, gamma)
 
 
 def synth_lyapunov_sos(get_new, vars_list, coefficients, template, lie, degree):
@@ -235,6 +177,10 @@ def synth_linear_lyapunov_smt(vars_list, coefficients, l, derivative, max_iter =
 
 
 def synth_lyapunov(dyn_sys, degree, use_mathematica=False, use_smt = False, max_iter=-1):
+    """
+    Entry point for synthesising different lyapunov function for dynamical systems
+
+    """
     assert not (use_smt and use_mathematica)
 
     vars_list = [s for s in dyn_sys.states()]
@@ -293,4 +239,152 @@ def validate_lyapunov(sys, lyapunov):
     return True
 
 
+def get_sympy_matrix(derivator, equations, variables):
+    sympy_equations = [derivator._get_sympy_expr(expr) for expr in equations]
+    sympy_variables = [dervivator._get_sympy_expr(var) for var in variables]
 
+    sys = sp.linear_eq_to_matrix(sympy_equations, sympy_variables)
+
+    return sys
+
+def synth_exp_lyapunov_values(s1, s2, alpha = None):
+    """ Ad-hoc function for values """
+
+    # Get only linear systems (not affine)
+    s1_scaled = s1.get_rescaled_by_equilibrium_point()
+    s2_lin = s2.remove_affine_terms()
+    s2_lin._derivator = s1_scaled.get_derivator()
+
+    A1 = get_sympy_matrix(s1_scaled.get_derivator(),
+                          [ode for ode in s1_scaled.get_odes()],
+                          [s for s in s1_scaled.get_states()])
+    A2 = get_sympy_matrix(s2_lin.get_derivator(),
+                          [ode for ode in s2_lin.get_odes()],
+                          [s for s in s2_lin.get_states()])
+
+    if (alpha is None):
+        alpha = picos.Constant('alpha', [1])
+    else:
+        alpha = picos.Constant('alpha', [alpha])
+
+    # The quadratic Lyapunov function is of the form V(X) = x^T P x with P a n x n matrix.
+    # P must be positive definite (to ensure V(x) > 0 when x != 0, and V(0) = 0,
+    sdp = picos.Problem()
+    s1_dim = len(s1_scaled.get_states())
+    s2_dim = len(s2_lin.get_states())
+
+    assert(s1_dim + 1 == s2_dim)
+
+    P = pic.SymmetricVariable('P', (s1_dim,s1_dim))
+    sdp.add_constraint(P >> 0)
+
+    # PA1 + A1^TP + alpha P << 0
+    sdp.add_constraint(P * A1 + A1.T * P + alpha * P << 0)
+
+    # P'A2 + A2^TP' + alpha P' << 0
+    # P' = | P     b2 |
+    #      | b2^T  c  |
+    b2 = picos.RealVariable('b2', (s1_dim,1))
+    c = pic.SymmetricVariable('c', 1)
+    P2 = ((P // b2.T).T // (b2 // c).T).T
+    sdp.add_constraint(P2 * A2 + A2.T * P2 + alpha * P2 << 0)
+
+
+    solution = sdp.solve(solver='cvxopt',verbosity=False)
+
+    if (sol.problemStatus == picos.modeling.solution.PS_FEASIBLE):
+        # # Construct the alyapunov function, x^T P x
+        # lyapunov = Real(0)
+        # state_vars = [v in dynamical_systems[0].get_states()]
+        # for row_index in range(len(state_vars))
+        #     row_sum = Real(0)
+        #     for column_index in columns:
+        #         val_from_picos = P[row_index * len(state_vars), column_index]
+
+        #         # Back to pysmt
+        #         val_from_picos = Real(val_from_picos)
+
+        #         row_sum = row_sum + Times(state_vars[column_index],
+        #                                   val_from_picos)
+        #     row_product = Times(state_vars[row_index], row_sum)
+
+        #     lyapunov += lyapunov + row_product
+
+        return (True, lyapunov)
+    else:
+        return (False, None)
+
+
+    return lyapunov
+
+
+
+def synth_common_lyapunov_for_AGS(dynamical_systems, alpha=None):
+    """
+    Input: a switched linear system, represented as a list of dynamical system.
+    Note: no partitions as input, prove AGS
+
+    der(x) = A1 x   for x in P1
+    ...
+    der(x) = Ak x   for x in Pk
+
+    Assume the systems are defined over the same state variables.
+
+    alpha > 0
+
+    Compute a common quadratic lyapunov function for asymptotic global stability using a SDP solver (the Lyapunov function synthesis is a LMI).
+
+    Returns (
+    """
+
+    assert len(dynamical_systems) > 0
+    assert (len(dynamical_systems) == len(partitions))
+
+
+    # Transform the dynamical systems, if one of them is affine.
+    sdp = picos.Problem()
+
+    # The quadratic Lyapunov function is of the form V(X) = x^T P x with P a n x n matrix.
+    # P must be positive definite (to ensure V(x) > 0 when x != 0, and V(0) = 0,
+    P = pic.SymmetricVariable('P', (2,2))
+    sdp.add_constraint(P >> 0)
+
+    if alpha is None:
+        # Cannot search for alpha
+        assert (False)
+    else:
+        assert (alpha > 0)
+
+    """ For each system der(x) = A1 x, generate the constraints:
+        PA + A^TP + alpha P << 0
+    """
+    for sys in dynamical_systems:
+        sys_matrix = get_sympy_matrix(sys.get_derivator(),
+                                      [ode for ode in sys.get_odes()],
+                                      [s for s in sys.get_states()])
+
+        # 
+
+    solution = sdp.solve(solver='cvxopt',verbosity=False)
+
+    if (sol.problemStatus == picos.modeling.solution.PS_FEASIBLE):
+        # Construct the lyapunov function, x^T P x
+        lyapunov = Real(0)
+        state_vars = [v in dynamical_systems[0].get_states()]
+        for row_index in range(len(state_vars))
+            row_sum = Real(0)
+            for column_index in columns:
+                val_from_picos = P[row_index * len(state_vars), column_index]
+
+                # Back to pysmt
+                val_from_picos = Real(val_from_picos)
+
+                row_sum = row_sum + Times(state_vars[column_index],
+                                          val_from_picos)
+            row_product = Times(state_vars[row_index], row_sum)
+
+            lyapunov += lyapunov + row_product
+
+        return (True, lyapunov)
+    else:
+        return (False, None)
