@@ -367,24 +367,24 @@ def synth_common_lyapunov_for_AGS(dynamical_systems, alpha=None):
 
     solution = sdp.solve(solver='cvxopt',verbosity=False)
 
-    if (sol.problemStatus == picos.modeling.solution.PS_FEASIBLE):
-        # Construct the lyapunov function, x^T P x
-        lyapunov = Real(0)
-        state_vars = [v in dynamical_systems[0].get_states()]
-        for row_index in range(len(state_vars))
-            row_sum = Real(0)
-            for column_index in columns:
-                val_from_picos = P[row_index * len(state_vars), column_index]
+    # if (sol.problemStatus == picos.modeling.solution.PS_FEASIBLE):
+    #     # Construct the lyapunov function, x^T P x
+    #     lyapunov = Real(0)
+    #     state_vars = [v in dynamical_systems[0].get_states()]
+    #     for row_index in range(len(state_vars))
+    #         row_sum = Real(0)
+    #         for column_index in columns:
+    #             val_from_picos = P[row_index * len(state_vars), column_index]
 
-                # Back to pysmt
-                val_from_picos = Real(val_from_picos)
+    #             # Back to pysmt
+    #             val_from_picos = Real(val_from_picos)
 
-                row_sum = row_sum + Times(state_vars[column_index],
-                                          val_from_picos)
-            row_product = Times(state_vars[row_index], row_sum)
+    #             row_sum = row_sum + Times(state_vars[column_index],
+    #                                       val_from_picos)
+    #         row_product = Times(state_vars[row_index], row_sum)
 
-            lyapunov += lyapunov + row_product
+    #         lyapunov += lyapunov + row_product
 
-        return (True, lyapunov)
-    else:
-        return (False, None)
+    #     return (True, lyapunov)
+    # else:
+    #     return (False, None)

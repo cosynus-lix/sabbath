@@ -21,7 +21,7 @@ import barrier.test
 from barrier.test import TestCase, skipIfSOSIsNotAvailable
 
 from barrier.system import DynSystem
-from barrier.lyapunov import synth_lyapunov, validate_lyapunov
+from barrier.lyapunov.lyapunov import synth_lyapunov, validate_lyapunov
 
 
 from pysmt.shortcuts import Symbol, REAL

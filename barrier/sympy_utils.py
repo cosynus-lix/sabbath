@@ -1,4 +1,5 @@
 from sympy.polys.monomials import itermonomials
+from sympy import Poly
 
 def gen_template_sympy(get_new, vars_list, degree, min_degree):
     coefficients = []
@@ -29,7 +30,7 @@ def make_positive_definite(get_new, prob, p, vars_list):
         Gamma must be positive
         """
 
-        p_degreee = sp.Poly(p, vars_list).total_degree()
+        p_degreee = Poly(p, vars_list).total_degree()
         if (p_degreee % 2 != 0):
             raise Exception("Polynomial degree should be divisible by 2")
         p_degreee = int(p_degreee)
