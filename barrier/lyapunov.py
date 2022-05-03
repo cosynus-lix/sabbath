@@ -346,7 +346,7 @@ def synth_common_lyapunov_for_AGS(dynamical_systems, alpha=None):
 
     # The quadratic Lyapunov function is of the form V(X) = x^T P x with P a n x n matrix.
     # P must be positive definite (to ensure V(x) > 0 when x != 0, and V(0) = 0,
-    P = pic.SymmetricVariable('P', (2,2))
+    P = picos.SymmetricVariable('P', (2,2))
     sdp.add_constraint(P >> 0)
 
     if alpha is None:
