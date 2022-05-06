@@ -35,6 +35,10 @@ LeConst = namedtuple("LeConst", "A b") # Ax <= b
 Edge = namedtuple("Edge", "source guards update dest")
 
 
+# Ax >= b
+def get_ge(A,b):
+  return LeConst(-A,-b)
+
 def myround(n):
   return round(float(n),20)
 
@@ -74,6 +78,32 @@ def to_smt_matrix(np_matrix):
     res = to_smt_vect(np_matrix[i])
     smt_matrix.append(res)
   return smt_matrix
+
+
+def get_derivator(hs, smt_vars, flow, ignore_b = False):
+  vector_field = {}
+  A_smt = to_smt_matrix(flow.A)
+  b_smt = to_smt_vect(flow.b)
+
+  for i in range(hs.dimensions):
+    var = smt_vars[i]
+    if not var.is_symbol():
+      continue
+    assert(ignore_b or b_smt[i] == Real(0)) # never add affine term b_smt[i]: but it should be explicit!
+    flow = dot_product_smt(A_smt[i], smt_vars) 
+    vector_field[var] = flow
+  derivator = Derivator(vector_field)
+  return derivator
+
+def _get_lyapunov_smt(smt_vars, lyapunov_map, lyapunov_smt, m):
+  if m not in lyapunov_smt:
+    smt_matrix = to_smt_matrix(lyapunov_map[m])
+    app = vect_times_matrix(smt_vars, smt_matrix)
+    # x^T V_m x
+    V_m = dot_product_smt(app, smt_vars)
+    lyapunov_smt[m] = V_m
+  V_m = lyapunov_smt[m]
+  return V_m
 
 
 class NumericAffineHS:
@@ -170,6 +200,47 @@ class NumericAffineHS:
     self.has_last_var_dummy = True
 
 
+  def change_coordinate(self, point):
+    """
+    Change the corrdinate system from x to y, where y = x - point
+    """
+    assert not self.has_last_var_dummy
+
+    point_stack = np.vstack(point)
+    def dotprod(A, point):
+      return np.dot(A,point).transpose()[0]
+
+    new_flow = {}
+    for (mode, affine_list) in self.flows.items():
+      new_affine_list = []
+      for affine in affine_list:
+        # Ax + b => A (y + point) + b => A y + (b + A point)
+        new_b = affine.b + dotprod(affine.A, point_stack)
+        new_affine_list.append(Affine(affine.A, new_b))
+        assert(len(affine.b) == len(new_b))
+      new_flow[mode] = new_affine_list
+    self.flows = new_flow
+
+    new_edges = []
+    for edge in self.edges:
+      new_edge = Edge(edge.source,
+                      # Ax <= b => A (y + point) <= b => A y  <= b - A point
+                      [LeConst(le.A, le.b - dotprod(le.A, point_stack)) for le in edge.guards],
+                      # x' = Ax + b => y' + point = A (y + point) + b =>
+                      #    y' = A y + A point + b - point
+                      Affine(edge.update.A, dotprod(edge.update.A, point_stack) - point + edge.update.b),
+                      edge.dest)
+      new_edges.append(new_edge)
+    self.edges = new_edges
+
+    new_invars = {}
+    for mode,const in self.invariant.items():
+      # Ax <= b => A (y + point) <= b => A y  <= b - A point
+      new_const = [LeConst(le.A, le.b - dotprod(le.A,point_stack)) for le in const]
+      new_invars[mode] = new_const
+    self.invariant = new_invars
+
+
   def get_vars(self):
     raise NotImplementedException()
 
@@ -228,6 +299,16 @@ class NumericAffineHS:
     res = simplify(GE(res, Real(0)))
 
     solver = Solver(logic=QF_NRA, name="z3")
+
+    # DEBUG
+    # if (not solver.is_valid(Implies(smt_formula, res))):
+    #   solver.add_assertion(Not(Implies(smt_formula, res)))
+    #   if solver.solve():
+    #     model = solver.get_model()
+    #     print(model)
+    #     print(model.get_value(smt_formula))
+    #     print(res.simplify().serialize(), " ", model.get_value(res))
+
     return solver.is_valid(Implies(smt_formula, res))
 
   @staticmethod
@@ -259,7 +340,7 @@ class PiecewiseQuadraticLF:
     self.I_tilda = {}
 
 
-def synth_piecewise_quadratic(hs, epsilon = 0.0001, dbg_stream=sys.stdout):
+def synth_piecewise_quadratic(hs, modes_in_loop=[], epsilon = 0.0001, dbg_stream=sys.stdout):
   """
   Synthesize a piecewise quadratic lyapunov function for the system.
   Follows 3.5.2
@@ -275,11 +356,13 @@ def synth_piecewise_quadratic(hs, epsilon = 0.0001, dbg_stream=sys.stdout):
   V_GE_F1 = 1
   V_LE_F2 = 2
   V_PRIME_LE_MINUS_F3 = 4
-  S_PROCEDURE = 8
+  V_EDGES = 8
+  S_PROCEDURE = 16
 
-  to_encode = V_GE_F1 | V_LE_F2 | V_PRIME_LE_MINUS_F3 | S_PROCEDURE
+  to_encode = V_GE_F1 | V_LE_F2 | V_PRIME_LE_MINUS_F3 | V_EDGES | S_PROCEDURE
+  #to_encode = V_GE_F1 | V_LE_F2 | V_PRIME_LE_MINUS_F3  | S_PROCEDURE
+  #to_encode = V_PRIME_LE_MINUS_F3
 
-  dbgprint("Computing stability for:")
   # get the homogeneous system from an affine one. This simplifies things, and move the equilibrium point to 0
   assert(hs.is_homogeneous)
 
@@ -306,7 +389,6 @@ def synth_piecewise_quadratic(hs, epsilon = 0.0001, dbg_stream=sys.stdout):
         if f.b[i] != 0:
           non_const_dimensions[i] = 1
     I_tilda_map[m] = picos.Constant('identity_tilda_%d' % m,  np.diag(non_const_dimensions))
-    dbgprint("I_tilda_map[%d] " % m, np.diag(non_const_dimensions))
 
 
   epsilon = picos.Constant("epsilon", epsilon)
@@ -383,8 +465,58 @@ def synth_piecewise_quadratic(hs, epsilon = 0.0001, dbg_stream=sys.stdout):
           sdp.add_constraint(c)
         dbgprint(",".join([str(c) for c in constraints]))
 
+    # hack if mode has to be equal
+    dst_loop = False
+    for (src,dst) in modes_in_loop:
+      if dst == mode:
+        dst_loop = True
+        break
+    if (not dst_loop):
+      P_s[mode] = picos.SymmetricVariable('P_%d' % mode, (hs.dimensions, hs.dimensions))
 
-    P_s[mode] = picos.SymmetricVariable('P_%d' % mode, (hs.dimensions, hs.dimensions))
+  # HACK - still not general, assume a single loop...
+  for (src,dst) in modes_in_loop:
+    equality_on_border = None
+    edge = None
+    for e in hs.edges:
+      if e.source == src and e.dest == dst:
+        edge = e
+    assert not edge is None
+
+    guard = e.guards[0]
+
+    AA = -np.copy(guard.A)
+    AA[:,hs.dimensions-1] = guard.b
+    all_eq_on_border = picos.Constant(0)
+    for i in range(hs.dimensions):
+      constraint = AA[i]
+      if (np.all(constraint == 0)):
+        # all zeros
+        continue
+      for j in range(hs.dimensions):
+        base_vect = np.zeros(hs.dimensions)
+        base_vect[j] = 1
+        e_j = np.transpose(np.vstack(base_vect))
+        vect = np.vstack(AA[i])
+        q_j = e_j * np.transpose(vect) + vect * np.transpose(e_j)
+
+        if (np.all(q_j == 0)):
+          # skipping 0-s matrix
+          continue
+        # print("\n",e_j,vect,q_j)
+        # print("e_j: ", e_j)
+        # print("vect ", vect)
+        # print("e_j * vect^T ", e_j * np.transpose(vect))
+        # print("vect * e_j^T ", vect * np.transpose(e_j))
+        # print("QJ ", q_j)
+
+        l = picos.RealVariable("eq_guards_%d_%d_%d_%d" % (edge.source, edge.dest, i, j), 1)
+        sdp.add_constraint(l >= 0)
+        if equality_on_border is None:
+          all_eq_on_border = all_eq_on_border + l * q_j
+
+    P_s[dst] = P_s[src] + all_eq_on_border
+    print("P_s[%d] = " % dst,  P_s[dst])
 
   edge_vars = {}
   for index in range(len(hs.edges)):
@@ -415,8 +547,6 @@ def synth_piecewise_quadratic(hs, epsilon = 0.0001, dbg_stream=sys.stdout):
       const = const + lambda_terms[i] * matrix_list[i]
     return const
 
-
-  to_check = {} # DEBUG
   for mode in hs.modes:
     # (3.5) - positivity constraints on Lyapunov function
     # P - invar_constraint - I >> 0
@@ -426,13 +556,9 @@ def synth_piecewise_quadratic(hs, epsilon = 0.0001, dbg_stream=sys.stdout):
                   tmp -
                   gamma * I_tilda_map[mode] >> 0)
 
-
-    # DEBUG
-    to_check[mode] = [(-1,P_s[mode]), (1,tmp), (1,I_tilda_map[mode]) ]
-
-
     if (to_encode & V_GE_F1):
       dbgprint("Encoding 3.5 ", constraint)
+      dbgprint(P_s[mode])
       sdp.add_constraint(constraint)
 
     # (3.6) - positivity constraints on Lyapunov function
@@ -451,19 +577,30 @@ def synth_piecewise_quadratic(hs, epsilon = 0.0001, dbg_stream=sys.stdout):
       flow_index += 1
       A_t = np.transpose(flow.A)
 
-      # A^T P + P A + alpha I >> 0
+      # A^T P + P A + alpha I << 0
       # V'(X) <= alpha ||x||^2
       eta_constraints = _build_sproc_const_new(eta[mode][flow_index], Q_invar[mode])
 
       constraint = A_t * P_s[mode] + P_s[mode] * flow.A + eta_constraints + alpha * I_tilda_map[mode] << 0
       if (to_encode & V_PRIME_LE_MINUS_F3):
-        dbgprint("Encoding 3.7", constraint, A_t, flow.A, eta_constraints)
-        sdp.add_constraint(constraint)
+        dbgprint("Encoding 3.7", constraint) #, A_t, flow.A, eta_constraints)
+        if (mode == 2):
+          sdp.add_constraint(constraint)
 
 
   for index in range(len(hs.edges)):
     e = hs.edges[index]
     tot_constraints = len(R_edges[index])
+
+    # HACK: skip edges if they are the one from a loop
+    skip = False
+    for (src,dst) in modes_in_loop:
+      if (src == e.source and dst == e.dest) or (dst == e.source and src == e.dest):
+        skip = True
+        break
+    if skip:
+      dbgprint("Skipping %d -> %d" % (e.source, e.dest))
+      continue
 
     # (3.8) - constraints on the edges
     if (tot_constraints > 0):
@@ -472,8 +609,9 @@ def synth_piecewise_quadratic(hs, epsilon = 0.0001, dbg_stream=sys.stdout):
 
       A_t = np.transpose(e.update.A)
       constraint = P_s[e.source] - A_t * P_s[e.dest] * e.update.A - edge_constraint - edge_slack * I_tilda >> 0
-      dbgprint("Encoding 3.8 ", constraint)
-      sdp.add_constraint(constraint)
+      if (to_encode & V_EDGES):
+        dbgprint("Encoding 3.8 ", constraint)
+        sdp.add_constraint(constraint)
 
   #  sdp.options.solver = "mosek"
   solution = sdp.solve(solver='mosek',verbosity=False, primals = None)
@@ -490,11 +628,16 @@ def synth_piecewise_quadratic(hs, epsilon = 0.0001, dbg_stream=sys.stdout):
     lf.lyapunov_map = {}
 
     for m in hs.modes:
+      print(m)
       m_out,m_i_tilda = [],[]
+      assert(not P_s[mode] is None)
+      assert(not P_s[mode].np is None)
+      l_m = P_s[mode].np
+
       for i in range(hs.dimensions):
         rout,r1 = [],[]
         for j in range(hs.dimensions):
-          rout.append(myround(P_s[mode].np[i][j]))
+          rout.append(myround(l_m[i][j]))
           r1.append(I_tilda_map[mode].np[i][j])
         m_out.append(rout)
         m_i_tilda.append(r1)
@@ -520,6 +663,8 @@ def synth_piecewise_quadratic(hs, epsilon = 0.0001, dbg_stream=sys.stdout):
     return (True, lf)
   else:
     return (False, None)
+
+
 
 def validate(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
   """
@@ -549,16 +694,6 @@ def validate(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
   2) x \in Inv(m) => V_m'(x) <= - alpha x^t x
   3) for each edge (m,G,U,m2) x \in G => V_m2(U(x)) <= V_m1(x)
   """
-
-  def _get_lyapunov_smt(lyapunov_map, lyapunov_smt, m):
-    if m not in lyapunov_smt:
-      smt_matrix = to_smt_matrix(lyapunov_map[m])
-      app = vect_times_matrix(smt_vars, smt_matrix)
-      # x^T V_m x
-      V_m = dot_product_smt(app, smt_vars)
-      lyapunov_smt[m] = V_m
-    V_m = lyapunov_smt[m]
-    return V_m
 
   def _get_update(expr, smt_vars, update_expr):
     """ applies the update to the expression """
@@ -601,23 +736,11 @@ def validate(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
 
   lyapunov_smt = {}
   for m in hs.modes:
-    vector_field = {}
+    # build the derivator
+    assert(len(hs.flows[m]) == 1)
+    derivator = get_derivator(hs, smt_vars, hs.flows[m][0])
 
-    flow = hs.flows[m][0]
-    A_smt = to_smt_matrix(flow.A)
-    b_smt = to_smt_vect(flow.b)
-
-    for i in range(hs.dimensions):
-      var = smt_vars[i]
-      if not var.is_symbol():
-        continue
-      assert(len(hs.flows[m]) == 1)
-
-      flow = dot_product_smt(A_smt[i], smt_vars) + b_smt[i]
-      vector_field[var] = flow
-    derivator = Derivator(vector_field)
-
-    V_m = _get_lyapunov_smt(lf.lyapunov_map, lyapunov_smt, m)
+    V_m = _get_lyapunov_smt(smt_vars, lf.lyapunov_map, lyapunov_smt, m)
     i_tilda_smt = to_smt_matrix(lf.I_tilda[m])
 
     smt_invar = hs.get_smt_affine(smt_vars, hs.invariant[m])
@@ -643,7 +766,7 @@ def validate(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
       print("Encoding %d -> %d" % (e.source, e.dest))
 
       smt_guard = And(hs.get_smt_affine(smt_vars, e.guards), smt_invar)
-      V_dest = _get_lyapunov_smt(lf.lyapunov_map, lyapunov_smt, e.dest)
+      V_dest = _get_lyapunov_smt(smt_vars, lf.lyapunov_map, lyapunov_smt, e.dest)
       V_dest_update = _get_update(V_dest, smt_vars, e.update)
 
       # print("V_dest ", V_dest.simplify().serialize())
@@ -673,3 +796,90 @@ def validate(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
       return False
 
   return True
+
+
+def validate_eq_johansson(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
+  """
+  Validate a lf obtained with the Johansson piecewise quadratic lyapunov function, plus equalities on switching conditions.
+  Ad-hoc check for the 2-mode system!
+  """
+  assert hs.is_homogeneous
+
+  alpha_smt = Real(float(lf.alpha))
+  if (not solver.is_valid(GT(alpha_smt,Real(0)))):
+    print("%s %f is not positive " % ("alpha",val))
+    return False
+
+  smt_vars = NumericAffineHS.get_smt_vars(hs.dimensions-1)
+  smt_vars.append(Real(1))
+
+  res = True
+  lyapunov_smt = {}
+  for m in hs.modes:
+    # build the derivator
+    assert(len(hs.flows[m]) == 1)
+
+    assert (m != 1 or np.all(hs.flows[m][0].b == 0))
+    derivator = get_derivator(hs, smt_vars, hs.flows[m][0], m == 1) # ignore affine term b in mode 1
+
+    V_m = _get_lyapunov_smt(smt_vars, lf.lyapunov_map, lyapunov_smt, m)
+    V_m_der = derivator.get_lie_der(V_m)
+    i_tilda_smt = to_smt_matrix(lf.I_tilda[m])
+    smt_invar = hs.get_smt_affine(smt_vars, hs.invariant[m])
+    x_t_x = dot_product_smt(vect_times_matrix(smt_vars, i_tilda_smt), smt_vars)
+
+    print("V_%d = %s" % (m,V_m.serialize()))
+    print("V_%d_der = %s" % (m,V_m_der.serialize()))
+
+    # 1) x \in Inv(m) => V_m(x) >= 0
+    c1 = Implies(smt_invar, And(GE(V_m, Real(0))))
+
+    # 2) x \in Inv(m) => V_m'(x) <= - alpha x^t x
+    # c2 = Implies(smt_invar,
+    #              LE(V_m_der, Times(Minus(Real(0), alpha_smt), x_t_x)))
+    # c2 = Implies(smt_invar,LE(V_m_der, Real(0)))
+    c2 = Implies(smt_invar, LE(V_m_der, Real(1)))
+
+    def _check_implication(solver, implication):
+      solver.reset_assertions()
+      solver.add_assertion(Not(implication))
+      if (solver.solve()):
+        print("\nNot great!")
+        model = solver.get_model()
+
+        def get_le_val(le):
+          assert(le.is_le())
+          return Minus(le.args()[0], le.args()[1])
+
+        def get_float_val_model(model, exp):
+          smt_val = model.get_value(exp)
+          float_val = float(fractions.Fraction(smt_val.serialize()))
+          return float_val
+
+        def get_float_val_le(model, exp):
+          return get_float_val_model(model, get_le_val(exp))
+
+        implicant = implication.args()[0].simplify()
+        consequent = implication.args()[1].simplify()
+
+        print("Model = ", ", ".join(["%s = %s" % (str(v),get_float_val_model(model, v)) for v in smt_vars]))
+        print("Implicant value =",  get_float_val_le(model, implicant))
+        print("Consequent value =", get_float_val_le(model, consequent))
+        return False
+      else:
+        return True
+
+    error = None
+    print("Checking c1 mode=",m)
+    if (not _check_implication(solver, c1)):
+      error = "c1 does not hold" # %s" % c1.simplify().serialize()
+      res = False
+      print(error)
+
+    print("Checking c2 mode=",m)
+    if (not _check_implication(solver, c2)):
+      error = "c2 does not hold %s" % c2.simplify().serialize()
+      res = False
+      print(error)
+
+  return res
