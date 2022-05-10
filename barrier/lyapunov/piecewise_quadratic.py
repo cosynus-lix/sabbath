@@ -820,10 +820,6 @@ def validate(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
     c1 = Implies(smt_invar,
                  And(LE(Times(gamma_smt, x_t_x), V_m), LE(V_m, Times(beta_smt, x_t_x))))
 
-    # DEBUG
-    c1 = Implies(smt_invar,
-                 LE(Times(gamma_smt, x_t_x), V_m))
-
     # 2) x \in Inv(m) => V_m'(x) <= - alpha x^t x
     V_m_der = derivator.get_lie_der(V_m)
     c2 = Implies(smt_invar,
