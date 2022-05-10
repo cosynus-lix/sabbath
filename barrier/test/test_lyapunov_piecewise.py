@@ -8,15 +8,13 @@ from functools import partial, reduce
 from fractions import Fraction
 
 try:
-    import unittest2 as unittest
+  import unittest2 as unittest
 except ImportError:
-    import unittest
+  import unittest
 
 from unittest import skip
 
 from nose.plugins.attrib import attr
-
-
 
 import barrier.test
 
@@ -30,9 +28,7 @@ from barrier.lyapunov.piecewise_quadratic import (
   validate, validate_eq_johansson
 )
 
-
 class TestLyapunovPiecewise(TestCase):
-
   def _get_system_1(self):
     dimensions = 2 # number of continuous variables
     modes = set([1]) # modes
@@ -61,6 +57,133 @@ class TestLyapunovPiecewise(TestCase):
     invariant = { 1 : [] }
 
     return NumericAffineHS(modes, dimensions, flow, edges, invariant, False)
+
+
+  def _get_system_3(self):
+    """
+    System with two modes with the same dynamic
+    """
+
+    dimensions = 2
+    modes = set([1,2]) # modes
+
+    # just a single dynamic for now
+    flow = {
+      1 : [Affine(np.array([[-1, 0],[1, -2]]),
+                  np.array([0,0]))],
+      2 : [Affine(np.array([[-1, 0],[1, -2]]),
+                  np.array([0,0]))]
+    }
+
+    invariant = { 1 : [LeConst(np.array([[1,0],[0,0]]), # x <= 10
+                               np.array([10,0]))],
+                  2 : [LeConst(np.array([[-1,0],[0,0]]), # x >= 10 | -x <= -10
+                               np.array([-10,0]))]}
+
+    g1 = LeConst(np.array([[-1,0],[0,0]]), # x >= 5 | -x <= -5
+                 np.array([-5,0]))
+    g2 = LeConst(np.array([[1,0],[0,0]]), # x <= 5
+                 np.array([5,0]))
+
+    fc = NumericAffineHS.get_frame_for_edge(dimensions)
+    edges = [Edge(1, [g1], fc, 2),
+             Edge(2, [g2], fc, 1)]
+
+    return NumericAffineHS(modes, dimensions, flow,
+                           edges, invariant, False)
+
+  def _get_system_4(self):
+    """
+    System with two modes with the same dynamic
+    and switching on the same surface
+    """
+
+    dimensions = 2
+    modes = set([1,2]) # modes
+
+    # just a single dynamic for now
+    flow = {
+      1 : [Affine(np.array([[-1, 0],[1, -2]]),
+                  np.array([0,0]))],
+      2 : [Affine(np.array([[-1, 0],[1, -2]]),
+                  np.array([0,0]))]
+    }
+
+    invariant = { 1 : [LeConst(np.array([[1,0],[0,0]]), # x <= 10
+                               np.array([10,0]))],
+                  2 : [LeConst(np.array([[-1,0],[0,0]]), # x >= 10 | -x <= -10
+                               np.array([-10,0]))]}
+
+    g1 = LeConst(np.array([[-1,0],[0,0]]), # x >= 10 | -x <= -10
+                 np.array([-10,0]))
+    g2 = LeConst(np.array([[1,0],[0,0]]), # x <= 10
+                 np.array([10,0]))
+
+    fc = NumericAffineHS.get_frame_for_edge(dimensions)
+    edges = [Edge(1, [g1,g2], fc, 2),
+             Edge(2, [g2,g1], fc, 1)]
+
+    return NumericAffineHS(modes, dimensions, flow,
+                           edges, invariant, False)
+
+
+  def _get_system_5(self):
+    """
+    System with two modes with different dynamic, different switch
+    """
+
+    dimensions = 2
+    modes = set([1,2]) # modes
+
+    # just a single dynamic for now
+    flow = {
+      1 : [Affine(np.array([[-1, 0],[1, -2]]),
+                  np.array([0,0]))],
+      2 : [Affine(np.array([[-3.830, -0.04182],[0.2848, -1.766]]),
+                  np.array([-0.7906,0.5590]))]
+
+    }
+
+    invariant = { 1 : [LeConst(np.array([[1,0],[0,0]]), # x <= 10
+                               np.array([10,0]))],
+                  2 : [LeConst(np.array([[-1,0],[0,0]]), # x >= 10 | -x <= -10
+                               np.array([-10,0]))]}
+
+    g1 = LeConst(np.array([[-1,0],[0,0]]), # x >= 5 | -x <= -5
+                 np.array([-5,0]))
+    g2 = LeConst(np.array([[1,0],[0,0]]), # x <= 5
+                 np.array([5,0]))
+
+    fc = NumericAffineHS.get_frame_for_edge(dimensions)
+    edges = [Edge(1, [g1], fc, 2),
+             Edge(2, [g2], fc, 1)]
+
+    return NumericAffineHS(modes, dimensions, flow,
+                           edges, invariant, False)
+
+  def _get_s5_s_procedure(self, hs):
+    m1_invar = np.array([[0,0,-0.5],
+                         [0,0,0],
+                         [-0.5,0,10]])
+    m2_invar = np.array([[0,0,0.5],
+                         [0,0,0],
+                         [0.5,0,-10]])
+
+    m1_m2_invar = np.array([[0,0,0.5],
+                            [0,0,0],
+                            [0.5,0,5]])
+    m2_m1_invar = np.array([[0,0,-0.5],
+                            [0,0,0],
+                            [-0.5,0,5]])
+
+    hs.set_s_procedure_invar(1, [m1_invar])
+    hs.set_s_procedure_invar(2, [m2_invar])
+
+    hs.set_s_procedure_edge(0, [m1_m2_invar])
+    hs.set_s_procedure_edge(1, [m2_m1_invar])
+
+    assert hs.verify_s_procedure()
+    return hs
 
 
   def _get_system_3_8(self):
@@ -193,6 +316,8 @@ class TestLyapunovPiecewise(TestCase):
     m2_invar = [LeConst(_copy_and_set(zero_matrix, [(0,0,1)]),v)]
     invariant = {1 : m1_invar, 2 : m2_invar}
 
+    print(m1_invar)
+
     # x[0] >= refval_const and x[0] <= refval_const
     guard = m1_invar + m2_invar
     # No update
@@ -202,6 +327,7 @@ class TestLyapunovPiecewise(TestCase):
       Edge(2, guard, frame_update, 1)
     ]
     hs = NumericAffineHS(modes, dimensions, flow, edges, invariant, False)
+
 
     return hs
 
@@ -253,15 +379,49 @@ class TestLyapunovPiecewise(TestCase):
   def test_s1(self):
     hs = self._get_system_1()
     hs.make_homogeneous()
-    (res, lf) = synth_piecewise_quadratic(hs,dbg_stream=sys.stderr)
+    (res, lf) = synth_piecewise_quadratic(hs,epsilon=0.1,dbg_stream=sys.stderr)
     self.assertTrue(res)
-    # self.assertTrue(validate(hs, lf))
+    self.assertTrue(validate(hs, lf))
 
   def test_s2(self):
     hs = self._get_system_2()
     hs.make_homogeneous()
+    epsilon=0.00000001
+    (has_function, lf) = synth_piecewise_quadratic(hs,epsilon=epsilon,dbg_stream=sys.stderr)
+
+    print(lf)
+
+    self.assertTrue(has_function)
+    self.assertTrue(validate(hs, lf))
+
+  def test_s3(self):
+    hs = self._get_system_3()
+    hs.make_homogeneous()
+    # can still find a common lyapunov
+    (res, lf) = synth_piecewise_quadratic(hs,dbg_stream=sys.stderr)
+    self.assertTrue(res)
+    self.assertTrue(validate(hs, lf))
+
+  def test_s4(self):
+    hs = self._get_system_4()
+    hs.make_homogeneous()
+    # can still find a common lyapunov
     (res, _) = synth_piecewise_quadratic(hs,dbg_stream=sys.stderr)
     self.assertTrue(res)
+    (res, lf) = synth_piecewise_quadratic(hs,modes_in_loop=[(1,2)],dbg_stream=sys.stderr)
+    self.assertTrue(res)
+    self.assertTrue(validate(hs, lf))
+
+  def test_s5(self):
+    hs = self._get_system_5()
+    hs.make_homogeneous()
+
+    hs = self._get_s5_s_procedure(hs)
+
+    (found_lyap, lf) = synth_piecewise_quadratic(hs,dbg_stream=sys.stderr)
+    self.assertTrue(found_lyap)
+    self.assertTrue(validate(hs, lf))
+
 
   def test_3_8(self):
     hs = self._get_system_3_8()
@@ -270,22 +430,21 @@ class TestLyapunovPiecewise(TestCase):
     (res, lf) = synth_piecewise_quadratic(hs, epsilon=0.01000158, dbg_stream=sys.stderr)
     self.assertTrue(res)
     # still does not work on edges
-    # self.assertTrue(validate(hs, lf))
+    self.assertTrue(validate(hs, lf))
 
 
-  # @unittest.skip("To clarify s-procedure for invariant")
+  @unittest.skip("To fix the encoding of equalities")
   def test_miniAEC(self):
     hs = self._get_miniAEC()
     hs = self._get_miniAEC_s_procedure(hs)
     self.assertTrue(hs.is_homogeneous)
     self.assertTrue(hs.verify_s_procedure())
-    (res, lf) = synth_piecewise_quadratic(hs, epsilon=0.01000158, modes_in_loop=[(1,2)], dbg_stream=sys.stderr)
-    self.assertTrue(res)
+    (found_lyapunov, lf) = synth_piecewise_quadratic(hs, epsilon=0.00001, modes_in_loop=[(1,2)], dbg_stream=sys.stderr)
+    self.assertTrue(found_lyapunov)
     self.assertTrue(validate(hs, lf))
 
-  def test_validate_miniAEC(self):
+  def test_validate_miniAEC_johansson(self):
     hs = self._get_miniAEC()
-
     # Change the coordinates of hs with respect to the equlibrium point in m1
     flow_m1 = hs.flows[1][0]
     # equivalent to np.linalg.solve(A,-b)
@@ -319,4 +478,41 @@ class TestLyapunovPiecewise(TestCase):
                     [-9.16253756e-03, -4.79896140e-04,  5.57122380e-03, -1.16195298e-02, -1.22234878e+01]])
     }
 
+    lf.lyapunov_map = {
+        1 : np.array([[ 1.92e-04, -1.41e-04, -3.25e-03, -2.58e-04, 0],
+                      [-1.41e-04,  1.36e-04,  1.87e-03,  9.27e-05, 0],
+                      [-3.25e-03,  1.87e-03,  2.42e-01,  8.21e-03, 0],
+                      [-2.58e-04,  9.27e-05,  8.21e-03,  9.49e-04, 0],
+                      [0,0,0,0,0]]),
+        2 : np.array([[ 2.09e-04, -1.43e-04, -3.21e-03, -3.10e-04, -2.12e-02],
+                      [-1.43e-04,  1.36e-04,  1.87e-03,  9.27e-05, -7.70e-04],
+                      [-3.21e-03,  1.87e-03,  2.42e-01,  8.21e-03,  1.88e-02],
+                      [-3.10e-04,  9.27e-05,  8.21e-03,  9.49e-04, -2.89e-02],
+                      [-2.12e-02, -7.70e-04,  1.88e-02, -2.89e-02, -2.83e+01]])
+    }
+
     self.assertTrue(validate_eq_johansson(hs, lf))
+
+  def test_app(self):
+    flow = Affine(np.array([[-3.83,    -0.04182, -0.7906 ],
+                            [ 0.2848,  -1.766,    0.559  ],
+                            [ 0.,       0.,       0.     ]]),
+                  np.zeros(3))
+    hs = NumericAffineHS([1], 3, {1 : [flow]}, [], {1 : []}, True)
+
+    lf = PiecewiseQuadraticLF()
+    app = np.concatenate((np.identity(2),np.zeros((2,1))), axis = 1)
+    I_tilda = np.concatenate((app,np.zeros((1,3))), axis = 0)
+    lf.I_tilda = {
+      1 : I_tilda,
+    }
+    lf.alpha = 3.888063241253907e-08
+    lf.beta = 1.0
+    lf.gamma = 0.17378531357276597
+    lf.lyapunov_map = {
+        1 : np.array([[ 0.41665144,  0.05090385,  0.07289088],
+                      [ 0.05090385,  0.65000279, -0.17312401],
+                      [ 0.07289088, -0.17312401,  1.09345671]])
+    }
+
+    self.assertTrue(validate(hs, lf))
