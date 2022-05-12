@@ -148,8 +148,6 @@ def _check_implication(solver, smt_vars, implication):
     _print_vals(implicant)
     print("Consequent")
     _print_vals(consequent)
-    # print("Implicant value =",  get_float_val_le(model, implicant))
-    # print("Consequent value =", get_float_val_le(model, consequent))
     return False
   else:
     return True
@@ -428,8 +426,7 @@ def synth_piecewise_quadratic(hs, modes_in_loop=[], epsilon = 0.0001, dbg_stream
   V_EDGES = 8
   S_PROCEDURE = 16
 
-#  to_encode = V_GE_F1 | V_LE_F2 | V_PRIME_LE_MINUS_F3 | V_EDGES | S_PROCEDURE
-  to_encode = V_GE_F1 | V_PRIME_LE_MINUS_F3
+  to_encode = V_GE_F1 | V_LE_F2 | V_PRIME_LE_MINUS_F3 | V_EDGES | S_PROCEDURE
 
   # get the homogeneous system from an affine one. This simplifies things, and move the equilibrium point to 0
   assert(hs.is_homogeneous)
@@ -652,8 +649,7 @@ def synth_piecewise_quadratic(hs, modes_in_loop=[], epsilon = 0.0001, dbg_stream
       constraint = A_t * P_s[mode] + P_s[mode] * flow.A + eta_constraints + alpha * I_tilda_map[mode] << 0
       if (to_encode & V_PRIME_LE_MINUS_F3):
         dbgprint("Encoding 3.7", constraint) #, A_t, flow.A, eta_constraints)
-        if (mode == 2):
-          sdp.add_constraint(constraint)
+        sdp.add_constraint(constraint)
 
 
   for index in range(len(hs.edges)):
@@ -682,7 +678,7 @@ def synth_piecewise_quadratic(hs, modes_in_loop=[], epsilon = 0.0001, dbg_stream
         sdp.add_constraint(constraint)
 
   #  sdp.options.solver = "mosek"
-  solution = sdp.solve(solver='mosek',verbosity=False) #False, primals = None)
+  solution = sdp.solve(solver='mosek',verbosity=False, primals = None) #False, primals = None)
 
   # Return a piecewise Lyapunov function
   if (solution.problemStatus == picos.modeling.solution.PS_FEASIBLE):
@@ -696,7 +692,8 @@ def synth_piecewise_quadratic(hs, modes_in_loop=[], epsilon = 0.0001, dbg_stream
     lf.lyapunov_map = {}
 
     for m in hs.modes:
-      print(P_s[mode].np)
+      # DEBUG
+      # print(P_s[mode].np)
       m_out,m_i_tilda = [],[]
       assert(not P_s[mode] is None)
       assert(not P_s[mode].np is None)

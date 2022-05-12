@@ -316,8 +316,6 @@ class TestLyapunovPiecewise(TestCase):
     m2_invar = [LeConst(_copy_and_set(zero_matrix, [(0,0,1)]),v)]
     invariant = {1 : m1_invar, 2 : m2_invar}
 
-    print(m1_invar)
-
     # x[0] >= refval_const and x[0] <= refval_const
     guard = m1_invar + m2_invar
     # No update
@@ -388,8 +386,6 @@ class TestLyapunovPiecewise(TestCase):
     hs.make_homogeneous()
     epsilon=0.00000001
     (has_function, lf) = synth_piecewise_quadratic(hs,epsilon=epsilon,dbg_stream=sys.stderr)
-
-    print(lf)
 
     self.assertTrue(has_function)
     self.assertTrue(validate(hs, lf))
