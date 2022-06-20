@@ -106,11 +106,12 @@ def _get_lyapunov_smt(smt_vars, lyapunov_map, lyapunov_smt, m):
   return V_m
 
 
-def _check_implication(solver, smt_vars, implication):
+def _check_implication(solver, smt_vars, implication, print_model=True):
   solver.reset_assertions()
   solver.add_assertion(Not(implication))
   if (solver.solve()):
-    print("\nNot great!")
+    if not print_model:
+      return False
     model = solver.get_model()
 
     def get_le_val(le):
@@ -129,7 +130,6 @@ def _check_implication(solver, smt_vars, implication):
     consequent = implication.args()[1].simplify()
 
     print("Model = ", ", ".join(["%s = %s" % (str(v),get_float_val_model(model, v)) for v in smt_vars]))
-
 
     def _print_vals(formula):
       stack = [formula]
