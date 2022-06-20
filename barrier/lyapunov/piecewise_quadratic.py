@@ -90,6 +90,8 @@ class EllipsoidConst(Const):
     res = LE(res, Real(myround(self.b)))
     return res
 
+  def __repr__(self):
+    return str(self.A) + "<="+ str(self.b)
 
 Edge = namedtuple("Edge", "source guards update dest")
 
@@ -118,8 +120,10 @@ def _get_lyapunov_smt(smt_vars, lf, lyapunov_smt, mode):
   if not (mode in lyapunov_smt):
     if isinstance(lf, PiecewiseGuardedQuadraticLF):
       lf_list = lf.lyapunov_map[mode]
+      convert = lambda l : l.to_smt(smt_vars[:-1]) # hack, works with dummy variable
     elif isinstance(lf, PiecewiseQuadraticLF):
       lf_list = [(TRUE(), lf.lyapunov_map[mode])]
+      convert = lambda l : l
     else:
       raise Exception("Unkonwn object for lyapunov function")
 
@@ -129,10 +133,7 @@ def _get_lyapunov_smt(smt_vars, lf, lyapunov_smt, mode):
       app = vect_times_matrix(smt_vars, smt_matrix)
       # x^T V_m x
       V_m = dot_product_smt(app, smt_vars)
-      res.append((g, V_m))
-
-      print(V_m.serialize())
-
+      res.append((convert(g), V_m))
     lyapunov_smt[mode] = frozenset(res)
 
   V_m_list = lyapunov_smt[mode]
@@ -331,7 +332,6 @@ class NumericAffineHS:
       invar_m = NumericAffineHS.get_smt_affine(smt_vars, self.invariant[m])
       for invar_matrix in self.get_s_procedure_invar(m):
         if not NumericAffineHS._verify_s_procedure(invar_m, invar_matrix, smt_vars):
-          print("here")
           return False
 
     for i in range(len(self.edges)):
@@ -365,8 +365,6 @@ class NumericAffineHS:
       res = res + p1[i1] * smt_vars[i1]
     res = simplify(GE(res, Real(0)))
 
-    print(res.serialize())
-
     solver = Solver(logic=QF_NRA, name="z3")
 
     # DEBUG
@@ -377,8 +375,6 @@ class NumericAffineHS:
     #     print(model)
     #     print(model.get_value(smt_formula))
     #     print(res.simplify().serialize(), " ", model.get_value(res))
-
-    print(smt_formula.simplify().serialize())
     return solver.is_valid(Implies(smt_formula, res))
 
   @staticmethod
@@ -452,6 +448,11 @@ class PiecewiseGuardedQuadraticLF(LF):
     self.I_tilda = {}
 
   def __repr__(self):
+    out = []
+    for mode, l in self.lyapunov_map.items():
+      for (g,f) in l:
+        out.append("mode %d" % mode + " guard " + str(g) + ":" + str(f))
+
     return ("Piecewise guarded quadratic LF" +
             "\nalpha " +
             str(self.alpha) +
@@ -461,7 +462,7 @@ class PiecewiseGuardedQuadraticLF(LF):
             str(self.gamma) +
             "\nedge_slack " +
             str(self.edge_slack) + "\n" +
-            "\n".join(["mode %d" % mode + " " + str(f) for mode, f in self.lyapunov_map.items()]))
+            "\n".join(out))
 
   def add_function(self, guard, mode, quadratic_function):
     """ add a new lyapunov function, guarded by a guard and the mode"""
@@ -491,6 +492,8 @@ def synth_piecewise_quadratic(hs, modes_in_loop=[], epsilon = 0.0001, dbg_stream
   S_PROCEDURE = 16
 
   to_encode = V_GE_F1 | V_LE_F2 | V_PRIME_LE_MINUS_F3 | V_EDGES | S_PROCEDURE
+
+  dbgprint(epsilon)
 
   # get the homogeneous system from an affine one. This simplifies things, and move the equilibrium point to 0
   assert(hs.is_homogeneous)
@@ -644,7 +647,6 @@ def synth_piecewise_quadratic(hs, modes_in_loop=[], epsilon = 0.0001, dbg_stream
           all_eq_on_border = all_eq_on_border + l * q_j
 
     P_s[dst] = P_s[src] + all_eq_on_border
-    print("P_s[%d] = " % dst,  P_s[dst])
 
   edge_vars = {}
   for index in range(len(hs.edges)):
@@ -740,7 +742,6 @@ def synth_piecewise_quadratic(hs, modes_in_loop=[], epsilon = 0.0001, dbg_stream
         dbgprint("Encoding 3.8 ", constraint)
         sdp.add_constraint(constraint)
 
-  #  sdp.options.solver = "mosek"
   solution = sdp.solve(solver='mosek',verbosity=False, primals = None) #False, primals = None)
 
   # Return a piecewise Lyapunov function
@@ -791,6 +792,7 @@ def synth_piecewise_quadratic(hs, modes_in_loop=[], epsilon = 0.0001, dbg_stream
 
     return (True, lf)
   else:
+    dbgprint("The SDP solver returned ", solution.problemStatus)
     return (False, None)
 
 
@@ -902,8 +904,6 @@ def validate(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
         e = hs.edges[i]
         if (e.source != m):
           continue
-
-        print("Encoding %d -> %d" % (e.source, e.dest))
 
         V_dest_list = _get_lyapunov_smt(smt_vars, lf, lyapunov_smt, e.dest)
         for (V_dest_guard, V_dest) in V_dest_list:
