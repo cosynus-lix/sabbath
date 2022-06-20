@@ -13,6 +13,15 @@ Plan:
 from collections import namedtuple
 import sys
 import fractions
+
+from barrier.lyapunov.la_smt import (
+  vect_times_matrix,
+  dot_product_smt,
+  to_smt_vect,
+  to_smt_matrix,
+  myround
+)
+
 from pysmt.typing import REAL
 from pysmt.logics import QF_NRA
 from pysmt.shortcuts import (
@@ -29,55 +38,65 @@ import picos
 
 from barrier.lie import Derivator
 
-
+# TODO: transform in CONST
 Affine = namedtuple("Affine", "A b") # Ax + b
-LeConst = namedtuple("LeConst", "A b") # Ax <= b
+#LeConst = namedtuple("LeConst", "A b") 
+
+class Const():
+  def __init__(self):
+    pass
+
+  def get_dimension(self):
+    raise NotImplementedException()
+
+  def to_smt(self, smt_vars):
+    raise NotImplementedException()
+
+class LeConst(Const):
+  # Ax <= b
+  def __init__(self, A, b):
+    self.A = A
+    self.b = b
+
+  def to_smt(self, smt_vars):
+    res = TRUE()
+    for i in range(len(self.A)):
+      assert len(self.A[i]) == len(smt_vars)
+      e1 = LE(dot_product_smt([Real(float(n)) for n in self.A[i]],
+                              smt_vars),
+              Real(float(self.b[i])))
+      res = And(res,e1)
+    return res
+
+
+class EllipsoidConst(Const):
+  # Represent a single ellipsoidal constraint with (A, b)
+  # where:
+  #  - A is a symmetric positive semi-definite matrix (n x n)
+  #  - b is a real number
+  #
+  # The ellipsoid is then: x^T A x <= b
+  #
+  def __init__(self, A, b):
+    self.A = A
+    self.b = b
+
+  def to_smt(self, smt_vars):
+    # x^T A x
+    smt_matrix = to_smt_matrix(self.A)
+    app = vect_times_matrix(smt_vars, smt_matrix)
+    res = dot_product_smt(app, smt_vars)
+
+    res = LE(res, Real(myround(self.b)))
+    return res
+
+
 Edge = namedtuple("Edge", "source guards update dest")
 
 
 # Ax >= b
 def get_ge(A,b):
   return LeConst(-A,-b)
-
-def myround(n):
-  return round(float(n),6)
-
-# SMT products
-def vect_times_matrix(vect, matrix):
-  assert(len(vect) == len(matrix))
-  res = []
-  for i1 in range(len(vect)):
-    index_term = Real(0)
-    for i2 in range(len(vect)):
-      num = matrix[i2][i1]
-      coefficient = num
-      index_term = index_term + Times(vect[i2], coefficient)
-    res.append(simplify(index_term))
-  return res
-
-def dot_product_smt(vect1, vect2):
-  # vect1^T vect2
-  assert len(vect1) == len(vect2)
-
-  res = Real(0)
-  for i1 in range(len(vect1)):
-    res = res + vect2[i1] * vect1[i1]
-  res = simplify(res)
-  return res
-
-def to_smt_vect(vect):
-  res = []
-  for j in range(len(vect)):
-    num = myround(vect[j])
-    res.append(Real(num))
-  return res
-
-def to_smt_matrix(np_matrix):
-  smt_matrix = []
-  for i in range(len(np_matrix)):
-    res = to_smt_vect(np_matrix[i])
-    smt_matrix.append(res)
-  return smt_matrix
 
 
 def get_derivator(hs, smt_vars, flow, ignore_b = False):
@@ -95,15 +114,29 @@ def get_derivator(hs, smt_vars, flow, ignore_b = False):
   derivator = Derivator(vector_field)
   return derivator
 
-def _get_lyapunov_smt(smt_vars, lyapunov_map, lyapunov_smt, m):
-  if m not in lyapunov_smt:
-    smt_matrix = to_smt_matrix(lyapunov_map[m])
-    app = vect_times_matrix(smt_vars, smt_matrix)
-    # x^T V_m x
-    V_m = dot_product_smt(app, smt_vars)
-    lyapunov_smt[m] = V_m
-  V_m = lyapunov_smt[m]
-  return V_m
+def _get_lyapunov_smt(smt_vars, lf, lyapunov_smt, mode):
+  if not (mode in lyapunov_smt):
+    if isinstance(lf, PiecewiseGuardedQuadraticLF):
+      lf_list = lf.lyapunov_map[mode]
+    elif isinstance(lf, PiecewiseQuadraticLF):
+      lf_list = [(TRUE(), lf.lyapunov_map[mode])]
+    else:
+      raise Exception("Unkonwn object for lyapunov function")
+
+    res = []
+    for (g, f) in lf_list:
+      smt_matrix = to_smt_matrix(f)
+      app = vect_times_matrix(smt_vars, smt_matrix)
+      # x^T V_m x
+      V_m = dot_product_smt(app, smt_vars)
+      res.append((g, V_m))
+
+      print(V_m.serialize())
+
+    lyapunov_smt[mode] = frozenset(res)
+
+  V_m_list = lyapunov_smt[mode]
+  return V_m_list
 
 
 def _check_implication(solver, smt_vars, implication, print_model=True):
@@ -289,18 +322,6 @@ class NumericAffineHS:
   def get_vars(self):
     raise NotImplementedException()
 
-
-  @staticmethod
-  def le_as_smt(smt_vars, le_constraint):
-    res = TRUE()
-    for i in range(len(le_constraint.A)):
-      assert len(le_constraint.A[i]) == len(smt_vars)
-      e1 = LE(dot_product_smt([Real(float(n)) for n in le_constraint.A[i]],
-                              smt_vars),
-              Real(float(le_constraint.b[i])))
-      res = And(res,e1)
-    return res
-
   def verify_s_procedure(self): 
     smt_vars = NumericAffineHS.get_smt_vars(self.dimensions-1)
     smt_vars.append(Real(1))
@@ -362,7 +383,7 @@ class NumericAffineHS:
 
   @staticmethod
   def get_smt_affine(smt_vars, affine_list):
-    smt_list = [NumericAffineHS.le_as_smt(smt_vars, le_constraint) for le_constraint in affine_list]
+    smt_list = [le_constraint.to_smt(smt_vars) for le_constraint in affine_list]
     return And(smt_list)
 
   @staticmethod
@@ -381,7 +402,15 @@ class NumericAffineHS:
                              self.has_last_var_dummy,
                              "\n".join([str(m) + ": " + ",".join([str(a) for a in flowlist]) for (m,flowlist) in self.flows.items()]))
 
-class PiecewiseQuadraticLF:
+class LF():
+  """ Empty class for lyapunov functions """
+  def __init__(self):
+    pass
+
+class PiecewiseQuadraticLF(LF):
+  """
+  Assign a lyapunov function to each mode
+  """
   def __init__(self):
     self.alpha = None
     self.beta = None
@@ -392,7 +421,6 @@ class PiecewiseQuadraticLF:
 
     # use this to re-construct the problem
     self.I_tilda = {}
-
 
   def __repr__(self):
     return ("Piecewise quadratic LF" +
@@ -405,6 +433,42 @@ class PiecewiseQuadraticLF:
             "\nedge_slack " +
             str(self.edge_slack) + "\n" +
             "\n".join(["mode %d" % mode + " " + str(f) for mode, f in self.lyapunov_map.items()]))
+
+
+class PiecewiseGuardedQuadraticLF(LF):
+  """
+  Assign a lyapunov function to each mode, and each lyapunov function has a guard.
+  """
+
+  def __init__(self):
+    self.alpha = None
+    self.beta = None
+    self.gamma = None
+    self.edge_slack = None
+
+    self.lyapunov_map = {}
+
+    # use this to re-construct the problem
+    self.I_tilda = {}
+
+  def __repr__(self):
+    return ("Piecewise guarded quadratic LF" +
+            "\nalpha " +
+            str(self.alpha) +
+            "\nbeta " +
+            str(self.beta) +
+            "\ngamma " +
+            str(self.gamma) +
+            "\nedge_slack " +
+            str(self.edge_slack) + "\n" +
+            "\n".join(["mode %d" % mode + " " + str(f) for mode, f in self.lyapunov_map.items()]))
+
+  def add_function(self, guard, mode, quadratic_function):
+    """ add a new lyapunov function, guarded by a guard and the mode"""
+    if not mode in self.lyapunov_map:
+      self.lyapunov_map[mode] = []
+    self.lyapunov_map[mode].append((guard, quadratic_function))
+
 
 
 def synth_piecewise_quadratic(hs, modes_in_loop=[], epsilon = 0.0001, dbg_stream=sys.stdout):
@@ -467,7 +531,6 @@ def synth_piecewise_quadratic(hs, modes_in_loop=[], epsilon = 0.0001, dbg_stream
 
   Q_invar = {}
   for mode in hs.modes:
-
     Q_invar[mode] = hs.get_s_procedure_invar(mode)
 
   R_edges = {}
@@ -788,7 +851,9 @@ def validate(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
     expr = substitute(expr, rename_map)
     return expr
 
+  assert(hs.is_homogeneous)
 
+  # Check for positiveness
   alpha_smt, beta_smt, gamma_smt = [Real(float(val)) for val in [lf.alpha,lf.beta,lf.gamma]]
   to_check = [("alpha", lf.alpha), ("beta", lf.beta), ("gamma", lf.gamma)]
   for name,val in to_check:
@@ -797,8 +862,17 @@ def validate(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
       print("%s %f is not positive " % (name,val))
       return False
 
-  smt_vars = NumericAffineHS.get_smt_vars(hs.dimensions-1)
-  smt_vars.append(Real(1))
+  if (hs.has_last_var_dummy):
+    smt_vars = NumericAffineHS.get_smt_vars(hs.dimensions-1)
+    smt_vars.append(Real(1))
+  else:
+    # For safety now: we assume the system has the additional variables to
+    # make it homogeneous.
+    #
+    # just set hs.has_last_var_dummy = True if the last variables z should be
+    # equal to 1
+    assert(False)
+    smt_vars = NumericAffineHS.get_smt_vars(hs.dimensions)
 
   lyapunov_smt = {}
   for m in hs.modes:
@@ -806,60 +880,59 @@ def validate(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
     assert(len(hs.flows[m]) == 1)
     derivator = get_derivator(hs, smt_vars, hs.flows[m][0])
 
-    V_m = _get_lyapunov_smt(smt_vars, lf.lyapunov_map, lyapunov_smt, m)
-    i_tilda_smt = to_smt_matrix(lf.I_tilda[m])
+    V_m_list = _get_lyapunov_smt(smt_vars, lf, lyapunov_smt, m)
 
-    smt_invar = hs.get_smt_affine(smt_vars, hs.invariant[m])
+    for (V_m_guard, V_m) in V_m_list:
+      i_tilda_smt = to_smt_matrix(lf.I_tilda[m])
+      smt_invar = hs.get_smt_affine(smt_vars, hs.invariant[m])
+      x_t_x = dot_product_smt(vect_times_matrix(smt_vars, i_tilda_smt), smt_vars)
 
-    x_t_x = dot_product_smt(vect_times_matrix(smt_vars, i_tilda_smt), smt_vars)
+      # 1) (Inv_m(x) /\ V_m_guard) => gamma x^t I_tilda x <= V_m(x) <= beta x^t I_tilda x
+      c1 = Implies(And(V_m_guard, smt_invar),
+                   And(LE(Times(gamma_smt, x_t_x), V_m), LE(V_m, Times(beta_smt, x_t_x))))
 
-    # 1) x \in Inv(m) => gamma x^t I_tilda x <= V_m(x) <= beta x^t I_tilda x
-    c1 = Implies(smt_invar,
-                 And(LE(Times(gamma_smt, x_t_x), V_m), LE(V_m, Times(beta_smt, x_t_x))))
+      # 2) (Inv_m(x) /\ V_m_guard) => V_m'(x) <= - alpha x^t x
+      V_m_der = derivator.get_lie_der(V_m)
+      c2 = Implies(And(V_m_guard, smt_invar),
+                   And(LE(V_m_der, Times(Minus(Real(0), alpha_smt), x_t_x))))
 
-    # 2) x \in Inv(m) => V_m'(x) <= - alpha x^t x
-    V_m_der = derivator.get_lie_der(V_m)
-    c2 = Implies(smt_invar,
-                 And(LE(V_m_der, Times(Minus(Real(0), alpha_smt), x_t_x))))
+      # 3) for each edge (m,G,U,m2). x \in G => V_m2(U(x)) <= V_m1(x)
+      edge_cond = []
+      for i in range(len(hs.edges)):
+        e = hs.edges[i]
+        if (e.source != m):
+          continue
 
-    # 3) for each edge (m,G,U,m2) x \in G => V_m2(U(x)) <= V_m1(x)
-    edge_cond = []
-    for i in range(len(hs.edges)):
-      e = hs.edges[i]
-      if (e.source != m):
-        continue
+        print("Encoding %d -> %d" % (e.source, e.dest))
 
-      print("Encoding %d -> %d" % (e.source, e.dest))
-
-      smt_guard = And(hs.get_smt_affine(smt_vars, e.guards), smt_invar)
-      V_dest = _get_lyapunov_smt(smt_vars, lf.lyapunov_map, lyapunov_smt, e.dest)
-      V_dest_update = _get_update(V_dest, smt_vars, e.update)
-
-      # print("V_dest ", V_dest.simplify().serialize())
-      # print("V_dest_update ", V_dest_update.simplify().serialize())
-
-      ce = Implies(smt_guard, LE(V_dest_update, V_m))
-      edge_cond.append(ce)
+        V_dest_list = _get_lyapunov_smt(smt_vars, lf, lyapunov_smt, e.dest)
+        for (V_dest_guard, V_dest) in V_dest_list:
+          smt_guard = And(hs.get_smt_affine(smt_vars, e.guards), smt_invar, V_m_guard, V_dest_guard)
+          V_dest_update = _get_update(V_dest, smt_vars, e.update)
+          # print("V_dest ", V_dest.simplify().serialize())
+          # print("V_dest_update ", V_dest_update.simplify().serialize())
+          ce = Implies(smt_guard, LE(V_dest_update, V_m))
+          edge_cond.append(ce)
 
 
-    print("Checking for mode ", m)
-    res, error = True, None
-    if (not _check_implication(solver, smt_vars, c1)):
-      error = "c1 does not hold" # %s" % c1.simplify().serialize()
-      res = False
-    elif (not _check_implication(solver, smt_vars, c2)):
-      error = "c2 does not hold %s" % c2.simplify().serialize()
-      res = False
-    else:
-      for c in edge_cond:
-        if (not _check_implication(solver, smt_vars, c)):
-          error = "c3 does not hold %s" % c.simplify().serialize()
-          res =  False
-          break
+      print("Checking for mode ", m)
+      res, error = True, None
+      if (not _check_implication(solver, smt_vars, c1)):
+        error = "c1 does not hold" # %s" % c1.simplify().serialize()
+        res = False
+      elif (not _check_implication(solver, smt_vars, c2)):
+        error = "c2 does not hold %s" % c2.simplify().serialize()
+        res = False
+      else:
+        for c in edge_cond:
+          if (not _check_implication(solver, smt_vars, c)):
+            error = "c3 does not hold %s" % c.simplify().serialize()
+            res =  False
+            break
 
-    if (not res):
-      print(error)
-      return False
+      if (not res):
+        print(error)
+        return False
 
   return True
 
@@ -888,7 +961,7 @@ def validate_eq_johansson(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
     assert (m != 1 or np.all(hs.flows[m][0].b == 0))
     derivator = get_derivator(hs, smt_vars, hs.flows[m][0], m == 1) # ignore affine term b in mode 1
 
-    V_m = _get_lyapunov_smt(smt_vars, lf.lyapunov_map, lyapunov_smt, m)
+    (V_m_guard, V_m), = _get_lyapunov_smt(smt_vars, lf, lyapunov_smt, m)
     V_m_der = derivator.get_lie_der(V_m)
     i_tilda_smt = to_smt_matrix(lf.I_tilda[m])
     smt_invar = hs.get_smt_affine(smt_vars, hs.invariant[m])
@@ -922,8 +995,8 @@ def validate_eq_johansson(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
   # 3) check lyapunov are the same on switching surface
   # x \in guard => V_m
 
-  V_1 = _get_lyapunov_smt(smt_vars, lf.lyapunov_map, lyapunov_smt, 1)
-  V_2 = _get_lyapunov_smt(smt_vars, lf.lyapunov_map, lyapunov_smt, 2)
+  (V_1_guard, V_1), = _get_lyapunov_smt(smt_vars, lf, lyapunov_smt, 1)
+  (V_2_guard, V_2), = _get_lyapunov_smt(smt_vars, lf, lyapunov_smt, 2)
   smt_guard = hs.get_smt_affine(smt_vars, hs.edges[0].guards)
 
   c3 = Implies(And(smt_guard,
