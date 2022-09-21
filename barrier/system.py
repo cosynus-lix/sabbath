@@ -127,7 +127,6 @@ class DynSystem(object):
         assert (len(self._inputs) == 0)
         assert (len(self._disturbances) == 0)
 
-
         # find equlibrium point(s)
         solutions = self.get_derivator().get_all_solutions_linear_system(self._odes.values(),
                                                                          self._states)
@@ -171,7 +170,7 @@ class DynSystem(object):
 
     def get_ode_matrix(self):
         """ Return a matrix representation of the system """
-        self.pippo
+        raise NotImplementedException()
 
     def get_derivator(self):
         """ Return the derivator object for the

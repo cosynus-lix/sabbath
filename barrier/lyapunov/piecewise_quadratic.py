@@ -117,6 +117,20 @@ def get_derivator(hs, smt_vars, flow, ignore_b = False):
   return derivator
 
 def _get_lyapunov_smt(smt_vars, lf, lyapunov_smt, mode):
+  """
+  Input:
+    - smt_vars: list of variables (pysmt)
+    - lf: Lyapunov function (numeric)
+    - mode: value of the mode to bu
+
+  Output:
+    - constructs the lyapunov function for the mode as a list of Guard x Function,
+      where Guard is a formula in real artithemtic and Function is a polynomial (also
+      expressed in real arithmetic using pysmt types)
+
+  Note that now the function assume to build a quadratic Lyapunov function (we should
+  move this to the lyapunov function class implementation).
+  """
   if not (mode in lyapunov_smt):
     if isinstance(lf, PiecewiseGuardedQuadraticLF):
       lf_list = lf.lyapunov_map[mode]
@@ -141,6 +155,9 @@ def _get_lyapunov_smt(smt_vars, lf, lyapunov_smt, mode):
 
 
 def _check_implication(solver, smt_vars, implication, print_model=True):
+  """
+  Check if an implication is valid, printing counterexample for debug if it's not.
+  """
   solver.reset_assertions()
   solver.add_assertion(Not(implication))
   if (solver.solve()):
@@ -1009,3 +1026,78 @@ def validate_eq_johansson(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
    res = False
 
   return res
+
+
+
+def validate_single_mode(hs, lf, m, is_exponential = False,
+                         alpha = 0,
+                         solver = Solver(logic=QF_NRA, name="z3")):
+  """
+  """
+  smt_vars = NumericAffineHS.get_smt_vars(hs.dimensions)
+
+  lyapunov_smt = {}
+
+  # build the derivator
+  assert(len(hs.flows[m]) == 1)
+  derivator = get_derivator(hs, smt_vars, hs.flows[m][0], True)
+
+  V_m_list = _get_lyapunov_smt(smt_vars, lf, lyapunov_smt, m)
+
+  # we assume a single (and not piece-wise) lyapunov function
+  assert(len(V_m_list) == 1)
+  for el in V_m_list:
+    (condition, V_m) = el
+    break
+  assert(TRUE() == condition)
+
+  V_m_der = derivator.get_lie_der(V_m)
+  smt_invar = hs.get_smt_affine(smt_vars, hs.invariant[m])
+  x_eq_zero = And([ Equals(x, Real(0)) for x in smt_vars])
+  V_m_zero = V_m.substitute({v : Real(0) for v in smt_vars})
+  V_m_der_zero = V_m_der.substitute({v : Real(0) for v in smt_vars})
+
+  # Check that:
+  #   c1 := V_m(0) = 0 is SAT
+  #   c2 := forall x != 0. V_m(x) > 0 is UNSAT
+  #   c3 := V_m'(0) = 0 is SAT
+  #   For global asymptotic stability (GAS):
+  #     c4 := forall x != 0. V_m'(x) < 0 is UNSAT
+  #   For exponential stability:
+  #     c4 := forall x != 0. V_m'(x) < alpha * V_m(x) is UNSAT
+  #
+
+  c1 = Implies(smt_invar, GT(V_m_zero, Real(0)))
+  c2 = Implies(And(smt_invar, Not(x_eq_zero)), GT(V_m, Real(0))) # UNSAT
+  c3 = Not(Implies(smt_invar, GT(V_m_der_zero, Real(0))))
+
+  if (not is_exponential):
+    c4 = Implies(And(smt_invar, Not(x_eq_zero)), LT(V_m_der, Real(0))) # UNSAT
+  else:
+    alpha_smt = Real(myround(alpha))
+    c4 = Implies(And(smt_invar, Not(x_eq_zero)),
+                 LT(V_m_der, Times(alpha_smt, V_m))) # UNSAT
+
+  if (not solver.is_sat(c1)):
+    error = "V(0) = 0 does not hold"
+    res = False
+  elif (not solver.is_sat(c3)):
+    error = "der(V)(0) = 0 does not hold"
+    res = False
+  elif (not _check_implication(solver, smt_vars, c2)):
+    error = "V(x) <= 0 for some x != 0"
+    res = False
+  elif (not _check_implication(solver, smt_vars, c4)):
+    error = "der(V)(x) >= 0 for some x != 0"
+    res = False
+  else:
+    res = True
+
+  if (not res):
+    print(error)
+    return False
+  else:
+    return True
+
+
+
