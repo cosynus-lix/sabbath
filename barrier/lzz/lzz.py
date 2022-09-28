@@ -22,6 +22,9 @@ from pysmt.shortcuts import (
     Real,
 )
 
+# [SM] Still in Testing - the Inf should distribute over an arbitrary boolean combination (according to the journal paper from Ghorbal and Sogokon)
+AVOID_DNF_CONVERSION = True
+
 class LzzOpt:
     def __init__(self, ivinf_via_inf = False, use_remainder = False):
         # remainder without inverting ivinf is not implemented now
@@ -227,6 +230,14 @@ def get_inf_le_pred(derivator, predicate):
     res = Or(first_disjunct, all_eq_0)
     return res
 
+# IN_{f,=}
+# TODO: add specific encoding for equalities
+def get_inf_eq_pred(derivator, predicate):
+    return And(get_inf_le_pred(derivator, predicate),
+               get_inf_le_pred(derivator, Minus(Real(0), predicate)),
+               )
+
+
 # IN_{f,<}
 def get_inf_lt_pred_remainders(derivator, predicate):
     predicate = change_sign(predicate)
@@ -240,6 +251,13 @@ def get_inf_le_pred_remainders(derivator, predicate):
     all_eq_0 = get_lie_eq_0(derivator, predicate, rank)
     res = Or(inf, all_eq_0)
     return res
+
+# IN_{f,=}
+# TODO: add specific encoding for equalities
+def get_inf_eq_pred_remainders(derivator, predicate):
+    return And(get_inf_le_pred_remainders(derivator, predicate),
+               get_inf_le_pred_remainders(derivator, Minus(Real(0), predicate)),
+               )
 
 # IvIN_{f,<}
 def get_ivinf_lt_pred(derivator, predicate):
@@ -255,18 +273,25 @@ def get_ivinf_le_pred(derivator, predicate):
     res = Or(first_disjunct, all_eq_0)
     return res
 
+# TODO: improve, simplify for equality
+# IvIN_{f,=}
+def get_ivinf_eq_pred(derivator, predicate):
+    return And(get_ivinf_le_pred(derivator,predicate),
+               get_ivinf_le_pred(derivator,Minus(Real(0), predicate)))
+
+
 def unsupported(pred):
-    raise Exception("Unsupported predicate")
+    raise Exception("Unsupported predicate ", pred.serialize())
 
 def get_inf_dnf(lzz_opt, derivator, formula):
     if (not lzz_opt.use_remainder):
         op_map = {pysmt_op.LT : partial(get_inf_lt_pred, derivator),
                   pysmt_op.LE : partial(get_inf_le_pred, derivator),
-                  pysmt_op.EQUALS : unsupported }
+                  pysmt_op.EQUALS : partial(get_inf_eq_pred, derivator) }
     else:
         op_map = {pysmt_op.LT : partial(get_inf_lt_pred_remainders, derivator),
                   pysmt_op.LE : partial(get_inf_le_pred_remainders, derivator),
-                  pysmt_op.EQUALS : unsupported }
+                  pysmt_op.EQUALS : partial(get_inf_eq_pred_remainders, derivator) }
 
     app = ApplyPredicate(op_map)
     inf_dnf = app.walk(formula)
@@ -286,7 +311,7 @@ def get_ivinf_dnf(lzz_opt, derivator, formula):
         assert not lzz_opt.use_remainder
         app = ApplyPredicate({pysmt_op.LT : partial(get_ivinf_lt_pred, derivator),
                               pysmt_op.LE : partial(get_ivinf_le_pred, derivator),
-                              pysmt_op.EQUALS : unsupported })
+                              pysmt_op.EQUALS : partial(get_ivinf_eq_pred, derivator) })
         ivinf_dnf = app.walk(formula)
         return ivinf_dnf
 
@@ -309,9 +334,13 @@ def lzz(lzz_opt, solver, candidate, derivator, init, invar):
     if (solver.is_valid(c1)):
         # Check condition on the differential equation
 
-        c = DNFConverter()
-        candidate_dnf = c.get_dnf(candidate)
-        invar_dnf = c.get_dnf(invar)
+        if AVOID_DNF_CONVERSION:
+            candidate_dnf = candidate
+            invar_dnf = invar
+        else:
+            c = DNFConverter()
+            candidate_dnf = c.get_dnf(candidate)
+            invar_dnf = c.get_dnf(invar)
 
         c2 = Implies(And(candidate, invar,
                          get_inf_dnf(lzz_opt, derivator, invar_dnf)),
@@ -349,9 +378,13 @@ def get_lzz_encoding(lzz_opt, candidate, derivator, invar):
     """
 
     # TODO: Factor with lzz checks
-    c = DNFConverter()
-    candidate_dnf = c.get_dnf(candidate)
-    invar_dnf = c.get_dnf(invar)
+    if AVOID_DNF_CONVERSION:
+        candidate_dnf = candidate
+        invar_dnf = invar
+    else:
+        c = DNFConverter()
+        candidate_dnf = c.get_dnf(candidate)
+        invar_dnf = c.get_dnf(invar)
 
     c2 = Implies(And(candidate, invar,
                      get_inf_dnf(lzz_opt, derivator, invar_dnf)),
@@ -383,9 +416,14 @@ def lzz_fast(lzz_opt, solver, candidate, derivator, init, invar):
     debug_print_max_degree(logger, c1)
     if (solver.is_valid(c1)):
         # Check condition on the differential equation
-        c = DNFConverter()
-        candidate_dnf = c.get_dnf(candidate)
-        invar_dnf = c.get_dnf(invar)
+
+        if AVOID_DNF_CONVERSION:
+            candidate_dnf = candidate
+            invar_dnf = invar
+        else:
+            c = DNFConverter()
+            candidate_dnf = c.get_dnf(candidate)
+            invar_dnf = c.get_dnf(invar)
 
         c2 = Implies(And(candidate, invar),
                      get_inf_dnf(lzz_opt, derivator, candidate_dnf))
