@@ -113,10 +113,12 @@ def get_inf_op_remainders(derivator, poly, op):
     #          | (r_0 = 0 & r_1 = 0 & r_2 op 0)
     #          ...)
 
+    logger.debug("Get remainders for ", poly)
     remainders = derivator.get_remainders_list(poly)
     trans_f_p = FALSE()
     index = 0
     for r in remainders:
+        logger.debug("Get remainders, iteration ", index)
         j = 0
         disjunct = op(r, Real(0))
         while (j < index):
@@ -125,6 +127,8 @@ def get_inf_op_remainders(derivator, poly, op):
 
         trans_f_p = Or(trans_f_p, disjunct)
         index = index + 1
+
+    logger.debug("Computed reminders, reached index ", index)
     return (len(remainders) - 1, trans_f_p)
 
 
@@ -240,6 +244,8 @@ def get_inf_eq_pred(derivator, predicate):
 
 # IN_{f,<}
 def get_inf_lt_pred_remainders(derivator, predicate):
+    # DEBUG
+    print("get_inf_lt_pred_remainders")
     predicate = change_sign(predicate)
     rank, inf = get_inf_op_remainders(derivator, predicate, GT)
     return inf
@@ -342,6 +348,7 @@ def lzz(lzz_opt, solver, candidate, derivator, init, invar):
             candidate_dnf = c.get_dnf(candidate)
             invar_dnf = c.get_dnf(invar)
 
+        logger.debug("Constructing c2...")
         c2 = Implies(And(candidate, invar,
                          get_inf_dnf(lzz_opt, derivator, invar_dnf)),
                      get_inf_dnf(lzz_opt, derivator, candidate_dnf))
@@ -350,6 +357,7 @@ def lzz(lzz_opt, solver, candidate, derivator, init, invar):
         debug_print_max_degree(logger, c2)
 
         if solver.is_valid(c2):
+            logger.debug("Constructing c3...")
             c3 = Implies(And(Not(candidate), invar,
                              get_ivinf_dnf(lzz_opt, derivator, invar_dnf)),
                          Not(get_ivinf_dnf(lzz_opt, derivator, candidate_dnf)))

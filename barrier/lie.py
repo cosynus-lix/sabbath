@@ -118,10 +118,6 @@ class Derivator(object):
         for var, vector_field_expr in self.vector_field.items():
             _var = self._get_sympy_expr(var)
             _sympy_der = self._get_sympy_expr(vector_field_expr)
-            # print("here")
-            # print(_sympy_der)
-            # print(_cont_vars)
-            # print(_params)
             _vector_field[_var] = _sympy_der
         _expr = self._get_sympy_expr(expr)
 
@@ -239,6 +235,8 @@ class Derivator(object):
             gb_bases = groebner([rem], vars_list, order='lex')
             remainders = [rem]
             while (rem != 0):
+                # DEBUG
+                # print("Remainder computation - inner loop...")
                 rem_der = Derivator._get_lie_der_sympy(rem, _vector_field)
                 if (len(gb_bases) == 1 and gb_bases[0].is_number):
                     rem = S.Zero

@@ -52,7 +52,7 @@ from barrier.utils import get_mathsat_smtlib
 from barrier.formula_utils import has_vars_in_divisor
 
 
-def run_lzz(opt, lzz_problem, env, solver = None):
+bdef run_lzz(opt, lzz_problem, env, solver = None):
     if solver is None:
         solver = Solver(logic=QF_NRA, name="z3")
 
