@@ -86,6 +86,30 @@ def get_mathsat_smtlib(env = get_env()):
 
     return solver
 
+def get_cvc5_smtlib(env = get_env()):
+    """
+    Get the mathsat SMT lib solver
+    """
+
+    name = "cvc5-smtlib"
+    logics = [QF_NRA]
+    try:
+        if not env.factory.is_generic_solver(name):
+            from shutil import which
+            mathsat_path = which("cvc5")
+
+            if mathsat_path is None:
+                logging.debug("CVC5 path not found!")
+            else:
+                logging.debug("CVC5 path: %s" % mathsat_path)
+                env.factory.add_generic_solver(name, [mathsat_path,"--incremental"], logics)
+
+        solver = env.factory.Solver(name=name, logic=logics[0])
+    except:
+        raise SolverAPINotFound
+
+    return solver
+
 
 def get_new(derivator):
     new_symb = FreshSymbol(REAL)
