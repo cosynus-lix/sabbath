@@ -120,7 +120,6 @@ class DynSystem(object):
 
         - Finds the equilibrium points of the system
         - Computes the rescaled linear system
-
         """
 
         assert (self.is_linear())
@@ -133,7 +132,6 @@ class DynSystem(object):
         rescaled_systems = []
         zero = Real(0)
         for solution in solutions:
-
             if reduce(lambda acc, val: acc and val == zero, solution.values(), True):
                 rescaled_systems.append(self.get_renamed(lambda x : x))
                 continue
@@ -149,7 +147,7 @@ class DynSystem(object):
 
             new_odes = {}
             for var, expr in self._odes.items():
-                new_odes[rename_map[v]] = substitute(expr, rename_map_body)
+                new_odes[rename_map[var]] = substitute(expr, rename_map_body)
 
             new_constraints = {}
             for var, expr in self._dist_constraints.items():
@@ -163,7 +161,7 @@ class DynSystem(object):
                                         new_constraints,
                                         False)
 
-            rescaled_systems.append(rescaled_system)
+            rescaled_systems.append((rescaled_system, solution))
 
         return rescaled_systems
 
@@ -207,7 +205,7 @@ class DynSystem(object):
 
     def get_ode(self, var):
         if var not in self._states:
-            raise Exeption("Not a state var!")
+            raise Exception("Not a state var!")
         else:
             return self._odes[var]
 
