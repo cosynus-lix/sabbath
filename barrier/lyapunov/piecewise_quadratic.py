@@ -1029,30 +1029,17 @@ def validate_eq_johansson(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
 
 
 
-def validate_single_mode(hs, lf, m, is_exponential = False,
-                         alpha = 0,
-                         solver = Solver(logic=QF_NRA, name="z3")):
+def validate_single_mode_smt(derivator, smt_vars, smt_invar,
+                             V_m, m, is_exponential = False,
+                             alpha_smt = Real(0),
+                             solver = Solver(logic=QF_NRA, name="z3")):
   """
+  Validation that takes as input a derivator - so it can be obtained
+  from the dynamical system (uses infinite precision arithmetic instead of the
+  NumericAffineHSx
   """
-  smt_vars = NumericAffineHS.get_smt_vars(hs.dimensions)
-
-  lyapunov_smt = {}
-
-  # build the derivator
-  assert(len(hs.flows[m]) == 1)
-  derivator = get_derivator(hs, smt_vars, hs.flows[m][0], True)
-
-  V_m_list = _get_lyapunov_smt(smt_vars, lf, lyapunov_smt, m)
-
-  # we assume a single (and not piece-wise) lyapunov function
-  assert(len(V_m_list) == 1)
-  for el in V_m_list:
-    (condition, V_m) = el
-    break
-  assert(TRUE() == condition)
 
   V_m_der = derivator.get_lie_der(V_m)
-  smt_invar = hs.get_smt_affine(smt_vars, hs.invariant[m])
   x_eq_zero = And([ Equals(x, Real(0)) for x in smt_vars])
   V_m_zero = V_m.substitute({v : Real(0) for v in smt_vars})
   V_m_der_zero = V_m_der.substitute({v : Real(0) for v in smt_vars})
@@ -1067,14 +1054,13 @@ def validate_single_mode(hs, lf, m, is_exponential = False,
   #     c4 := forall x != 0. V_m'(x) < alpha * V_m(x) is UNSAT
   #
 
-  c1 = Implies(smt_invar, GT(V_m_zero, Real(0)))
+  c1 = Implies(smt_invar, Equals(V_m_zero, Real(0)))
   c2 = Implies(And(smt_invar, Not(x_eq_zero)), GT(V_m, Real(0))) # UNSAT
   c3 = Not(Implies(smt_invar, GT(V_m_der_zero, Real(0))))
 
   if (not is_exponential):
     c4 = Implies(And(smt_invar, Not(x_eq_zero)), LT(V_m_der, Real(0))) # UNSAT
   else:
-    alpha_smt = Real(myround(alpha))
     c4 = Implies(And(smt_invar, Not(x_eq_zero)),
                  LT(V_m_der, Times(alpha_smt, V_m))) # UNSAT
 
@@ -1095,9 +1081,33 @@ def validate_single_mode(hs, lf, m, is_exponential = False,
 
   if (not res):
     print(error)
-    return False
+    return (False, None)
   else:
-    return True
+    return (True, V_m)
 
 
+def validate_single_mode(hs, lf, m, is_exponential = False,
+                         alpha = 0,
+                         solver = Solver(logic=QF_NRA, name="z3")):
+  """
+  """
+  smt_vars = NumericAffineHS.get_smt_vars(hs.dimensions)
+  smt_invar = hs.get_smt_affine(smt_vars, hs.invariant[m])
 
+  # build the derivator
+  assert(len(hs.flows[m]) == 1)
+  derivator = get_derivator(hs, smt_vars, hs.flows[m][0], True)
+
+  lyapunov_smt = {}
+  V_m_list = _get_lyapunov_smt(smt_vars, lf, lyapunov_smt, m)
+  # we assume a single (and not piece-wise) lyapunov function
+  assert(len(V_m_list) == 1)
+  for el in V_m_list:
+    (condition, V_m) = el
+    break
+  assert(TRUE() == condition)
+
+  return validate_single_mode_smt(derivator, smt_vars, smt_invar,
+                                  V_m, m, is_exponential,
+                                  Real(myround(alpha)),
+                                  solver)

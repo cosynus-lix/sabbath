@@ -223,9 +223,8 @@ def synth_lyapunov(dyn_sys, degree, use_mathematica=False, use_smt = False, max_
     return (res, lyapunov)
 
 
-def validate_lyapunov(sys, lyapunov):
+def validate_lyapunov(sys, lyapunov, solver = Solver(logic=QF_NRA, name="z3")):
     """ Use smt to validate that lyapunov is a lyapunov function """
-    solver = Solver(logic=QF_NRA, name="z3")
 
     # lyapunov must be positive (apart in the equilibrium point?)
     if (not solver.is_valid(Implies (Or([ NotEquals(v, Real(0)) for v in sys.states() ] ),

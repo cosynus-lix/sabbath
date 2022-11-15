@@ -120,55 +120,58 @@ class DynSystem(object):
 
         - Finds the equilibrium points of the system
         - Computes the rescaled linear system
+
+
+        x' = Ax + b
+        Equilibrium point e such that Ax + b = e
+
+        Change of coordinates to z = x - e, so x = z + e
+
+        So, x' = Ax + b
+            (z+e)' = A(z+e) + b
+            z' = Az + Ae + b
+            z' = Az
+
+        If we have a f(z), we get a f'(x) = f(z + e)
+
         """
 
         assert (self.is_linear())
         assert (len(self._inputs) == 0)
         assert (len(self._disturbances) == 0)
+        assert (len(self._dist_constraints) == 0)
 
         # find equlibrium point(s)
         solutions = self.get_derivator().get_all_solutions_linear_system(self._odes.values(),
                                                                          self._states)
         rescaled_systems = []
-        zero = Real(0)
         for solution in solutions:
-            if reduce(lambda acc, val: acc and val == zero, solution.values(), True):
-                rescaled_systems.append(self.get_renamed(lambda x : x))
-                continue
-
-            rename_map = {}
+            rescaled_states = []
             rename_map_body = {}
-            for v in self._states:
-                v_new = FormulaHelper.get_fresh_var_name(get_env().formula_manager,
-                                                         v.symbol_name(),
-                                                         v.symbol_type())
-                rename_map[v] = v_new
-                rename_map_body[v] = v_new + solution[v]
-
+            z2x = {}
             new_odes = {}
-            for var, expr in self._odes.items():
-                new_odes[rename_map[var]] = substitute(expr, rename_map_body)
+            for x in self._states:
+                z = FormulaHelper.get_fresh_var_name(get_env().formula_manager,
+                                                     x.symbol_name(),
+                                                     x.symbol_type())
+                rescaled_states.append(z)
+                # Rename x to z (i.e., we susbstitute x with z + e)
+                rename_map_body[x] = z + solution[x]
+                # Rename z to x (i.e., we substitute z with x - e
+                z2x[z] = x - solution[x]
 
-            new_constraints = {}
-            for var, expr in self._dist_constraints.items():
-                new_constraints[rename(var)] = substitute(expr, rename_map_body)
+            for x,z in zip(self._states, rescaled_states):
+                new_odes[z] = substitute(self.get_ode(x), rename_map_body)
 
-            rename_vars = lambda expr : substitute(expr, rename_map)
-            rescaled_system = DynSystem(list(map(rename_vars, self._states)),
-                                        list(map(rename_vars, self._inputs)),
-                                        list(map(rename_vars, self._disturbances)),
+            rescaled_system = DynSystem(rescaled_states,
+                                        [],
+                                        [],
                                         new_odes,
-                                        new_constraints,
+                                        {},
                                         False)
-
-            rescaled_systems.append((rescaled_system, solution))
+            rescaled_systems.append((rescaled_system, solution, z2x))
 
         return rescaled_systems
-
-
-    def get_ode_matrix(self):
-        """ Return a matrix representation of the system """
-        raise NotImplementedException()
 
     def get_derivator(self):
         """ Return the derivator object for the

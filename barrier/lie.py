@@ -297,8 +297,10 @@ class Derivator(object):
         sympy_equations = [self._get_sympy_expr(expr) for expr in equations]
         sympy_variables = [self._get_sympy_expr(var) for var in variables]
 
-        sys = linear_eq_to_matrix(sympy_equations, sympy_variables)
-        sympy_solutions = linsolve(sys, sympy_variables)
+        # From system of linear equations to Ax = b
+        A,b = linear_eq_to_matrix(sympy_equations, sympy_variables)
+        # Find solution for Ax = b
+        sympy_solutions = linsolve((A,b), sympy_variables)
         for sympy_sol in sympy_solutions:
             assert(len(sympy_sol) == len(sympy_variables))
 
@@ -308,9 +310,16 @@ class Derivator(object):
                 for value,var in zip(sympy_sol, variables):
                     sol[var] = self._get_pysmt_expr(value)
                 solutions.append(sol)
-
         return solutions
 
+    def get_sympy_matrix_equations(self, equations, variables):
+        # Note: returns the matrixes A and b such that Ax = b
+        #       be careful about b sign!
+        sympy_equations = [self._get_sympy_expr(expr) for expr in equations]
+        sympy_variables = [self._get_sympy_expr(var) for var in variables]
+
+        A,b = linear_eq_to_matrix(sympy_equations, sympy_variables)
+        return A,b
 
 
 # EOC Derivator

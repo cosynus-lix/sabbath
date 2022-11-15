@@ -77,7 +77,6 @@ class TestSystem(TestCase):
 
 
     def test_rescale(self):
-
         var = [Symbol("x%s" % (i+1), REAL) for i in range(2)]
         sys = DynSystem(var, [], [],
                         {var[0] :  var[0]*Real(2) + var[1]*Real(3) - Real(4),
@@ -92,17 +91,23 @@ class TestSystem(TestCase):
         rename = {new_sys._states[0] : sys._states[0],
                   new_sys._states[1] : sys._states[1]}
 
+        eq_0 = {new_sys._states[0] : Real(0),
+                new_sys._states[1] : Real(0)}
+
         other_ode = new_sys.get_ode(new_sys._states[0])
+        self.assertTrue(is_valid(Equals(other_ode.substitute(eq_0),
+                                        Real(0))))
         self.assertTrue(is_valid(Equals(other_ode.substitute(rename),
                                  sys.get_ode(var[0]) + Real(4))))
 
         other_ode = new_sys.get_ode(new_sys._states[1])
+        self.assertTrue(is_valid(Equals(other_ode.substitute(eq_0),
+                                        Real(0))))
         self.assertTrue(is_valid(Equals(other_ode.substitute(rename),
                                  sys.get_ode(var[1]) - Real(1))))
 
         self.assertTrue(is_valid(Equals(sys.get_ode(var[0]).substitute(sol),
                                         Real(0))))
-
         self.assertTrue(is_valid(Equals(sys.get_ode(var[1]).substitute(sol),
                                         Real(0))))
 
