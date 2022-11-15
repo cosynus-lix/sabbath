@@ -161,8 +161,5 @@ class ApplyPredicate(IdentityDagWalker):
     def walk_equals(self, formula, args, **kwargs):
         predicate = Minus(args[0], args[1])
         f = self.map_f[operators.EQUALS]
-
-        print(f)
-
         new_node = f(predicate)
         return new_node
