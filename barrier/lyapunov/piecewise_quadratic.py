@@ -180,7 +180,7 @@ def _check_implication(solver, smt_vars, implication, print_model=True):
     implicant = implication.args()[0].simplify()
     consequent = implication.args()[1].simplify()
 
-    print("Model = ", ", ".join(["%s = %s" % (str(v),get_float_val_model(model, v)) for v in smt_vars]))
+#    print("Model = ", ", ".join(["%s = %s" % (str(v),get_float_val_model(model, v)) for v in smt_vars]))
 
     def _print_vals(formula):
       stack = [formula]
@@ -194,10 +194,7 @@ def _check_implication(solver, smt_vars, implication, print_model=True):
         else:
           print(f, " = ", model.get_value(f))
 
-
-    print("Implicant")
     _print_vals(implicant)
-    print("Consequent")
     _print_vals(consequent)
     return False
   else:
@@ -984,8 +981,8 @@ def validate_eq_johansson(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
     smt_invar = hs.get_smt_affine(smt_vars, hs.invariant[m])
     x_t_x = dot_product_smt(vect_times_matrix(smt_vars, i_tilda_smt), smt_vars)
 
-    print("V_%d = %s" % (m,V_m.serialize()))
-    print("V_%d_der = %s" % (m,V_m_der.serialize()))
+    # print("V_%d = %s" % (m,V_m.serialize()))
+    # print("V_%d_der = %s" % (m,V_m_der.serialize()))
 
     # 1) x \in Inv(m) => V_m(x) >= 0
     c1 = Implies(smt_invar, And(GE(V_m, Real(0))))

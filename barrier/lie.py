@@ -322,6 +322,10 @@ class Derivator(object):
         return A,b
 
 
+    def simplify(self, expression):
+        """ Just use sympy to simplify the expression """
+        return self._get_pysmt_expr(self._get_sympy_expr(expression).expand())
+
 # EOC Derivator
 
 class Pysmt2Sympy(DagWalker):
