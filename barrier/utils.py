@@ -96,13 +96,14 @@ def get_cvc5_smtlib(env = get_env()):
     try:
         if not env.factory.is_generic_solver(name):
             from shutil import which
-            mathsat_path = which("cvc5")
+            solver_path = which("cvc5")
 
-            if mathsat_path is None:
+            if solver_path is None:
                 logging.debug("CVC5 path not found!")
             else:
-                logging.debug("CVC5 path: %s" % mathsat_path)
-                env.factory.add_generic_solver(name, [mathsat_path,"--incremental"], logics)
+                logging.debug("CVC5 path: %s" % solver_path)
+                env.factory.add_generic_solver(name, [solver_path,"--incremental","--lang=smtlib","--print-success","--output-lang=smtlib","--produce-models"], logics)
+
 
         solver = env.factory.Solver(name=name, logic=logics[0])
     except:
