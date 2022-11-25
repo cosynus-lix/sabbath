@@ -164,10 +164,19 @@ class MathematicaSolver(Solver):
 
     # Here is where we call Reduce from Mathematica
     free_vars = to_solve.get_free_variables()
-    exists_formula = self.mgr.Exists(free_vars, to_solve)
-    mathematica_exists_formula = self.converter.convert(exists_formula)
 
-    reduce_cmd = wl.Reduce(mathematica_exists_formula, wlexpr('Reals'))
+    generate_model = True
+
+    if (not generate_model):
+      exists_formula = self.mgr.Exists(free_vars, to_solve)
+      mathematica_exists_formula = self.converter.convert(exists_formula)
+
+      reduce_cmd = wl.Reduce(mathematica_exists_formula, wlexpr('Reals'))
+    else:
+      vars_list = wlexpr("{%s}" % ",".join([str(self.converter.convert(v)) for v in free_vars]))
+
+      mathematica_formula = self.converter.convert(to_solve)
+      reduce_cmd = wl.FindInstance(mathematica_formula, vars_list, wlexpr('Reals'))
 
     budget_time = self.options.budget_time
     if (self.options.budget_time > 0):
@@ -202,17 +211,50 @@ class MathematicaSolver(Solver):
 
     # Invalidate cached model
     self.latest_model = None
+
+    # TODO: generate a pysmt model to be compliant
+
+    if generate_model:
+      if (isinstance(exist_res, wolframclient.language.expression.WLFunction) and
+          isinstance(exist_res[0] , (bool))):
+          d = {}
+          model = EagerModel(assignment=d)
+          self.latest_model = model
+          exist_res = True
+      elif len(exist_res) > 0:
+        # Construct the model
+        d = {}
+        for assignment in exist_res[0]:
+          if (isinstance(assignment, wolframclient.language.expression.WLFunction)):
+            node_type = assignment.head
+            if (isinstance(node_type, wolframclient.language.expression.WLSymbol)):
+              var = self.converter.back(assignment.args[0])
+              value = self.converter.back(assignment.args[1])
+              d[var] = value
+            else:
+              raise NotImplementedError("Error parsing the models from mathematica!")
+          else:
+            raise NotImplementedError("Error parsing the models from mathematica!")
+
+        model = EagerModel(assignment=d)
+        self.latest_model = model
+        exist_res = True
+      else:
+        exist_res = False
+
+
     return exist_res
 
   def get_value(self, item):
-    if self.latest_model is None:
-      self.get_model()
-    return self.latest_model.get_value(item)
+    assert (not self.latest_model is None)
+    return self.latest_model[item]
 
   def get_model(self):
-    # We should call FindInstance to find a model (instead o resolve)
+    # We should call FindInstance to find a model (instead o reduce)
     # The main issue is to parse algebraic numbers
-    raise NotImplementedError
+    assert (not self.latest_model is None)
+
+    return self.latest_model
 
   @clear_pending_pop
   def push(self, levels=1):
@@ -252,6 +294,10 @@ class MathematicaConverter(Converter, DagWalker):
     raise NotImplementedError("Conversion of Pow operator from mathematica not supported ")
 
     # return Pow(term, args[0])
+
+  def sanitize(self, identifier):
+    """ Just returns the identifier removing special characters """
+    return identifier.replace("_", "underscore")
 
   def __init__(self, environment):
     DagWalker.__init__(self)
@@ -330,7 +376,7 @@ class MathematicaConverter(Converter, DagWalker):
       return self.back_fun[head](term, args)
     except KeyError:
       raise ConvertExpressionError("Unsupported expression:",
-                                    repr(term))
+                                   repr(term))
 
   def _walk_back(self, term, mgr):
     stack = [term]
@@ -344,13 +390,18 @@ class MathematicaConverter(Converter, DagWalker):
         res = Real(current)
         self.back_memoization[current] = res
       elif (isinstance(current, wolframclient.language.expression.WLSymbol)):
-        # Assume symbol is a real variable for now
         name = current.name
-        prefix = 'Global`'
-        assert(name.startswith(prefix))
-        var_name = name[len(prefix):]
-        res = self.mgr.Symbol(var_name, REAL)
-        self.back_memoization[current] = res
+
+        if (current in self.back_memoization):
+          return self.back_memoization[current]
+        else:
+          # Assume symbol is a real variable for now
+
+          prefix = 'Global`'
+          assert(name.startswith(prefix))
+          var_name = name[len(prefix):]
+          res = self.mgr.Symbol(var_name, REAL)
+          self.back_memoization[current] = res
 
       elif (isinstance(current, wolframclient.language.expression.WLFunction) and
             current.head == wl.Rational):
@@ -400,7 +451,18 @@ class MathematicaConverter(Converter, DagWalker):
       raise ConvertExpressionError("Trying to declare a symbol that "
                                    "is not of Real type (%s : %s)" % (str(formula.symbol_type()),
                                                                       formula.symbol_name()))
-    res = wlexpr(formula.symbol_name())
+
+    sanitized = self.sanitize(formula.symbol_name())
+
+    # res = wlexpr(sanitized)
+    res =  wolframclient.language.Global.__getattr__(sanitized)
+
+    # If this happens then another term different from formula
+    # was converted to the same res
+    assert not (res in self.back_memoization)
+
+    self.back_memoization[res] = formula
+
     return res
 
   def walk_real_constant(self, formula, **kwargs):
