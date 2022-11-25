@@ -1042,18 +1042,18 @@ def validate_single_mode_smt(derivator, smt_vars, smt_invar,
   V_m_der_zero = V_m_der.substitute({v : Real(0) for v in smt_vars})
 
   # Check that:
-  #   c1 := V_m(0) = 0 is SAT
-  #   c2 := forall x != 0. V_m(x) > 0 is UNSAT
-  #   c3 := V_m'(0) = 0 is SAT
+  #   c1 := V_m(0) = 0
+  #   c2 := forall x != 0. V_m(x) > 0
+  #   c3 := V_m'(0) = 0
   #   For global asymptotic stability (GAS):
-  #     c4 := forall x != 0. V_m'(x) < 0 is UNSAT
+  #     c4 := forall x != 0. V_m'(x) < 0
   #   For exponential stability:
   #     c4 := forall x != 0. V_m'(x) < alpha * V_m(x) is UNSAT
   #
 
   c1 = Implies(smt_invar, Equals(V_m_zero, Real(0)))
   c2 = Implies(And(smt_invar, Not(x_eq_zero)), GT(V_m, Real(0))) # UNSAT
-  c3 = Not(Implies(smt_invar, GT(V_m_der_zero, Real(0))))
+  c3 = Implies(smt_invar, Equals(V_m_der_zero, Real(0)))
 
   if (not is_exponential):
     c4 = Implies(And(smt_invar, Not(x_eq_zero)), LT(V_m_der, Real(0))) # UNSAT
@@ -1061,10 +1061,10 @@ def validate_single_mode_smt(derivator, smt_vars, smt_invar,
     c4 = Implies(And(smt_invar, Not(x_eq_zero)),
                  LT(V_m_der, Times(alpha_smt, V_m))) # UNSAT
 
-  if (not solver.is_sat(c1)):
+  if (not _check_implication(solver, smt_vars, c1)):
     error = "V(0) = 0 does not hold"
     res = False
-  elif (not solver.is_sat(c3)):
+  if (not _check_implication(solver, smt_vars, c3)):
     error = "der(V)(0) = 0 does not hold"
     res = False
   elif (not _check_implication(solver, smt_vars, c2)):
