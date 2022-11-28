@@ -217,10 +217,13 @@ class MathematicaSolver(Solver):
     if generate_model:
       if (isinstance(exist_res, wolframclient.language.expression.WLFunction) and
           isinstance(exist_res[0] , (bool))):
+        if exist_res[0]:
           d = {}
           model = EagerModel(assignment=d)
           self.latest_model = model
           exist_res = True
+        else:
+          exist_res = False
       elif len(exist_res) > 0:
         # Construct the model
         d = {}
