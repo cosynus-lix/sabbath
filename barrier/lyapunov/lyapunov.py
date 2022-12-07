@@ -27,7 +27,7 @@ from pysmt.shortcuts import (
     FreshSymbol, Symbol, REAL, Solver,
     Exists, ForAll,
     Or, NotEquals, And, Implies, Not, Equals,
-    GT, LE, GE, TRUE,
+    GT, LE, LT,GE, TRUE,
     Real,
     Times
 )
@@ -38,6 +38,9 @@ from barrier.utils import gen_template, gen_quadratic_template, get_new
 from barrier.sympy_utils import make_positive_definite
 from barrier.mathematica.mathematica import MathematicaQuantifierEliminator
 
+from barrier.lyapunov.la_smt import (
+    vect_times_matrix, dot_product_smt
+)
 
 
 def synth_lyapunov_sos(get_new, vars_list, coefficients, template, lie, degree):
@@ -115,10 +118,12 @@ def synth_linear_lyapunov_smt(vars_list, coefficients, l, derivative, max_iter =
 
     DEBUG = False
 
-    # (x != 0 -> L(X) > 0) & d(L(X)) <= 0 & 
+    # (x != 0 -> L(X) > 0) & (x != 0 -> d(L(X)) <= 0)
     condition = And(Implies(Or([ NotEquals(v, Real(0)) for v in vars_list  ] ),
                             GT(l, Real(0))),
-                    LE(derivative, Real(0)))
+                    Implies(Or([ NotEquals(v, Real(0)) for v in vars_list  ] ),
+                            LT(derivative, Real(0)))
+                    )
 
     iteration = 0
 
@@ -168,12 +173,45 @@ def synth_linear_lyapunov_smt(vars_list, coefficients, l, derivative, max_iter =
 
 
         else:
-            print("Learner unsat")
+            if DEBUG: print("Learner unsat")
             return (False, None)
         iteration = iteration + 1
 
     print("Unknown")
     return (None, None)
+
+def synth_lyapunov_linear(dyn_sys):
+    """
+    dyn_sys must be homogeneous.
+
+    Solve the lyapunov equation for linear systems:
+
+    A^t * P + P * A + Q = 0
+
+    where Q is an arbitrary symmetric positive matrix.
+
+    The system (der(X) = A X) is globally asymptotic stable iff there is a solution P > 0.
+
+    A is n x n, P is n x n and is the matrix defining the quadratic lyapunov
+    function V(X) = X^T P X.
+
+    The function returns Bool x Term.
+
+    NOTE: The result is correct by construction since we use precise methods.
+    """
+
+    der = dyn_sys.get_derivator()
+    sys_vars = dyn_sys._states
+    res_matrix = der.get_positive_definite_sol_to_lyapunov_eq(dyn_sys._odes.values(),
+                                                              sys_vars)
+
+    if (not res_matrix is None):
+        # x^T P x
+        app = vect_times_matrix(sys_vars, res_matrix)
+        lyap = dot_product_smt(app, sys_vars)
+        return (True, lyap)
+    else:
+        return (False, None)
 
 
 def synth_lyapunov(dyn_sys, degree, use_mathematica=False, use_smt = False, max_iter=-1):
@@ -226,12 +264,16 @@ def synth_lyapunov(dyn_sys, degree, use_mathematica=False, use_smt = False, max_
 def validate_lyapunov(sys, lyapunov, solver = Solver(logic=QF_NRA, name="z3")):
     """ Use smt to validate that lyapunov is a lyapunov function """
 
+    eq_point = And([Equals(v, Real(0)) for v in sys.states() ])
+
+
     # lyapunov must be positive (apart in the equilibrium point?)
-    if (not solver.is_valid(Implies (Or([ NotEquals(v, Real(0)) for v in sys.states() ] ),
-                                     GT(lyapunov, Real(0))) )):
+    if (not solver.is_valid(Implies(Not(eq_point),
+                                    GT(lyapunov, Real(0))) )):
         print("The lyapunov function is NOT positive")
         return False
-    elif (not solver.is_valid( LE(sys.get_derivator().get_lie_der(lyapunov), Real(0)) )):
+    elif (not solver.is_valid(Implies(Not(eq_point),
+                                      LT(sys.get_derivator().get_lie_der(lyapunov), Real(0)) ))):
         print("The lyapunov function is not non-negative")
         return False
 

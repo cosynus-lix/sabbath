@@ -16,7 +16,7 @@ from pysmt.typing import REAL
 
 from sympy import (
     sympify,
-    linear_eq_to_matrix, linsolve,
+    linear_eq_to_matrix, linsolve, solve_linear_system,
     degree as sympy_degree,
     total_degree, S,
     diff as sympy_diff,
@@ -28,12 +28,16 @@ from sympy import (
     Pow as Pow_sympy,
     Rational as Rational_sympy,
     Integer as Integer_sympy,
+    Eq as Eq_sympy,
+    zeros, eye
 )
 
 from sympy import groebner, factor_list
 from sympy.polys.domains import RR,ZZ
 from sympy.polys.polytools import reduced
 
+from sympy import Matrix
+from sympy.physics.quantum import TensorProduct
 
 def get_inverse_odes(_odes):
     inverse_odes = {}
@@ -325,6 +329,103 @@ class Derivator(object):
     def simplify(self, expression):
         """ Just use sympy to simplify the expression """
         return self._get_pysmt_expr(self._get_sympy_expr(expression).expand())
+
+    def get_positive_definite_sol_to_lyapunov_eq(self, equations, variables):
+        """
+        Solve the linear system:
+
+        A^t * P + P * A + Q = 0
+
+        where A is n x n, Q is an arbitrary symmetric positive
+        matrix (we start with the identity), P is a n x n matrix of real-valued
+        variables.
+
+        and returns the (unique) solution P (i.e., the matrix) to the system that
+        is positive semi-definite, or None otherwise
+        """
+
+        sympy_equations = [self._get_sympy_expr(expr) for expr in equations]
+        sympy_variables = [self._get_sympy_expr(var) for var in variables]
+
+        n = len(sympy_variables)
+
+        # From system of linear equations to Ax = b
+        A,b = linear_eq_to_matrix(sympy_equations, sympy_variables)
+        assert (b == zeros(n,1)) # The system shoudl be homogeneous, i.e., Ax = 0
+        Q = eye(n)
+
+        # Creates the symmetric matrix P (i.e., P = P^T
+        unknowns = []
+        P = zeros(n,n)
+        for i in range(n):
+            for j in range(n):
+                is_upper_triang = i <= j
+                var_name = "__x_%d_%d" % (i if is_upper_triang else j,
+                                          j if is_upper_triang else i)
+                var = sympy_symbols(var_name)
+                if (is_upper_triang):
+                    unknowns.append(var)
+                P[i,j] = var
+
+
+        # Build the equations for the system
+        # A^t * P + P * A + Q = 0
+        final_A = A.T * P + P * A + Q
+        equations = []
+        for i in range(final_A.shape[0]):
+            for j in range(final_A.shape[1]):
+                equations.append(final_A[i,j])
+
+        # DEBUG
+        # print("A is ", A)
+        # print("P is ", P)
+        # print("Q is ", Q)
+        # print("A.T * P  + P * A + Q:  ", A.T * P + P * A + Q)
+        # print("Equations: ", equations)
+        # print("Unknowns: ", unknowns)
+
+        # Solve the system
+        A,b = linear_eq_to_matrix(equations, unknowns)
+        sympy_solutions = linsolve((A,b), unknowns)
+
+        for sympy_sol in sympy_solutions:
+            assert(len(sympy_sol) == len(unknowns))
+
+            if reduce(lambda acc, res: acc and isinstance(res, Number_sympy),
+                      sympy_sol, True):
+
+                # get the map from variable to value
+                sol = {}
+                for value,var in zip(sympy_sol, unknowns):
+                    sol[var] = value
+                    if not value.is_constant:
+                        # parametric solution, not unique
+                        return None
+
+                M = eye(n,n)
+                res_matrix = []
+                for i in range(n):
+                    res_row = []
+                    for j in range(n):
+                        is_upper_triang = i <= j
+                        var_name = "__x_%d_%d" % (i if is_upper_triang else j,
+                                                  j if is_upper_triang else i)
+                        var = sympy_symbols(var_name)
+                        assert var in unknowns
+                        value = sol[var]
+                        M[i,j] = value
+                        res_row.append(self._get_pysmt_expr(value))
+                    res_matrix.append(res_row)
+
+                if M.is_positive_definite:
+                    return res_matrix
+                else:
+                    # No positive definite unique solution
+                    return None
+
+        # No solutions found
+        return None
+
 
 # EOC Derivator
 

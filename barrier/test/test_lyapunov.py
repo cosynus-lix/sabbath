@@ -21,7 +21,11 @@ import barrier.test
 from barrier.test import TestCase, skipIfSOSIsNotAvailable
 
 from barrier.system import DynSystem
-from barrier.lyapunov.lyapunov import synth_lyapunov, validate_lyapunov
+from barrier.lyapunov.lyapunov import (
+    synth_lyapunov,
+    validate_lyapunov,
+    synth_lyapunov_linear
+)
 
 
 from pysmt.shortcuts import Symbol, REAL
@@ -44,13 +48,13 @@ class TestLyapunov(TestCase):
                        {
                          x1 : x2,
                          x2 : -x1
-                       }, {}), True),
+                       }, {}), False), # not stable, e.g., circle...
 
             (DynSystem([x1,x2], [], [],
                        {
                          x1 : x1 + Real(3) * x2,
                          x2 : Real(2) * x1
-                       }, {}), None), # Unstable, so no lyapunov
+                       }, {}), False), # Unstable, so no lyapunov
         ]
         return systems
 
@@ -60,9 +64,12 @@ class TestLyapunov(TestCase):
         # smt synthesis
         for (sys, expected) in systems:
             (res, lyapunov) = synth_lyapunov(sys, 2, False, True, 20)
-            self.assertTrue(res == expected)
-            if (expected):
+            self.assertTrue(res == None or res == expected)
+            if (res):
                 # correct by construction
+                # print(res)
+                # print("LYAP ", sys.get_derivator().simplify(lyapunov).serialize())
+                # print("LIE  ", sys.get_derivator().get_lie_der(lyapunov).serialize())
                 self.assertTrue(validate_lyapunov(sys, lyapunov))
 
     @attr('sos')
@@ -72,7 +79,7 @@ class TestLyapunov(TestCase):
         systems = TestLyapunov.get_test_cases()
         for (sys, expected) in systems:
             (res, lyapunov) = synth_lyapunov(sys, 2, False, False)
-            print(res, expected)
+            # print(res, expected)
             # expected -> res (all the others cannot be checked)
             self.assertTrue((not expected) or res)
             if (res and expected):
@@ -89,7 +96,6 @@ class TestLyapunov(TestCase):
         systems = TestLyapunov.get_test_cases()
         for (sys, expected) in systems:
             (res, lyapunov) = synth_lyapunov(sys, 2, False, False)
-            print(res, expected)
             # expected -> res (all the others cannot be checked)
             self.assertTrue((not expected) or res)
             if (res and expected):
@@ -98,7 +104,14 @@ class TestLyapunov(TestCase):
                     print("Lyapunov function is not valid: ", lyapunov.serialize())
                 self.assertTrue(is_valid)
 
+    def test_lyapunov_direct(self):
+        systems = TestLyapunov.get_test_cases()
+        for (sys, expected) in systems:
+            (res, lyap) = synth_lyapunov_linear(sys)
 
+            self.assertTrue(res == expected)
 
-
-    
+            # Should be correct by construction
+            if (expected):
+                # print("LYAP ", sys.get_derivator().simplify(lyap).serialize())
+                self.assertTrue(validate_lyapunov(sys, lyap))
