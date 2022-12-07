@@ -330,7 +330,7 @@ class Derivator(object):
         """ Just use sympy to simplify the expression """
         return self._get_pysmt_expr(self._get_sympy_expr(expression).expand())
 
-    def get_positive_definite_sol_to_lyapunov_eq(self, equations, variables):
+    def get_positive_definite_sol_to_lyapunov_eq(self, equations, variables, test_pos=True):
         """
         Solve the linear system:
 
@@ -386,7 +386,10 @@ class Derivator(object):
 
         # Solve the system
         A,b = linear_eq_to_matrix(equations, unknowns)
+
+        logging.debug("Solving the lyapunov equation with %d unknowns", len(unknowns))
         sympy_solutions = linsolve((A,b), unknowns)
+        logging.debug("Finished solving the linear system, found %s" % len(sympy_solutions) )
 
         for sympy_sol in sympy_solutions:
             assert(len(sympy_sol) == len(unknowns))
@@ -417,11 +420,16 @@ class Derivator(object):
                         res_row.append(self._get_pysmt_expr(value))
                     res_matrix.append(res_row)
 
-                if M.is_positive_definite:
-                    return res_matrix
+                if (test_pos):
+                    logging.debug("Checking for positive definiteness using sympy...")
+                    if M.is_positive_definite:
+                        return res_matrix
+                    else:
+                        # No positive definite unique solution
+                        return None
                 else:
-                    # No positive definite unique solution
-                    return None
+                    # let the caller deal with this check
+                    return res_matrix
 
         # No solutions found
         return None

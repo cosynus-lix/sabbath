@@ -17,6 +17,7 @@ except ImportError:
         raise Exception("SumOfSquare module not found")
 
 import sys
+import logging
 from fractions import Fraction
 
 
@@ -180,7 +181,8 @@ def synth_linear_lyapunov_smt(vars_list, coefficients, l, derivative, max_iter =
     print("Unknown")
     return (None, None)
 
-def synth_lyapunov_linear(dyn_sys):
+def synth_lyapunov_linear(dyn_sys, use_smt = False,
+                          solver = Solver(logic=QF_NRA, name="z3")):
     """
     dyn_sys must be homogeneous.
 
@@ -203,12 +205,26 @@ def synth_lyapunov_linear(dyn_sys):
     der = dyn_sys.get_derivator()
     sys_vars = dyn_sys._states
     res_matrix = der.get_positive_definite_sol_to_lyapunov_eq(dyn_sys._odes.values(),
-                                                              sys_vars)
+                                                              sys_vars,
+                                                              not use_smt)
+
 
     if (not res_matrix is None):
         # x^T P x
         app = vect_times_matrix(sys_vars, res_matrix)
         lyap = dot_product_smt(app, sys_vars)
+
+        # test for positive semi-definite using SMT
+        if (use_smt):
+            eq_point = And([Equals(v, Real(0)) for v in sys_vars ])
+            logging.debug("Checking for positive definitess (with smt)")
+            if (not solver.is_valid(Implies(Not(eq_point),
+                                            GT(lyap, Real(0))) )):
+                # Not positive definite
+                logging.debug("Matrix not positive definite (with SMT)...")
+                return (False, None)
+
+        logging.debug("Found lyapunov function")
         return (True, lyap)
     else:
         return (False, None)
@@ -265,7 +281,6 @@ def validate_lyapunov(sys, lyapunov, solver = Solver(logic=QF_NRA, name="z3")):
     """ Use smt to validate that lyapunov is a lyapunov function """
 
     eq_point = And([Equals(v, Real(0)) for v in sys.states() ])
-
 
     # lyapunov must be positive (apart in the equilibrium point?)
     if (not solver.is_valid(Implies(Not(eq_point),

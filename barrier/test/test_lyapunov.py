@@ -106,12 +106,13 @@ class TestLyapunov(TestCase):
 
     def test_lyapunov_direct(self):
         systems = TestLyapunov.get_test_cases()
-        for (sys, expected) in systems:
-            (res, lyap) = synth_lyapunov_linear(sys)
 
-            self.assertTrue(res == expected)
+        for use_smt in [True, False]:
+            for (sys, expected) in systems:
+                (res, lyap) = synth_lyapunov_linear(sys, use_smt)
 
-            # Should be correct by construction
-            if (expected):
-                # print("LYAP ", sys.get_derivator().simplify(lyap).serialize())
-                self.assertTrue(validate_lyapunov(sys, lyap))
+                self.assertTrue(res == expected)
+
+                # Should be correct by construction
+                if (expected):
+                    self.assertTrue(validate_lyapunov(sys, lyap))
