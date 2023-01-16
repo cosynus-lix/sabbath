@@ -225,14 +225,22 @@ class MathematicaSolver(Solver):
         else:
           exist_res = False
       elif len(exist_res) > 0:
+
         # Construct the model
         d = {}
         for assignment in exist_res[0]:
           if (isinstance(assignment, wolframclient.language.expression.WLFunction)):
             node_type = assignment.head
             if (isinstance(node_type, wolframclient.language.expression.WLSymbol)):
-              var = self.converter.back(assignment.args[0])
-              value = self.converter.back(assignment.args[1])
+              try:
+                var = self.converter.back(assignment.args[0])
+                value = self.converter.back(assignment.args[1])
+              except NotImplementedError:
+                # return result but invalidate the model
+                # Need to deal with algebraic numbers...
+                self.latest_model = None
+                return exist_res
+
               d[var] = value
             else:
               raise NotImplementedError("Error parsing the models from mathematica!")

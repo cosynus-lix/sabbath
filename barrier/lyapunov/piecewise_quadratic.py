@@ -1035,7 +1035,6 @@ def validate_single_mode_smt(derivator, smt_vars, smt_invar,
   from the dynamical system (uses infinite precision arithmetic instead of the
   NumericAffineHSx
   """
-
   V_m_der = derivator.get_lie_der(V_m)
   x_eq_zero = And([ Equals(x, Real(0)) for x in smt_vars])
   V_m_zero = V_m.substitute({v : Real(0) for v in smt_vars})
