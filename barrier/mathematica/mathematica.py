@@ -1,6 +1,8 @@
 from six.moves import xrange
 import logging
 
+from fractions import Fraction
+
 from concurrent.futures import TimeoutError
 
 try:
@@ -19,7 +21,7 @@ from pysmt.solvers.qelim import QuantifierEliminator
 
 from pysmt.solvers.eager import EagerModel
 from pysmt.walkers import DagWalker
-from pysmt.constants import Fraction, is_pysmt_fraction, is_pysmt_integer
+from pysmt.constants import is_pysmt_fraction, is_pysmt_integer
 from pysmt.decorators import clear_pending_pop, catch_conversion_error
 
 from pysmt.exceptions import (PysmtException, ConvertExpressionError,
@@ -32,6 +34,8 @@ from pysmt.shortcuts import (
 )
 
 
+# DEBUG
+DEBUG_CONVERSION = True
 
 class OutOfTimeSolverError(PysmtException):
   def __init__(self, budget):
@@ -173,16 +177,14 @@ class MathematicaSolver(Solver):
 
       reduce_cmd = wl.Reduce(mathematica_exists_formula, wlexpr('Reals'))
     else:
-      vars_list = wlexpr("{%s}" % ",".join([str(self.converter.convert(v)) for v in free_vars]))
+      vars_list = wl.List(*[self.converter.convert(v) for v in free_vars])
 
       mathematica_formula = self.converter.convert(to_solve)
       reduce_cmd = wl.FindInstance(mathematica_formula, vars_list, wlexpr('Reals'))
 
     budget_time = self.options.budget_time
     if (self.options.budget_time > 0):
-      remaining_time = (
-        self.options.budget_time -
-        self.used_time)
+      remaining_time = (self.options.budget_time - self.used_time)
 
       if (remaining_time <= 0):
         if (not None is self._exit_callback):
@@ -193,19 +195,11 @@ class MathematicaSolver(Solver):
       timing = self.session.evaluate(wl.TimeUsed())
       logging.debug("Dummy command done...")
 
-      timed_eval_cmd = wl.TimeConstrained(reduce_cmd,
-                                          remaining_time)
+      timed_eval_cmd = wl.TimeConstrained(reduce_cmd, wlexpr('%s' % remaining_time))
+
       logging.debug("About to evaluate an expression with Mathematica...")
       exist_res = self.session.evaluate(timed_eval_cmd)
       logging.debug("Mathematica expression evaluated...")
-
-      if (type(exist_res) != bool):
-        if (exist_res.name == '$Aborted'):
-          self.used_time += remaining_time
-          if (not None is self._exit_callback):
-            self._exit_callback(self)
-          raise OutOfTimeSolverError(self.options.budget_time)
-      self.used_time = self.session.evaluate(wl.TimeUsed())
     else:
       exist_res = self.session.evaluate(reduce_cmd)
 
@@ -213,7 +207,6 @@ class MathematicaSolver(Solver):
     self.latest_model = None
 
     # TODO: generate a pysmt model to be compliant
-
     if generate_model:
       if (isinstance(exist_res, wolframclient.language.expression.WLFunction) and
           isinstance(exist_res[0] , (bool))):
@@ -251,10 +244,75 @@ class MathematicaSolver(Solver):
         self.latest_model = model
         exist_res = True
       else:
-        exist_res = False
+        if (self.options.budget_time > 0):
+          if (exist_res == ()):
+            exist_res = False
+          elif (exist_res.name == '$Aborted'):
+            self.used_time += remaining_time
+            if (not None is self._exit_callback):
+              self._exit_callback(self)
+            raise OutOfTimeSolverError(self.options.budget_time)
+        else:
+          exist_res = False
+    else:
+      if (self.options.budget_time > 0):
+        if (type(exist_res) != bool):
+          if (exist_res.name == '$Aborted'):
+            self.used_time += remaining_time
+            if (not None is self._exit_callback):
+              self._exit_callback(self)
+            raise OutOfTimeSolverError(self.options.budget_time)
 
+    if (self.options.budget_time > 0):
+        self.used_time = self.session.evaluate(wl.TimeUsed())
 
     return exist_res
+
+  def find_min(self, function, constraints, round_precision = 6):
+    # Note: The method is numeric and returns floating point (i.e., it's not
+    # guarnateed.
+    #
+    def myround(n,k):
+      rounded = round(float(n),k)
+      rounded = Fraction.from_float(rounded)
+      rounded = rounded.limit_denominator(pow(10,k))
+      return Real(rounded)
+
+    free_vars = function.get_free_variables()
+    free_vars = free_vars.union(constraints.get_free_variables())
+
+    function_mat = self.converter.convert(function)
+    constraints_mat =  self.converter.convert(constraints)
+    vars_list = wl.List(*[self.converter.convert(v) for v in free_vars])
+
+    cmd = wl.FindMinimum(wl.List(function_mat, constraints_mat),
+                         vars_list)
+
+    res = self.session.evaluate(cmd)
+
+    if (wl.DirectedInfinity(-1) == res[0]):
+      # No minimum,
+      return None, None
+
+    # Here we have a result, parsing minimum and model
+    min_value = myround(res[0], round_precision)
+
+    # Build the model finding the value
+    assignment = {}
+    for rule in res[1]:
+      assert len(rule.args) == 2
+      assert (type(rule.args[1]) == float)
+
+      var = self.converter.back(rule.args[0])
+      assert not var in assignment
+
+      value = myround(rule.args[1], round_precision)
+
+      assignment[var] = value
+
+    model = EagerModel(assignment=assignment)
+    return min_value, model
+
 
   def get_value(self, item):
     assert (not self.latest_model is None)
@@ -450,6 +508,7 @@ class MathematicaConverter(Converter, DagWalker):
     # May rewrite Boolean variables to use Real variables in the
     # future.
     res = self.walk(formula)
+
     return res
 
   def walk_symbol(self, formula, **kwargs):
@@ -470,7 +529,16 @@ class MathematicaConverter(Converter, DagWalker):
 
     # If this happens then another term different from formula
     # was converted to the same res
-    assert not (res in self.back_memoization)
+
+    # if (res in self.back_memoization):
+    #   print(formula != self.back_memoization[res])
+    #   print(sanitized)
+    #   print(res)
+    #   print(self.back_memoization[res])
+    #   print(formula)
+
+    assert not (res in self.back_memoization and
+                formula != self.back_memoization[res])
 
     self.back_memoization[res] = formula
 
@@ -481,6 +549,7 @@ class MathematicaConverter(Converter, DagWalker):
     frac = formula.constant_value()
     n,d = frac.numerator, frac.denominator
     rep = str(n) + "/" + str(d)
+
     return wlexpr(rep)
 
   def walk_int_constant(self, formula, **kwargs):
@@ -498,14 +567,16 @@ class MathematicaConverter(Converter, DagWalker):
                                  "allowed!" % str(formula) )
 
   def walk_plus(self, formula, args, **kwargs):
-    return wl.Plus(*args)
+    res = wl.Plus(*args)
+    return res
 
   def walk_minus(self, formula, args, **kwargs):
     assert(len(args) == 2)
     return wl.Plus(args[0], wl.Minus(args[1]))
 
   def walk_times(self, formula, args, **kwargs):
-    return wl.Times(*args)
+    res = wl.Times(*args)
+    return res
 
   def walk_div(self, formula, args, **kwargs):
     return wl.Divide(args[0],args[1])

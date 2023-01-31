@@ -22,6 +22,8 @@ from pysmt.exceptions import SolverAPINotFound
 
 from barrier.sympy_utils import gen_template_sympy
 
+import traceback
+
 def get_range(var_list, range_matrix):
     """
     Generates a box constraints.
@@ -105,8 +107,50 @@ def get_cvc5_smtlib(env = get_env()):
                 env.factory.add_generic_solver(name, [solver_path,"--incremental","--lang=smtlib","--print-success","--output-lang=smtlib","--produce-models"], logics)
 
 
-        solver = env.factory.Solver(name=name, logic=logics[0])
+        solver = env.factory.Solver(name=name, logic=logics[0],
+                                    solver_options={'debug_interaction':False})
     except:
+        raise SolverAPINotFound
+
+    return solver
+
+def get_dreal_smtlib(env = get_env()):
+    """
+    Get the dreal SMT lib solver
+    """
+
+    name = "dreal-smtlib"
+    logics = [QF_NRA]
+    try:
+        if not env.factory.is_generic_solver(name):
+            from shutil import which
+            solver_path = which("dreal")
+
+            if solver_path is None:
+                logging.debug("dreal path not found!")
+                print("Patg is none")
+            else:
+                print("Path found " + solver_path)
+                logging.debug("dreal path: %s" % solver_path)
+
+                args = [
+                    solver_path,
+                    "--in",
+                    "--format smt2",
+                    "--smtlib2-compliant",
+                    "--produce-models",
+                ]
+
+                print("Adding solver")
+                env.factory.add_generic_solver(name,
+                                               args,
+                                               logics)
+
+                print("Added solver, calling factory")
+        solver = env.factory.Solver(name=name, logic=logics[0])
+    except Exception as err:
+        print(err)
+        print(type(err))
         raise SolverAPINotFound
 
     return solver

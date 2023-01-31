@@ -102,3 +102,44 @@ class TestMathematica(TestCase):
         finally:
             MathematicaSession.terminate_session()
 
+
+class TestFindMin(TestCase):
+    @attr('mathematica')
+    @skipIfMathematicaIsNotAvailable()
+    def test_solve(self):
+        def test_approx(solver, val, expected):
+            if (expected is None) != (val is None):
+                return False
+            elif (expected is None and val is None):
+                return True
+            else:
+                delta = Real(Fraction(1,1000))
+                in_range = And(
+                    [
+                        LE(val, expected + delta),
+                        GE(val, Minus(expected, delta)),
+                    ]
+                )
+                return solver.is_sat(in_range)
+
+        env = get_env()
+        try:
+            solver = get_mathematica(env)
+
+            x,y = [Symbol(s,REAL) for s in ["x","y"]]
+
+
+            test_cases = [
+                (x,LE(x*x + y*y - 1, Real(0)),Real(-1)),
+                (x, GE(x,Real(0)), Real(0)),
+                (x, LE(x,Real(0)), None), # No minimum
+            ]
+
+            for (f, const, expected) in test_cases:
+                (min_value, min_model) = solver.find_min(f, const)
+                self.assertTrue(test_approx(solver, min_value, expected))
+
+        except SolverAPINotFound:
+            print("Mathematica not found - skipping test...")
+        finally:
+            MathematicaSession.terminate_session()
