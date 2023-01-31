@@ -268,7 +268,14 @@ class MathematicaSolver(Solver):
 
     return exist_res
 
+
   def find_min(self, function, constraints, round_precision = 6):
+    return self.find_optimal(function, constraints, True, round_precision)
+
+  def find_max(self, function, constraints, round_precision = 6):
+    return self.find_optimal(function, constraints, False, round_precision)
+
+  def find_optimal(self, function, constraints, is_minimum = True, round_precision = 6):
     # Note: The method is numeric and returns floating point (i.e., it's not
     # guarnateed.
     #
@@ -285,17 +292,23 @@ class MathematicaSolver(Solver):
     constraints_mat =  self.converter.convert(constraints)
     vars_list = wl.List(*[self.converter.convert(v) for v in free_vars])
 
-    cmd = wl.FindMinimum(wl.List(function_mat, constraints_mat),
-                         vars_list)
+    if is_minimum:
+      cmd = wl.FindMinimum(wl.List(function_mat, constraints_mat),
+                           vars_list)
+      infinity = wl.DirectedInfinity(-1)
+    else:
+      cmd = wl.FindMaximum(wl.List(function_mat, constraints_mat),
+                           vars_list)
+      infinity = wl.DirectedInfinity(1)
 
     res = self.session.evaluate(cmd)
 
-    if (wl.DirectedInfinity(-1) == res[0]):
-      # No minimum,
+    if (infinity == res[0]):
+      # No optimal
       return None, None
 
-    # Here we have a result, parsing minimum and model
-    min_value = myround(res[0], round_precision)
+    # Here we have a result, parsing optimal and model
+    opt_value = myround(res[0], round_precision)
 
     # Build the model finding the value
     assignment = {}
@@ -311,7 +324,7 @@ class MathematicaSolver(Solver):
       assignment[var] = value
 
     model = EagerModel(assignment=assignment)
-    return min_value, model
+    return opt_value, model
 
 
   def get_value(self, item):
