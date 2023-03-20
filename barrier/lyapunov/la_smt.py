@@ -16,7 +16,22 @@ import sympy as sp
 
 DEFAULT_PRECISION = 6
 
-def myround(n,k=DEFAULT_PRECISION):
+def myround(x, p=DEFAULT_PRECISION):
+  ''' Rounding performed keeping p significant figures. '''
+  import numpy as np
+  x = np.asarray(float(x))
+  x_positive = np.where(np.isfinite(x) & (x != 0), np.abs(x), 10**(p-1))
+  mags_power = (p - 1 - np.floor(np.log10(x_positive)))
+  mags = 10 ** mags_power
+  rounded = np.round(x * mags)
+  if mags_power < 0:
+    rounded = Fraction(int(rounded) * int(10**(-mags_power)))
+  else:
+    rounded = Fraction(int(rounded), int(mags))
+  return rounded
+
+def myround_decimal(n,k=DEFAULT_PRECISION):
+  ''' Rounding performed keeping p decimal figures. '''
   rounded = round(float(n),k)
   rounded = Fraction.from_float(rounded)
   rounded = rounded.limit_denominator(pow(10,k))
