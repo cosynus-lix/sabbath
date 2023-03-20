@@ -13,6 +13,7 @@ Plan:
 from collections import namedtuple
 import sys
 import fractions
+import logging
 
 from barrier.lyapunov.la_smt import (
   vect_times_matrix,
@@ -34,6 +35,7 @@ from pysmt.shortcuts import (
 )
 
 import numpy as np
+import sympy as sp
 import picos
 
 from barrier.lie import Derivator
@@ -153,8 +155,10 @@ def _get_lyapunov_smt(smt_vars, lf, lyapunov_smt, mode):
   V_m_list = lyapunov_smt[mode]
   return V_m_list
 
+def _check_implication(solver, smt_vars, implication, print_model=True, expr=None):
+  return solver.is_valid(implication)
 
-def _check_implication(solver, smt_vars, implication, print_model=True):
+def _check_implication_full(solver, smt_vars, implication, print_model=True):
   """
   Check if an implication is valid, printing counterexample for debug if it's not.
   """
@@ -834,7 +838,6 @@ def validate(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
 
   So, we verify that:
   0) beta > 0, alpha > 0
-
   1) x \in Inv(m) => x^t x <= V_m(x) <= beta x^t x
   2) x \in Inv(m) => V_m'(x) <= - alpha x^t x
   3) for each edge (m,G,U,m2) x \in G => V_m2(U(x)) <= V_m1(x)
@@ -1024,21 +1027,22 @@ def validate_eq_johansson(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
 
   return res
 
-
-
 def validate_single_mode_smt(derivator, smt_vars, smt_invar,
-                             V_m, m, is_exponential = False,
+                             V_m, P_sym, A_sympy, m, is_exponential = False,
                              alpha_smt = Real(0),
-                             solver = Solver(logic=QF_NRA, name="z3")):
+                             solver = Solver(logic=QF_NRA, name="z3"),
+                             use_determinant=True):
   """
   Validation that takes as input a derivator - so it can be obtained
   from the dynamical system (uses infinite precision arithmetic instead of the
   NumericAffineHSx
   """
+  import time
   V_m_der = derivator.get_lie_der(V_m)
   x_eq_zero = And([ Equals(x, Real(0)) for x in smt_vars])
   V_m_zero = V_m.substitute({v : Real(0) for v in smt_vars})
   V_m_der_zero = V_m_der.substitute({v : Real(0) for v in smt_vars})
+  Matrix_V_m_der = (sp.transpose(A_sympy) @ P_sym) + (P_sym @ A_sympy)
 
   # Check that:
   #   c1 := V_m(0) = 0
@@ -1051,36 +1055,61 @@ def validate_single_mode_smt(derivator, smt_vars, smt_invar,
   #
 
   c1 = Implies(smt_invar, Equals(V_m_zero, Real(0)))
-  c2 = Implies(And(smt_invar, Not(x_eq_zero)), GT(V_m, Real(0))) # UNSAT
+  if use_determinant:
+    # V_m >= 0
+    c2 = Implies(smt_invar, GE(V_m, Real(0))) # UNSAT
+  else:
+    # V_m > 0 per x!=0
+    c2 = Implies(And(smt_invar, Not(x_eq_zero)), GT(V_m, Real(0))) # UNSAT
+
   c3 = Implies(smt_invar, Equals(V_m_der_zero, Real(0)))
 
   if (not is_exponential):
-    c4 = Implies(And(smt_invar, Not(x_eq_zero)), LT(V_m_der, Real(0))) # UNSAT
+    if use_determinant:
+      # V_m_der <= 0:
+      c4 = Implies(And(smt_invar),  LE(V_m_der, Real(0) ) )# UNSAT
+    else:
+      # V_m_der < 0 per x != 0
+      c4 = Implies(And(smt_invar, Not(x_eq_zero)), LT(V_m_der, Real(0))) # UNSAT
+
   else:
     c4 = Implies(And(smt_invar, Not(x_eq_zero)),
                  LT(V_m_der, Times(alpha_smt, V_m))) # UNSAT
 
+
+  logging.info("validating V(0) = 0")
   if (not _check_implication(solver, smt_vars, c1)):
-    error = "V(0) = 0 does not hold"
-    res = False
+    logging.critical("V(0) = 0 does not hold")
+    return False, None
+
+  logging.info("validating der(V)(0) = 0")
   if (not _check_implication(solver, smt_vars, c3)):
-    error = "der(V)(0) = 0 does not hold"
-    res = False
-  elif (not _check_implication(solver, smt_vars, c2)):
-    error = "V(x) <= 0 for some x != 0"
-    res = False
-  elif (not _check_implication(solver, smt_vars, c4)):
-    error = "der(V)(x) >= 0 for some x != 0"
-    res = False
-  else:
-    res = True
+    logging.critical("der(V)(0) = 0 does not hold")
+    return False, None
 
-  if (not res):
-    print(error)
-    return (False, None)
-  else:
-    return (True, V_m)
+  s = time.time()
+  logging.info("validating V(x) > 0 for all x != 0")
+  if use_determinant and sp.Determinant(P_sym).doit() == 0:
+    logging.critical("C1 is invalid: V(x) = 0 for some x != 0")
+    return False, None
+  if (not _check_implication(solver, smt_vars, c2, expr=V_m)):
+    logging.critical("C1 is invalid: V(x) <= 0 for some x != 0")
+    return False, None
+  s1 = time.time()
+  logging.critical(f"Time for validating c1: {round(s1 - s, 2)}")
 
+  s = s1
+  logging.info("validating der(V)(x) < 0 for all x != 0")
+  if use_determinant and sp.Determinant(Matrix_V_m_der).doit() == 0:
+    logging.critical("C2 is invalid: det(V)(x) = 0 for some x != 0")
+    return False, None
+  if (not _check_implication(solver, smt_vars, c4, expr=V_m_der)):
+    logging.critical("C2 is invalid: der(V)(x) >= 0 for some x != 0")
+    return False, None
+  s1 = time.time()
+  logging.critical(f"Time for validating c2: {round(s1 - s, 2)}")
+
+  return True, V_m
 
 def validate_single_mode(hs, lf, m, is_exponential = False,
                          alpha = 0,

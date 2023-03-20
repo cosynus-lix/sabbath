@@ -12,6 +12,7 @@ from pysmt.shortcuts import (
   GE, LE, LT, GT, Equals,
   substitute
 )
+import sympy as sp
 
 DEFAULT_PRECISION = 6
 
@@ -96,3 +97,9 @@ def to_smt_matrix(np_matrix, k = DEFAULT_PRECISION):
     res = to_smt_vect(np_matrix[i], k)
     smt_matrix.append(res)
   return smt_matrix
+
+def to_sym_matrix(A, k = DEFAULT_PRECISION):
+  A_sympy=[]
+  for ind in range(0,len(A)):
+    A_sympy.append(sp.Matrix([myround(x) for x in A[ind]]).transpose())
+  return sp.Matrix(A_sympy)
