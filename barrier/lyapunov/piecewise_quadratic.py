@@ -15,6 +15,8 @@ import sys
 import fractions
 import logging
 
+from barrier.system import DynSystem
+
 from barrier.lyapunov.la_smt import (
   vect_times_matrix,
   dot_product_smt,
@@ -173,6 +175,10 @@ def _check_implication_full(solver, smt_vars, implication, print_model=True):
       assert(le.is_le())
       return Minus(le.args()[0], le.args()[1])
 
+    def get_lt_val(le):
+      assert(le.is_lt())
+      return Minus(le.args()[0], le.args()[1])
+
     def get_float_val_model(model, exp):
       smt_val = model.get_value(exp)
       float_val = float(fractions.Fraction(smt_val.serialize()))
@@ -180,6 +186,10 @@ def _check_implication_full(solver, smt_vars, implication, print_model=True):
 
     def get_float_val_le(model, exp):
       return get_float_val_model(model, get_le_val(exp))
+
+    def get_float_val_lt(model, exp):
+      return get_float_val_model(model, get_lt_val(exp))
+
 
     implicant = implication.args()[0].simplify()
     consequent = implication.args()[1].simplify()
@@ -195,6 +205,8 @@ def _check_implication_full(solver, smt_vars, implication, print_model=True):
             stack.append(a)
         elif f.is_le():
           print(f, " := ", get_float_val_le(model, f), " <= 0")
+        elif f.is_lt():
+          print(f, " := ", get_float_val_lt(model, f), " < 0")
         else:
           print(f, " = ", model.get_value(f))
 
@@ -951,6 +963,79 @@ def validate(hs, lf, solver = Solver(logic=QF_NRA, name="z3")):
         print(error)
         return False
 
+  return True
+
+
+def validate_ohlerking(states,
+                       A0, A1,
+                       switch_pred,
+                       LF0, LF1,
+                       solver = Solver(logic=QF_NRA, name="z3")):
+  """
+  TODO: merge with validate.
+
+  WARNING: assume switching systems! (so, x' = x on jump)
+
+  Conditions on the Global Lyapunov Function from theorem 3.5
+
+  We check the following conditions for each mode m:
+  """
+
+  assert (len(states) == A0.shape[0] and
+          len(states) == A1.shape[0])
+
+
+  sys0 = DynSystem.get_from_matrix(states, A0, None)
+  sys1 = DynSystem.get_from_matrix(states, A1, None)
+
+  # DEBUG
+  tmp1, tmp2 = sys0.get_derivator().get_sympy_matrix_equations(sys0._odes.values(),
+                                                           states)
+  assert (tmp1 == A0)
+  assert (tmp2 == sp.zeros(len(states),1))
+  tmp1, tmp2 = sys1.get_derivator().get_sympy_matrix_equations(sys1._odes.values(),
+                                                               states)
+  assert (tmp1 == A1)
+  assert (tmp2 == sp.zeros(len(states),1))
+
+  d0 = sys0.get_derivator()
+  d1 = sys1.get_derivator()
+
+  m0_invariant = LE(switch_pred, Real(0))
+  m1_invariant = Not(m0_invariant)
+
+  # Positive
+  c1_0 = Implies(m0_invariant, GE(LF0, Real(0)))
+  c1_1 = Implies(m1_invariant, GE(LF1, Real(0)))
+
+  # Derivative positive
+  LF0_der = sys0.get_derivator().get_lie_der(LF0)
+
+  x_eq_zero = And([ Equals(x, Real(0)) for x in states[:-1]])
+  c2_0 = Implies(And(m0_invariant, Not(x_eq_zero)),
+                 LT(LF0_der, Real(0)))
+  # c2_0 = Implies(m0_invariant, LE(LF0_der, Real(0)))
+
+  LF1_der = sys1.get_derivator().get_lie_der(LF0)
+  c2_1 = Implies(And(m1_invariant, Not(x_eq_zero)),
+                 LT(LF1_der, Real(0)))
+  # c2_1 = Implies(m1_invariant, LE(LF1_der, Real(0)))
+
+  # Does not decrease on switch
+  cswitch = Implies(Equals(switch_pred, Real(0)), Equals(LF0,LF1))
+
+  check = [(c1_0,"Lyap m0 can be negative"),
+           (c1_1,"Lyap m1 can be negative"),
+           (c2_0,"Lyap m0 can increase"),
+           (c2_1,"Lyap m1 can increase"),
+           (cswitch,"Switching does not work")
+           ]
+
+  for c,msg in check:
+    print("CHECK")
+    if not _check_implication_full(solver, states, c):
+      print("Fail ", msg)
+      return False
   return True
 
 

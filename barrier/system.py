@@ -23,7 +23,56 @@ from barrier.formula_utils import FormulaHelper
 class MalformedSystem(Exception):
     pass
 
+def matrix_times_vect_tmp(vect, matrix):
+  """
+  matrix x vect, where matrix is [m x n] vect is [n x 1], .
+  Result is the dot product, [m x 1] vector.
+
+  vect and matrix should contain Real numbers (from pysmt)
+  """
+  res = []
+  for row_index in range(len(matrix)):
+    assert(len(matrix[row_index]) == len(vect))
+
+    index_term = Real(0)
+    for column_index in range(len(vect)):
+      num = matrix[row_index][column_index]
+      coefficient = num
+      index_term = index_term + Times(vect[column_index], coefficient)
+    res.append(simplify(index_term))
+  return res
+
+
 class DynSystem(object):
+
+    @staticmethod
+    def get_from_matrix(states, A, B):
+        """
+        Creates a system out of a A and B matrix from sympy
+        """
+        derivator = Derivator({})
+
+        A_smt = []
+        assert (len(states) == A.shape[0])
+        for i in range(A.shape[0]):
+            vect = []
+            for j in range(A.shape[1]):
+                elem = A[i,j]
+                vect.append(derivator._get_pysmt_expr(elem))
+            A_smt.append(vect)
+
+        odes_vec = matrix_times_vect_tmp(states,A_smt)
+        if not (B is None):
+            assert (B.shape[0] == len(A_smt)) # same number of rows
+            for j in range(B.shape[0]):
+                odes_vec[j] = odes_vec[j] + derivator._get_pysmt_expr(B[j])
+
+        odes = {}
+        for j in range(len(odes_vec)):
+            odes[states[j]] = odes_vec[j]
+
+        return DynSystem(states, [], [], odes, {}, {})
+
 
     def __init__(self, states, inputs, disturbances, odes,
                  dist_constraints, check_malformed = True):
