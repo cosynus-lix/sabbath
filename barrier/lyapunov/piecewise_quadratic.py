@@ -970,7 +970,9 @@ def validate_ohlerking(states,
                        A0, A1,
                        switch_pred,
                        LF0, LF1,
-                       solver = Solver(logic=QF_NRA, name="z3")):
+                       solver = Solver(logic=QF_NRA, name="z3"),
+                       is_hybrid = False,
+                       hp_c1=None,hp_c2=None):
   """
   TODO: merge with validate.
 
@@ -1021,15 +1023,24 @@ def validate_ohlerking(states,
                  LT(LF1_der, Real(0)))
   # c2_1 = Implies(m1_invariant, LE(LF1_der, Real(0)))
 
-  # Does not decrease on switch
-  cswitch = Implies(Equals(switch_pred, Real(0)), Equals(LF0,LF1))
 
   check = [(c1_0,"Lyap m0 can be negative"),
            (c1_1,"Lyap m1 can be negative"),
            (c2_0,"Lyap m0 can increase"),
            (c2_1,"Lyap m1 can increase"),
-           (cswitch,"Switching does not work")
            ]
+
+  if (not is_hybrid):
+    # Does not decrease on switch
+    cswitch = Implies(Equals(switch_pred, Real(0)), Equals(LF0,LF1))
+
+    check.append((cswitch,"Switching does not work"))
+  else:
+    # V1 > V2 nei punti in cui vado da 1 a 2 sull'iperpiano descritto dall'equazione
+    check.append((Implies(hp_c1, GT(LF0, LF1)),"Not LF_0 > LF_1 on switch"))
+    check.append((Implies(hp_c2, GT(LF1, LF0)),"Not LF_1 > LF_0 on switch"))
+
+
 
   for c,msg in check:
     print("CHECK")
