@@ -182,7 +182,7 @@ class TestDecomposition(TestCase):
         # (dyn_sys, invar, abstraction, init, safe, expected)
         return (dyn_sys, TRUE(),[x,y], init, safe, (Result.UNKNOWN, []))
 
-    @unittest.skip("To fix, see issue ")
+    @unittest.skip("To fix, see issue #27")
     def test_invar_lazy(self):
         test_cases = [TestDecomposition.get_test_case_1(),
                       TestDecomposition.get_test_case_2(),
