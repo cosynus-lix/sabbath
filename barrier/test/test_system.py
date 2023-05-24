@@ -14,7 +14,7 @@ import sys
 
 from pysmt.typing import BOOL
 from pysmt.shortcuts import (
-    Symbol, TRUE, FALSE, get_env, GE, Real, Equals, Solver
+    Symbol, TRUE, FALSE, get_env, GE, Real, Equals, Solver,
     Not, And, Or, Implies, Iff, ExactlyOne, is_valid
 )
 from pysmt.typing import REAL

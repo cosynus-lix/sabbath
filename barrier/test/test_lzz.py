@@ -11,6 +11,7 @@ try:
     import unittest2 as unittest
 except ImportError:
     import unittest
+from unittest import skip
 
 from nose.plugins.attrib import attr
 
@@ -373,6 +374,7 @@ class TestLzz(TestCase):
                                                                   div_ode))
                 self.assertFalse(div_candidate or div_invar or div_ode)
 
+    @unittest.skip("Skip. Candidate is not a differential invariant, still need to find one.")
     def test_linear(self):
         x, t = [Symbol(var, REAL) for var in ["x","t"]]
         # der(x) = -2y, der(y) = x^2

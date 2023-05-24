@@ -97,3 +97,25 @@ class skipIfSOSIsNotAvailable(object):
             return test_fun(*args, **kwargs)
         return wrapper
 
+
+class skipIfPicosIsNotAvailable(object):
+    """Skip a test if picos is not available."""
+
+    def __init__(self):
+        try:
+            import picos
+            self.has_picos = True
+        except ImportError:
+            self.has_picos = False
+
+    def __call__(self, test_fun):
+        msg = "SoS solver not available"
+        skip = not self.has_picos
+        @unittest.skipIf(skip, msg)
+        @wraps(test_fun)
+        def wrapper(*args, **kwargs):
+            return test_fun(*args, **kwargs)
+        return wrapper
+
+
+
