@@ -31,11 +31,11 @@ class TestSystem(TestCase):
         self.env = reset_env()
 
     def test_ts(self):
-        def test_ts_impl(ts, safe):
+        def test_ts_impl(ts, safe, env):
             outstream = StringIO()
             ts.to_vmt(outstream, safe)
             outstream.seek(0)
-            (ts_new, safe_new) = TS.from_vmt(outstream)
+            (ts_new, safe_new) = TS.from_vmt(outstream, env)
             self.assertTrue(is_valid(Iff(ts.init, ts_new.init)))
             self.assertTrue(is_valid(Iff(ts.trans, ts_new.trans)))
             self.assertTrue(is_valid(Iff(safe, safe_new)))
@@ -43,21 +43,21 @@ class TestSystem(TestCase):
         def test_ts_file(filename):
             with open(filename, "r") as f:
                 (ts, safe) = TS.from_vmt(f)
-                test_ts_impl(ts, safe)
+                test_ts_impl(ts, safe, self.env)
 
-        env = get_env()
+        self.env = get_env()
 
         x,y,z = Symbol("x"), Symbol("y"), Symbol("z")
         next_x,next_y,next_z = Symbol("x_next"), Symbol("y_next"), Symbol("z_next")
 
         next_f = lambda l : {x : next_x, y : next_y, z : next_z }[l]
 
-        ts = TS(env,
+        ts = TS(self.env,
                 [x,y,z], next_f,
                 And(x,y),
                 And(And(Iff(next_x, x), Implies(x, next_y)),
                     Iff(z, Not(next_x))))
-        test_ts_impl(ts, TRUE())
+        test_ts_impl(ts, TRUE(), self.env)
 
         current_path = os.path.dirname(os.path.abspath(__file__))
         input_path = os.path.join(current_path, "vmt_models")
