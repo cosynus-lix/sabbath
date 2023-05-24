@@ -20,6 +20,8 @@ from pysmt.shortcuts import *
 from pysmt.typing import REAL
 
 from barrier.lie import get_inverse_odes, Derivator
+from barrier.formula_utils import FormulaHelper
+
 
 from barrier.ts import TS
 
@@ -27,7 +29,56 @@ from barrier.ts import TS
 class MalformedSystem(Exception):
     pass
 
+def matrix_times_vect_tmp(vect, matrix):
+  """
+  matrix x vect, where matrix is [m x n] vect is [n x 1], .
+  Result is the dot product, [m x 1] vector.
+
+  vect and matrix should contain Real numbers (from pysmt)
+  """
+  res = []
+  for row_index in range(len(matrix)):
+    assert(len(matrix[row_index]) == len(vect))
+
+    index_term = Real(0)
+    for column_index in range(len(vect)):
+      num = matrix[row_index][column_index]
+      coefficient = num
+      index_term = index_term + Times(vect[column_index], coefficient)
+    res.append(simplify(index_term))
+  return res
+
+
 class DynSystem(object):
+
+    @staticmethod
+    def get_from_matrix(states, A, B):
+        """
+        Creates a system out of a A and B matrix from sympy
+        """
+        derivator = Derivator({})
+
+        A_smt = []
+        assert (len(states) == A.shape[0])
+        for i in range(A.shape[0]):
+            vect = []
+            for j in range(A.shape[1]):
+                elem = A[i,j]
+                vect.append(derivator._get_pysmt_expr(elem))
+            A_smt.append(vect)
+
+        odes_vec = matrix_times_vect_tmp(states,A_smt)
+        if not (B is None):
+            assert (B.shape[0] == len(A_smt)) # same number of rows
+            for j in range(B.shape[0]):
+                odes_vec[j] = odes_vec[j] + derivator._get_pysmt_expr(B[j])
+
+        odes = {}
+        for j in range(len(odes_vec)):
+            odes[states[j]] = odes_vec[j]
+
+        return DynSystem(states, [], [], odes, {}, {})
+
 
     def __init__(self, states, inputs, disturbances, odes,
                  dist_constraints, check_malformed = True):
@@ -118,6 +169,64 @@ class DynSystem(object):
                             False)
         return inverse
 
+    def get_rescaled_by_equilibrium_point(self):
+        """ Works on linear systems.
+
+        - Finds the equilibrium points of the system
+        - Computes the rescaled linear system
+
+
+        x' = Ax + b
+        Equilibrium point e such that Ax + b = e
+
+        Change of coordinates to z = x - e, so x = z + e
+
+        So, x' = Ax + b
+            (z+e)' = A(z+e) + b
+            z' = Az + Ae + b
+            z' = Az
+
+        If we have a f(z), we get a f'(x) = f(z + e)
+
+        """
+
+        assert (self.is_linear())
+        assert (len(self._inputs) == 0)
+        assert (len(self._disturbances) == 0)
+        assert (len(self._dist_constraints) == 0)
+
+        # find equlibrium point(s)
+        solutions = self.get_derivator().get_all_solutions_linear_system(self._odes.values(),
+                                                                         self._states)
+        rescaled_systems = []
+        for solution in solutions:
+            rescaled_states = []
+            rename_map_body = {}
+            z2x = {}
+            new_odes = {}
+            for x in self._states:
+                z = FormulaHelper.get_fresh_var_name(get_env().formula_manager,
+                                                     x.symbol_name(),
+                                                     x.symbol_type())
+                rescaled_states.append(z)
+                # Rename x to z (i.e., we susbstitute x with z + e)
+                rename_map_body[x] = z + solution[x]
+                # Rename z to x (i.e., we substitute z with x - e
+                z2x[z] = x - solution[x]
+
+            for x,z in zip(self._states, rescaled_states):
+                new_odes[z] = substitute(self.get_ode(x), rename_map_body)
+
+            rescaled_system = DynSystem(rescaled_states,
+                                        [],
+                                        [],
+                                        new_odes,
+                                        {},
+                                        False)
+            rescaled_systems.append((rescaled_system, solution, z2x))
+
+        return rescaled_systems
+
     def get_derivator(self, pysmt2sympy= None, sympy2pysmt = None):
         """ Return the derivator object for the
         dynamical system.
@@ -153,7 +262,7 @@ class DynSystem(object):
 
     def get_ode(self, var):
         if var not in self._states:
-            raise Exeption("Not a state var!")
+            raise Exception("Not a state var!")
         else:
             return self._odes[var]
 
@@ -162,6 +271,14 @@ class DynSystem(object):
         for x in self._states:
             odes[x] = self._odes[x]
         return odes
+
+    def is_linear(self):
+        """ Returns true if the system is linear (in all the variables, not only the state ones) """
+        for ode in self._odes.values():
+            degree = self.get_derivator().get_poly_degree(ode)
+            if (degree > 1):
+                return False
+        return True
 
     # TODO: add logging to the function
     def __check_syntax__(self):

@@ -58,11 +58,12 @@ def _get_preds_ia_list(poly):
     )
 
 def _get_lzz_in(opt, derivator, preds_list, next_f, lzz_f):
+    bound = None
     current_impl = lambda p : Implies(p, lzz_f(p))
     next_impl = lambda p : Implies(next_f(p),
-                                   get_inf_dnf(opt, derivator, lzz_f(p)))
+                                   get_inf_dnf(opt, derivator, bound, lzz_f(p)))
     and_not_inf = lambda p : And(p,
-                                 Not(get_inf_dnf(opt, derivator, lzz_f(p))))
+                                 Not(get_inf_dnf(opt, derivator, bound, lzz_f(p))))
 
     return And([And(list(map(current_impl, preds_list))),
                 And(list(map(next_impl, preds_list))),
@@ -70,7 +71,8 @@ def _get_lzz_in(opt, derivator, preds_list, next_f, lzz_f):
 
 
 def _get_lzz_out(opt, derivator, preds_list, next_f, lzz_f):
-    current_impl = lambda p : Implies(p, get_ivinf_dnf(opt, derivator, lzz_f(p)))
+    bound = None
+    current_impl = lambda p : Implies(p, get_ivinf_dnf(opt, derivator, bound, lzz_f(p)))
     next_impl = lambda p : Implies(next_f(p), lzz_f(p))
     and_not_inf = lambda p : And(p, Not(lzz_f(p)))
 

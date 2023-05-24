@@ -108,11 +108,10 @@ def main():
     invar_problem = problem_list[0]
     (problem_name, init, safe, dyn_sys, invariants, predicates) = invar_problem
     print("parsed problem...")
-
-    # print(dyn_sys)
-    # print(invariants.serialize())
-    # print(init.serialize())
-    # print(safe.serialize())
+    print(dyn_sys)
+    print("Invariant ", invariants.serialize())
+    print("Init ", init.serialize())
+    print("Safe ", safe.serialize())
 
     # Read predicates
     if (args.lzz_use_remainders):
@@ -232,14 +231,6 @@ def main():
         else:
             assert args.direct_encoding == "false"
             direct_encoding = False
-
-        simplified_encoding = False
-        if (args.simplified_ia_encoding == "true"):
-            simplified_encoding = True
-        else:
-            assert args.simplified_ia_encoding == "false"
-            simplified_encoding = False
-
         print("Re-encoding init and prop? %d" % encode_init_and_prop)
 
         opt = DecompositionOptions(encode_init_and_prop,

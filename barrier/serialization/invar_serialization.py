@@ -72,7 +72,12 @@ def readVar(parser, var_decl, all_vars):
         elif cmd.name == smtcmd.DEFINE_FUN:
             (var, formals, typename, body) = cmd.args
 
-def parse_dyn_sys(env, problem_json, is_check_problem = False):
+def parse_dyn_sys(env, problem_json, is_check_problem = False, only_ode = False):
+    """
+    is_check_problem: true if the problem is to check if a differential invariant holds (so, need to read candidate and not antecendent and consequent)
+    only_ode: parse a dynamical system and not a hybrid system
+    """
+
     parser = SmtLibParser(env)
 
     # Read all the variables
@@ -88,22 +93,29 @@ def parse_dyn_sys(env, problem_json, is_check_problem = False):
         readVar(parser, var_decl, cont_vars)
 
     if (not is_check_problem):
-        # Antecedent
-        antecedent = fromStringFormula(parser, vars_decl_str, problem_json["antecedent"])
-        # Consequent
-        consequent = fromStringFormula(parser, vars_decl_str, problem_json["consequent"])
+        if not (only_ode):
+            # Antecedent
+            antecedent = fromStringFormula(parser, vars_decl_str, problem_json["antecedent"])
+            # Consequent
+            consequent = fromStringFormula(parser, vars_decl_str, problem_json["consequent"])
 
-        predicates = []
-        for pred_json in problem_json["predicates"]:
-            pred_eq_0 = fromStringFormula(parser, vars_decl_str, pred_json)
-            pred = pred_eq_0.args()[0]
-            predicates.append(pred)
+            predicates = []
+            for pred_json in problem_json["predicates"]:
+                pred_eq_0 = fromStringFormula(parser, vars_decl_str, pred_json)
+                pred = pred_eq_0.args()[0]
+                predicates.append(pred)
     else:
-        # Invariant candidate
-        candidate = fromStringFormula(parser, vars_decl_str, problem_json["candidate"])
+        if not (only_ode):
+            # Invariant candidate
+            candidate = fromStringFormula(parser, vars_decl_str, problem_json["candidate"])
+        else:
+            candidate = None
 
     # Invariant of the dynamical system
-    invar = fromStringFormula(parser, vars_decl_str, problem_json["constraints"])
+    if (not only_ode):
+        invar = fromStringFormula(parser, vars_decl_str, problem_json["constraints"])
+    else:
+        invar = None
 
     # Discrete variables (e.g., parameters) that are not in the
     # continuous variables become (discrete) inputs.

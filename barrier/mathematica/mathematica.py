@@ -1,6 +1,8 @@
 from six.moves import xrange
 import logging
 
+from fractions import Fraction
+
 from concurrent.futures import TimeoutError
 
 try:
@@ -12,18 +14,28 @@ except:
   pass
 
 from pysmt.exceptions import SolverAPINotFound
-from pysmt.logics import QF_NRA
+from pysmt.logics import QF_NRA, QF_LRA, NRA, LRA
 from pysmt import typing as types
 from pysmt.solvers.solver import Solver, Converter, SolverOptions
+from pysmt.solvers.qelim import QuantifierEliminator
+
 from pysmt.solvers.eager import EagerModel
 from pysmt.walkers import DagWalker
-from pysmt.constants import Fraction, is_pysmt_fraction, is_pysmt_integer
+from pysmt.constants import is_pysmt_fraction, is_pysmt_integer
 from pysmt.decorators import clear_pending_pop, catch_conversion_error
 
 from pysmt.exceptions import (PysmtException, ConvertExpressionError,
                               PysmtValueError, PysmtTypeError)
 from pysmt.oracles import get_logic
-from pysmt.shortcuts import get_env
+from pysmt.typing import REAL
+from pysmt.shortcuts import (
+  get_env, TRUE, FALSE,
+  Real, Symbol, Pow
+)
+
+
+# DEBUG
+DEBUG_CONVERSION = True
 
 class OutOfTimeSolverError(PysmtException):
   def __init__(self, budget):
@@ -32,7 +44,10 @@ class OutOfTimeSolverError(PysmtException):
 
 
 def has_kernel():
-  return not (find_default_kernel_path() is None)
+  try:
+    return not (find_default_kernel_path() is None)
+  except:
+    return None
 
 def exit_callback_print_time(solver, outstream):
     if (not solver.session is None):
@@ -49,7 +64,7 @@ class MathematicaSession():
 
   @staticmethod
   def get_session():
-    if not has_kernel():
+    if has_kernel() is None or not has_kernel():
       raise SolverAPINotFound
 
     if MathematicaSession._session is None:
@@ -153,16 +168,23 @@ class MathematicaSolver(Solver):
 
     # Here is where we call Reduce from Mathematica
     free_vars = to_solve.get_free_variables()
-    exists_formula = self.mgr.Exists(free_vars, to_solve)
-    mathematica_exists_formula = self.converter.convert(exists_formula)
 
-    reduce_cmd = wl.Reduce(mathematica_exists_formula, wlexpr('Reals'))
+    generate_model = True
+
+    if (not generate_model):
+      exists_formula = self.mgr.Exists(free_vars, to_solve)
+      mathematica_exists_formula = self.converter.convert(exists_formula)
+
+      reduce_cmd = wl.Reduce(mathematica_exists_formula, wlexpr('Reals'))
+    else:
+      vars_list = wl.List(*[self.converter.convert(v) for v in free_vars])
+
+      mathematica_formula = self.converter.convert(to_solve)
+      reduce_cmd = wl.FindInstance(mathematica_formula, vars_list, wlexpr('Reals'))
 
     budget_time = self.options.budget_time
     if (self.options.budget_time > 0):
-      remaining_time = (
-        self.options.budget_time -
-        self.used_time)
+      remaining_time = (self.options.budget_time - self.used_time)
 
       if (remaining_time <= 0):
         if (not None is self._exit_callback):
@@ -173,35 +195,148 @@ class MathematicaSolver(Solver):
       timing = self.session.evaluate(wl.TimeUsed())
       logging.debug("Dummy command done...")
 
-      timed_eval_cmd = wl.TimeConstrained(reduce_cmd,
-                                          remaining_time)
+      timed_eval_cmd = wl.TimeConstrained(reduce_cmd, wlexpr('%s' % remaining_time))
+
       logging.debug("About to evaluate an expression with Mathematica...")
       exist_res = self.session.evaluate(timed_eval_cmd)
       logging.debug("Mathematica expression evaluated...")
-
-      if (type(exist_res) != bool):
-        if (exist_res.name == '$Aborted'):
-          self.used_time += remaining_time
-          if (not None is self._exit_callback):
-            self._exit_callback(self)
-          raise OutOfTimeSolverError(self.options.budget_time)
-      self.used_time = self.session.evaluate(wl.TimeUsed())
     else:
       exist_res = self.session.evaluate(reduce_cmd)
 
     # Invalidate cached model
     self.latest_model = None
+
+    # TODO: generate a pysmt model to be compliant
+    if generate_model:
+      if (isinstance(exist_res, wolframclient.language.expression.WLFunction) and
+          isinstance(exist_res[0] , (bool))):
+        if exist_res[0]:
+          d = {}
+          model = EagerModel(assignment=d)
+          self.latest_model = model
+          exist_res = True
+        else:
+          exist_res = False
+      elif len(exist_res) > 0:
+
+        # Construct the model
+        d = {}
+        for assignment in exist_res[0]:
+          if (isinstance(assignment, wolframclient.language.expression.WLFunction)):
+            node_type = assignment.head
+            if (isinstance(node_type, wolframclient.language.expression.WLSymbol)):
+              try:
+                var = self.converter.back(assignment.args[0])
+                value = self.converter.back(assignment.args[1])
+              except NotImplementedError:
+                # return result but invalidate the model
+                # Need to deal with algebraic numbers...
+                self.latest_model = None
+                return exist_res
+
+              d[var] = value
+            else:
+              raise NotImplementedError("Error parsing the models from mathematica!")
+          else:
+            raise NotImplementedError("Error parsing the models from mathematica!")
+
+        model = EagerModel(assignment=d)
+        self.latest_model = model
+        exist_res = True
+      else:
+        if (self.options.budget_time > 0):
+          if (exist_res == ()):
+            exist_res = False
+          elif (exist_res.name == '$Aborted'):
+            self.used_time += remaining_time
+            if (not None is self._exit_callback):
+              self._exit_callback(self)
+            raise OutOfTimeSolverError(self.options.budget_time)
+        else:
+          exist_res = False
+    else:
+      if (self.options.budget_time > 0):
+        if (type(exist_res) != bool):
+          if (exist_res.name == '$Aborted'):
+            self.used_time += remaining_time
+            if (not None is self._exit_callback):
+              self._exit_callback(self)
+            raise OutOfTimeSolverError(self.options.budget_time)
+
+    if (self.options.budget_time > 0):
+        self.used_time = self.session.evaluate(wl.TimeUsed())
+
     return exist_res
 
+
+  def find_min(self, function, constraints, round_precision = 6):
+    return self.find_optimal(function, constraints, True, round_precision)
+
+  def find_max(self, function, constraints, round_precision = 6):
+    return self.find_optimal(function, constraints, False, round_precision)
+
+  def find_optimal(self, function, constraints, is_minimum = True, round_precision = 6):
+    # Note: The method is numeric and returns floating point (i.e., it's not
+    # guarnateed.
+    #
+    def myround(n,k):
+      rounded = round(float(n),k)
+      rounded = Fraction.from_float(rounded)
+      rounded = rounded.limit_denominator(pow(10,k))
+      return Real(rounded)
+
+    free_vars = function.get_free_variables()
+    free_vars = free_vars.union(constraints.get_free_variables())
+
+    function_mat = self.converter.convert(function)
+    constraints_mat =  self.converter.convert(constraints)
+    vars_list = wl.List(*[self.converter.convert(v) for v in free_vars])
+
+    if is_minimum:
+      cmd = wl.FindMinimum(wl.List(function_mat, constraints_mat),
+                           vars_list)
+      infinity = wl.DirectedInfinity(-1)
+    else:
+      cmd = wl.FindMaximum(wl.List(function_mat, constraints_mat),
+                           vars_list)
+      infinity = wl.DirectedInfinity(1)
+
+    res = self.session.evaluate(cmd)
+
+    if (infinity == res[0]):
+      # No optimal
+      return None, None
+
+    # Here we have a result, parsing optimal and model
+    opt_value = myround(res[0], round_precision)
+
+    # Build the model finding the value
+    assignment = {}
+    for rule in res[1]:
+      assert len(rule.args) == 2
+      assert (type(rule.args[1]) == float)
+
+      var = self.converter.back(rule.args[0])
+      assert not var in assignment
+
+      value = myround(rule.args[1], round_precision)
+
+      assignment[var] = value
+
+    model = EagerModel(assignment=assignment)
+    return opt_value, model
+
+
   def get_value(self, item):
-    if self.latest_model is None:
-      self.get_model()
-    return self.latest_model.get_value(item)
+    assert (not self.latest_model is None)
+    return self.latest_model[item]
 
   def get_model(self):
-    # We should call FindInstance to find a model (instead o resolve)
+    # We should call FindInstance to find a model (instead o reduce)
     # The main issue is to parse algebraic numbers
-    raise NotImplementedError
+    assert (not self.latest_model is None)
+
+    return self.latest_model
 
   @clear_pending_pop
   def push(self, levels=1):
@@ -230,6 +365,22 @@ class MathematicaConverter(Converter, DagWalker):
   Does not implement the back conversion!
   """
 
+  @staticmethod
+  def powertotimes(term, args):
+    # issue - mathematica returns negative powers for variables
+    # we would need to pre-process mathematica result to
+    # - remove the variables from the denominators
+    # - add a condition forcing the denominator to be non-zero (a new conjunction)
+    #   - Mathematica usually already has such condition in the formula
+
+    raise NotImplementedError("Conversion of Pow operator from mathematica not supported ")
+
+    # return Pow(term, args[0])
+
+  def sanitize(self, identifier):
+    """ Just returns the identifier removing special characters """
+    return identifier.replace("_", "underscore")
+
   def __init__(self, environment):
     DagWalker.__init__(self)
 
@@ -240,6 +391,120 @@ class MathematicaConverter(Converter, DagWalker):
     # todo: remember mapping of symbols
     # todo: implement back mapping
 
+    self.back_memoization = {}
+    self.back_fun = {
+      # wl.True
+      # mathsat.MSAT_TAG_TRUE: lambda term, args: self.mgr.TRUE(),
+      # mathsat.MSAT_TAG_FALSE:lambda term, args: self.mgr.FALSE(),
+
+      wl.Plus : self._back_adapter(self.mgr.Plus),
+      wl.Times : self._back_adapter(self.mgr.Times),
+      wl.Divide : self._back_adapter(self.mgr.Div),
+
+      wl.Equal : self._back_adapter(self.mgr.Equals),
+      wl.LessEqual : self._back_adapter(self.mgr.LE),
+      wl.Less : self._back_adapter(self.mgr.LT),
+
+      wl.GreaterEqual : lambda term, args: self.mgr.LE(args[1],args[0]),
+      wl.Greater : lambda term, args: self.mgr.LT(args[1], args[0]),
+
+      wl.And : self._back_adapter(self.mgr.And),
+      wl.Or : self._back_adapter(self.mgr.Or),
+      wl.Not : self._back_adapter(self.mgr.Not),
+      wl.Equivalent : self._back_adapter(self.mgr.Iff),
+      wl.Implies : self._back_adapter(self.mgr.Implies),
+
+      wl.Exists : lambda term, args: self.mgr.Exists(),
+      wl.ForAll : lambda term, args: self.mgr.ForAll() ,
+
+      wl.Power : lambda term, args: MathematicaConverter.powertotimes(term, args) ,
+
+      # # Symbols, Constants and UFs have TAG_UNKNOWN
+      # mathsat.MSAT_TAG_UNKNOWN: self._back_tag_unknown,
+    }
+
+    return
+
+  def back(self, expr):
+    return self._walk_back(expr, self.mgr)
+
+  def _back_adapter(self, op):
+    """Create a function that for the given op.
+      This is used in the construction of back_fun, to simplify the code.
+    """
+    def back_apply(term, args):
+      return op(*args)
+    return back_apply
+
+  def _back_single_term(self, term, mgr, args):
+    """Builds the pysmt formula given a term and the list of formulae
+    obtained by converting the term children.
+    :param term: The Mathematica term to be transformed in pysmt formulae
+    :type term: mathematica term
+    :param mgr: The formula manager to be sued to build the
+    formulae, it should allow for type unsafety.
+    :type mgr: Formula manager
+    :param args: List of the pysmt formulae obtained by converting
+    all the args (obtained by mathsat.msat_term_get_arg()) to
+    pysmt formulae
+    :type args: List of pysmt formulae
+    :returns The pysmt formula representing the given term
+    :rtype Pysmt formula
+    """
+
+    head = term.head
+
+    try:
+      return self.back_fun[head](term, args)
+    except KeyError:
+      raise ConvertExpressionError("Unsupported expression:",
+                                   repr(term))
+
+  def _walk_back(self, term, mgr):
+    stack = [term]
+    while len(stack) > 0:
+      current = stack.pop()
+
+      if (isinstance(current, bool)):
+        res = TRUE() if current else FALSE()
+        self.back_memoization[current] = res
+      elif (isinstance(current, int)):
+        res = Real(current)
+        self.back_memoization[current] = res
+      elif (isinstance(current, wolframclient.language.expression.WLSymbol)):
+        name = current.name
+
+        if (current in self.back_memoization):
+          return self.back_memoization[current]
+        else:
+          # Assume symbol is a real variable for now
+
+          prefix = 'Global`'
+          assert(name.startswith(prefix))
+          var_name = name[len(prefix):]
+          res = self.mgr.Symbol(var_name, REAL)
+          self.back_memoization[current] = res
+
+      elif (isinstance(current, wolframclient.language.expression.WLFunction) and
+            current.head == wl.Rational):
+        res = Real(Fraction(current.args[0],current.args[1]))
+        self.back_memoization[current] = res
+      else:
+        arity = len(current.args)
+        if current not in self.back_memoization:
+          self.back_memoization[current] = None
+          stack.append(current)
+          for i in range(arity):
+            son = current.args[i]
+            stack.append(son)
+        elif self.back_memoization[current] is None:
+          args = [self.back_memoization[current.args[i]] for i in range(arity)]
+          res = self._back_single_term(current, mgr, args)
+          self.back_memoization[current] = res
+        else:
+          # we already visited the node, nothing else to do
+          pass
+    return self.back_memoization[term]
 
   @catch_conversion_error
   def convert(self, formula):
@@ -256,6 +521,7 @@ class MathematicaConverter(Converter, DagWalker):
     # May rewrite Boolean variables to use Real variables in the
     # future.
     res = self.walk(formula)
+
     return res
 
   def walk_symbol(self, formula, **kwargs):
@@ -268,7 +534,27 @@ class MathematicaConverter(Converter, DagWalker):
       raise ConvertExpressionError("Trying to declare a symbol that "
                                    "is not of Real type (%s : %s)" % (str(formula.symbol_type()),
                                                                       formula.symbol_name()))
-    res = wlexpr(formula.symbol_name())
+
+    sanitized = self.sanitize(formula.symbol_name())
+
+    # res = wlexpr(sanitized)
+    res =  wolframclient.language.Global.__getattr__(sanitized)
+
+    # If this happens then another term different from formula
+    # was converted to the same res
+
+    # if (res in self.back_memoization):
+    #   print(formula != self.back_memoization[res])
+    #   print(sanitized)
+    #   print(res)
+    #   print(self.back_memoization[res])
+    #   print(formula)
+
+    assert not (res in self.back_memoization and
+                formula != self.back_memoization[res])
+
+    self.back_memoization[res] = formula
+
     return res
 
   def walk_real_constant(self, formula, **kwargs):
@@ -276,6 +562,7 @@ class MathematicaConverter(Converter, DagWalker):
     frac = formula.constant_value()
     n,d = frac.numerator, frac.denominator
     rep = str(n) + "/" + str(d)
+
     return wlexpr(rep)
 
   def walk_int_constant(self, formula, **kwargs):
@@ -293,14 +580,16 @@ class MathematicaConverter(Converter, DagWalker):
                                  "allowed!" % str(formula) )
 
   def walk_plus(self, formula, args, **kwargs):
-    return wl.Plus(*args)
+    res = wl.Plus(*args)
+    return res
 
   def walk_minus(self, formula, args, **kwargs):
     assert(len(args) == 2)
     return wl.Plus(args[0], wl.Minus(args[1]))
 
   def walk_times(self, formula, args, **kwargs):
-    return wl.Times(*args)
+    res = wl.Times(*args)
+    return res
 
   def walk_div(self, formula, args, **kwargs):
     return wl.Divide(args[0],args[1])
@@ -387,3 +676,32 @@ def get_mathematica(env=get_env(), budget_time=0, exit_callback=None):
 
 
 
+
+class MathematicaQuantifierEliminator(QuantifierEliminator):
+
+  LOGICS = [LRA, NRA]
+
+  def __init__(self, environment, logic=None):
+    """
+    """
+    QuantifierEliminator.__init__(self)
+
+    self.mathematica_solver = get_mathematica(env=environment)
+    self.converter = self.mathematica_solver.converter
+    self.session = self.mathematica_solver.session
+    self.logic = logic
+
+
+  def eliminate_quantifiers(self, formula):
+    """Returns a quantifier-free equivalent formula of `formula`."""
+    mathematica_formula = self.converter.convert(formula)
+    reduce_cmd = wl.Reduce(mathematica_formula, wlexpr('Reals'))
+    result = self.session.evaluate(reduce_cmd)
+
+    result_pysmt = self.converter.back(result)
+
+    return result_pysmt
+
+
+  def _exit(self):
+      MathematicaSession.terminate_session()

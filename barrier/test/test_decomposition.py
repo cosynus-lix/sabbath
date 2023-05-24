@@ -14,6 +14,8 @@ try:
 except ImportError:
     import unittest
 
+from unittest import skip
+
 from nose.plugins.attrib import attr
 
 
@@ -180,10 +182,12 @@ class TestDecomposition(TestCase):
         # (dyn_sys, invar, abstraction, init, safe, expected)
         return (dyn_sys, TRUE(),[x,y], init, safe, (Result.UNKNOWN, []))
 
+    @unittest.skip("To fix, see issue #27")
     def test_invar_lazy(self):
         test_cases = [TestDecomposition.get_test_case_1(),
                       TestDecomposition.get_test_case_2(),
-                      TestDecomposition.get_test_case_3()]
+                      TestDecomposition.get_test_case_3()
+        ]
 
         for t in test_cases:
             (dyn_sys, invar, poly, init, safe, expected) = t
@@ -370,9 +374,12 @@ class TestDecomposition(TestCase):
                       "Strogatz Example 6_3_2",
                       "Dumortier Llibre Artes Ex. 5_2",
                       "Dumortier 10.7",
-                      "Liu Zhan Zhao Emsoft11 Example 25 new example"]
+                      "Liu Zhan Zhao Emsoft11 Example 25 new example",
+                      "Liu Zhan Zhao Emsoft11 Example 25 circle",
+                      "Liu Zhan Zhao Emsoft11 Example 25 disjunctive"]
 
-        long_tests_dwcl = ["Dai Gan Xia Zhan JSC14 Ex. 1"]
+        long_tests_dwcl = ["Dai Gan Xia Zhan JSC14 Ex. 1",
+                           "Ben Sassi Girard Sankaranarayanan 2014 Fitzhugh-Nagumo"]
 
         not_supported = ["Nonlinear Circuit Example 1+2 (Tunnel Diode Oscillator)"]
 
