@@ -5,6 +5,7 @@ import logging
 import unittest
 import os
 import sys
+from io import StringIO
 import tempfile
 from fractions import Fraction
 from nose.plugins.attrib import attr
@@ -33,7 +34,12 @@ from pysmt.exceptions import SolverAPINotFound
 from barrier.test import TestCase, skipIfMSaticIsNotAvailable
 from barrier.system import DynSystem
 from barrier.utils import get_range_from_int, get_mathsat_smtlib
-from barrier.lzz.serialization import importInvar
+
+from barrier.serialization.invar_serialization import importInvarVer
+from barrier.serialization.hybrid_serialization import importHSVer, serializeHS
+
+from barrier.decomposition.predicates import AbsPredsTypes, get_predicates, get_polynomials_ha
+from barrier.lzz.lzz import LzzOpt
 
 from barrier.formula_utils import FormulaHelper
 
@@ -42,7 +48,8 @@ from barrier.msatic3 import MSatic3
 
 from barrier.decomposition.encoding import (
     DecompositionEncoder, DecompositionOptions,
-    _get_neigh_encoding
+    _get_neigh_encoding,
+    DecompositionEncoderHA
 )
 
 
@@ -135,7 +142,7 @@ class TestDecompositionEncoding(TestCase):
         input_path = os.path.join(current_path, "invar_inputs")
         problem_file = os.path.join(input_path, "Constraint-based_Example_7__Human_Blood_Glucose_Metabolism_.invar")
         with open(problem_file, "r") as json_stream:
-            problem_list = importInvar(json_stream, env)
+            problem_list = importInvarVer(json_stream, env)
 
         (problem_name, init, safe, dyn_sys, invariants, predicates) = problem_list[0]
 
@@ -162,7 +169,7 @@ class TestDecompositionEncoding(TestCase):
         print("Reading input...")
         env = get_env()
         with open(test_case, "r") as f:
-            problem_list = importInvar(f, env)
+            problem_list = importInvarVer(f, env)
             assert(len(problem_list) == 1)
 
         (problem_name, ant, cons, dyn_sys, invar, predicates) = problem_list[0]
@@ -201,3 +208,78 @@ class TestDecompositionEncoding(TestCase):
                                         options)
         (ts, p, predicates) = encoder.get_ts_ia()
         self.assertTrue(self._prove_ts(ts, p) == MSatic3.Result.SAFE)
+
+
+    @attr('msatic3')
+    @skipIfMSaticIsNotAvailable()
+    def test_hs(self):
+        input_path = self.get_from_path("hybrid_inputs")
+        env = get_env()
+
+        models = [
+            ("disc1.hyb", MSatic3.Result.SAFE),
+            ("disc2.hyb", MSatic3.Result.UNSAFE),
+            ("disc3.hyb", MSatic3.Result.UNSAFE),
+            ("disc4.hyb", MSatic3.Result.SAFE),
+            ("disc5.hyb", MSatic3.Result.SAFE),
+            ("disc6.hyb", MSatic3.Result.SAFE),
+            ("disc7.hyb", MSatic3.Result.UNSAFE),
+            ("disc8.hyb", MSatic3.Result.SAFE),
+            ("cont1.hyb", MSatic3.Result.UNSAFE),
+            ("cont2.hyb", MSatic3.Result.SAFE),
+            ("hyb_fc.hyb", MSatic3.Result.SAFE)
+        ]
+
+        for (m,expected) in models:
+            with open(os.path.join(input_path, m), "r") as f:
+                problem = importHSVer(f, env)
+                ha = problem.ha
+                prop = problem.prop
+                predicates = problem.predicates
+
+                options = DecompositionOptions(False, False, False, False)
+                encoder = DecompositionEncoderHA(env, ha, predicates, prop,
+                                                 options, None)
+                (ts, p, predicates) = encoder.get_ts_ia()
+
+
+                # print("Final trans")
+                # print(ts.trans.serialize())
+                # # Debug
+                outstream = StringIO()
+                with open("/tmp/app.smt2", "w") as f:
+                    ts.to_vmt(f, p)
+                # print(outstream.getvalue())
+                # print(ts.trans.serialize())
+
+                print(ts.trans.serialize())
+
+                self.assertTrue(self._prove_ts(ts, p) == expected)
+
+
+    def test_hs_hscc(self):
+        input_path = self.get_from_path("hybrid_inputs")
+        env = get_env()
+
+        with open(os.path.join(input_path, "hybrid_controller_hscc17.hyb"), "r") as f:
+            problem = importHSVer(f, env)
+            ha = problem.ha
+            prop = problem.prop
+            predicates = problem.predicates
+
+            abs_type = (AbsPredsTypes.FACTORS.value)
+            polynomials = get_polynomials_ha(ha, prop, abs_type, env)
+
+            lzz_opt = LzzOpt(True, True)
+            options = DecompositionOptions(False, False, False, False, lzz_opt)
+            encoder = DecompositionEncoderHA(env, ha, polynomials, prop,
+                                             options, None)
+            (ts, p, predicates) = encoder.get_ts_ia()
+
+            with open("/tmp/hscc2017.smt2", "w") as f:
+                ts.to_vmt(f, p)
+
+            with open("/tmp/hscc2017.preds", "w") as outstream:
+                ts.dump_predicates(outstream, predicates)
+
+            # self.assertTrue(self._prove_ts(ts, p) == MSatic3.Result.SAFE)

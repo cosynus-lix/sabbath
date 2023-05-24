@@ -1,0 +1,35 @@
+{
+  "name" : "thermostat_alur_TECS2006",
+  "contVars": ["(declare-fun t () Real)","(declare-fun T () Real)","(declare-fun d () Real)"],
+  "varsDecl": ["(declare-fun t () Real)","(declare-fun T () Real)","(declare-fun d () Real)"],
+  "init" : {
+    "cool" : "false",
+    "heat" : "(and (and (= 0 t) (and (<= 5 T) (<= T 10))) (= d (- T t)))",
+    "check" : "false"
+  },
+  "locations" : {
+    "cool" : {
+      "invar" : "(and (and (<= 0 t) (<= t 100)) (and (<= 5 T) (<= T 100)))",
+      "vectorField": ["(= 1 0)", "(= (- 0.0 T) 0)", "(= (- T t) 0)"]
+    },
+    "heat" : {
+      "invar" : "(and (and (<= 0 t) (<= t 3)) (and (<= 0 T) (<= T 10)))",
+      "vectorField": ["(= 1 0)", "(= 2 0)", "(= (- T t) 0)"]
+    },
+    "check" : {
+      "invar" : "(and (and (<= 0 t) (<= t 1)) (and (<= 0 T) (<= T 100)))",
+      "vectorField": ["(= 1 0)", "(= (- 0.0 (* T (/ 1.0 2.0))) 0)", "(= (- T t) 0)"]
+    }
+  },
+  "edges" : {
+    "cool" : [{"dst" : "heat", "trans" : "(and (<= T 6) (and (= t_next 0) (= T_next T)) (= d_next (- T_next t_next)))"}],
+    "heat" : [{"dst" : "cool", "trans" : "(and (>= T 9) (and (= t_next t) (= T_next T)) (= d_next (- T_next t_next)))"},
+              {"dst" : "check", "trans" : "(and (>= t 2) (and (= t_next 0) (= T_next T)) (= d_next (- T_next t_next)))"}],
+    "check" : [{"dst" : "heat", "trans" : "(and (>= T 0.5) (and (= t_next 0) (= T_next T)) (= d_next (- T_next t_next)))"}]
+  },
+  "predicates" : ["(= t 0)", "(= (- t 2) 0)", "(= (- t 1) 0)", "(= (- T 5) 0)", "(= (- T 10) 0)", "(= (- T 4.5) 0)", "(= (- T 9) 0)", "(= (- (- T 5) (* 2 t)) 0)", "(= (+ (- T 9) (* 4.49 t)) 0)"],
+  "property" : "(> T 4.5)",
+  "property_by_loc" : {
+  }
+}
+

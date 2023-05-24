@@ -1,0 +1,17 @@
+{
+  "name" : "disc",
+  "contVars": ["(declare-fun x () Real)","(declare-fun y () Real)"],
+  "varsDecl": ["(declare-fun x () Real)","(declare-fun y () Real)"],
+  "init" : {
+    "1" : "(= (+ (* x x) (* y y)) 1)"
+  },
+  "locations" : {
+    "1" : {
+      "invar" : "true",
+      "vectorField": ["(= (- y) 0)","(= (- x) 0)"]
+    }
+  },
+  "edges" : {
+  },
+  "property" : "(= (+ (* x x) (* y y)) 1)"
+}

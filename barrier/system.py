@@ -10,7 +10,10 @@ try:
 except ImportError:
     from io import StringIO
 
+from collections import namedtuple
+
 from functools import reduce
+
 
 import pysmt
 from pysmt.shortcuts import *
@@ -18,6 +21,9 @@ from pysmt.typing import REAL
 
 from barrier.lie import get_inverse_odes, Derivator
 from barrier.formula_utils import FormulaHelper
+
+
+from barrier.ts import TS
 
 
 class MalformedSystem(Exception):
@@ -163,7 +169,6 @@ class DynSystem(object):
                             False)
         return inverse
 
-
     def get_rescaled_by_equilibrium_point(self):
         """ Works on linear systems.
 
@@ -222,7 +227,7 @@ class DynSystem(object):
 
         return rescaled_systems
 
-    def get_derivator(self):
+    def get_derivator(self, pysmt2sympy= None, sympy2pysmt = None):
         """ Return the derivator object for the
         dynamical system.
         """
@@ -235,7 +240,7 @@ class DynSystem(object):
             for var, ode in self._odes.items():
                 vector_field[var] = ode
 
-            derivator = Derivator(vector_field)
+            derivator = Derivator(vector_field, pysmt2sympy, sympy2pysmt)
             self._derivator = derivator
 
         return self._derivator
@@ -303,18 +308,19 @@ class DynSystem(object):
         def _is_expr(expr):
             if (expr.get_type() != REAL):
                 return False
-            # A real type term
-            elif expr.is_symbol():
+            elif expr.is_constant():
+                # a real type constant
                 return True
-            # Not real type term, not a symbol
+            elif expr.is_symbol():
+                # a real type expression
+                return True
             elif (expr.is_plus() or
                   expr.is_minus() or
-                  expr.is_times() or
-                  expr.is_pow() or
-                  expr.is_div()):
+                  expr.is_times()):
+                # a real type polynomial
                 return True
-            # A polynomial
             else:
+                # otherwise
                 return False
 
         def _check_ode(ode_expr):
@@ -373,9 +379,58 @@ class DynSystem(object):
             len(self._dist_constraints) == len(self._disturbances) and
             # all dist are predicates from set vars
             reduce(lambda acc, expr: acc and _check_dist(expr),
-                   self._dist_constraints.values(), True)
+                   self._dist_constraints.values(), True) and
 
+            True
         )
 
 
+
+class HybridAutomaton(object):
+    """
+    Explicit hybrid automata representation (locations and edges are explicit).
+    """
+
+    Location = namedtuple("Location", "invar vector_field")
+    Edge = namedtuple("Edge", "dst trans")
+
+    def __init__(self, disc_vars, cont_vars, init, locations, edges):
+        # Discrete variables of the automaton
+        self._disc_vars = list(disc_vars)
+        self._cont_vars = list(cont_vars)
+
+        # Initial condition
+        self._init = {}
+        for (loc_name, data) in init.items():
+            self._init[loc_name] = data
+
+        # List of locations
+        self._locations = {}
+        for (loc_name, data) in locations.items():
+            self._locations[loc_name] = data
+
+        # Adjacency lists for edges
+        self._edges = {}
+        for loc_name, data  in edges.items():
+            dst_list = [l for l in data]
+            self._edges[loc_name] = dst_list
+
+    def is_pred_cont(self, pred):
+        for v in pred.get_free_variables():
+            if v in self._cont_vars:
+                return True
+        return False
+
+    # def to_str(self):
+    #     print(self._disc_vars)
+    #     print(self._cont_vars)
+    #     print("Init:")
+    #     for k,v in self._init.items():
+    #         print("  %s: %s" % (k,v))
+    #     print("Locations")
+    #     for k,v in self._locations.items():
+    #         print("  %s: %s" % (k, v.invar))
+
+HaProp = namedtuple("HaProp", "global_prop prop_by_loc")
+HaVerProblem = namedtuple("HaVerProblem", "name ha prop predicates")
 

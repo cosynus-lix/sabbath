@@ -23,7 +23,7 @@ from pysmt.shortcuts import (
 )
 
 # [SM] Still in Testing - the Inf should distribute over an arbitrary boolean combination (according to the journal paper from Ghorbal and Sogokon)
-AVOID_DNF_CONVERSION = True
+AVOID_DNF_CONVERSION = False
 
 class LzzOpt:
     def __init__(self, ivinf_via_inf = False, use_remainder = False):
@@ -428,6 +428,7 @@ def lzz_fast(lzz_opt, solver, candidate, derivator, init, invar):
     """
 
     logger = logging.getLogger(__name__)
+    bound = None
 
     # candidate is an invariant of the dynamical system if:
     #
@@ -450,14 +451,14 @@ def lzz_fast(lzz_opt, solver, candidate, derivator, init, invar):
             invar_dnf = c.get_dnf(invar)
 
         c2 = Implies(And(candidate, invar),
-                     get_inf_dnf(lzz_opt, derivator, candidate_dnf))
+                     get_inf_dnf(lzz_opt, derivator, bound, candidate_dnf))
 
         logger.debug("Checking c2 (fast)...")
         debug_print_max_degree(logger, c2)
 
         if solver.is_valid(c2):
             c3 = Implies(And(Not(candidate), invar),
-                         Not(get_ivinf_dnf(lzz_opt, derivator, candidate_dnf)))
+                         Not(get_ivinf_dnf(lzz_opt, derivator, bound, candidate_dnf)))
 
             logger.debug("Checking c3 (fast)...")
             debug_print_max_degree(logger, c3)

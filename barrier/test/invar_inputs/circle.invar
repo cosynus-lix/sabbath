@@ -1,0 +1,10 @@
+[{
+  "antecedent": "(= (+ (* x x) (* y y)) 1)",
+  "consequent": "(= (+ (* x x) (* y y)) 1)",
+  "constraints": "true",
+  "contVars": ["(declare-fun x () Real)","(declare-fun y () Real)"],
+  "name": "circle",
+  "predicates": ["(= (- (+ (* x x) (* y y)) 1) 0)"],
+  "varsDecl": ["(declare-fun x () Real)","(declare-fun y () Real)"],
+  "vectorField": ["(= (- y) 0)","(= x 0)"]
+}]

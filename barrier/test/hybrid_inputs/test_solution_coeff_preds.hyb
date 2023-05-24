@@ -1,0 +1,19 @@
+{
+  "name" : "Test solutions (relational predicates, encode the change of quantities)",
+  "contVars": ["(declare-fun v () Real)","(declare-fun t () Real)"],
+  "varsDecl": ["(declare-fun v () Real)","(declare-fun t () Real)", "(declare-fun v0 () Real)","(declare-fun t0 () Real)", "(declare-fun a () Real)"],
+  "init" : {
+    "init" : "(and (= t 0) (= v 0) (= t0 t) (= v0 v) )"
+  },
+  "locations" : {
+    "init" : {
+      "invar" : "(<= t 5)",
+      "vectorField" : ["(= a 0)", "(= 1 0)"]
+    }
+  },
+  "edges" : {
+    "init" : []
+  },
+  "predicates" : ["(= a 0)", "(= t 0)", "(= v 0)", "(= t0 0)", "(= v0 0)", "(= (- t0 t) 0)", "(= (- v0 t) 0)", "(= (- t 5) 0)", "(= (- v (* 5 a)) 0)", "(= (- v (+ v0 (* a (- t t0) ))) 0)"],
+  "property" : "(and (or (<= a 0) (<= v (* 5 a))) (or (>= a 0) (>= v (* 5 a)))  )"
+}

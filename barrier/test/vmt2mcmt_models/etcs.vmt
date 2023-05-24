@@ -1,0 +1,136 @@
+(set-option :print-success true)
+(set-option :diagnostic-output-channel "stdout")
+(set-option :produce-models true)
+(set-logic QF_NRA)
+
+
+(declare-fun ep () Real)
+(declare-fun b () Real)
+(declare-fun maxA () Real)
+(declare-fun m () Real)
+(declare-fun z () Real)
+(declare-fun v () Real)
+(declare-fun t () Real)
+(declare-fun a () Real)
+(declare-fun loop () Bool)
+(declare-fun cont_trans () Bool)
+(declare-fun delta () Real)
+
+(declare-fun epnext () Real)
+(declare-fun bnext () Real)
+(declare-fun maxAnext () Real)
+(declare-fun mnext () Real)
+(declare-fun znext () Real)
+(declare-fun vnext () Real)
+(declare-fun tnext () Real)
+(declare-fun anext () Real)
+(declare-fun loopnext () Bool)
+(declare-fun cont_transnext () Bool)
+(declare-fun deltanext () Real)
+
+(define-fun .defnext_0 () Real (! ep :next epnext))
+(define-fun .defnext_1 () Real (! b :next bnext))
+(define-fun .defnext_2 () Real (! maxA :next maxAnext))
+(define-fun .defnext_3 () Real (! m :next mnext))
+(define-fun .defnext_4 () Real (! z :next znext))
+(define-fun .defnext_5 () Real (! v :next vnext))
+(define-fun .defnext_6 () Real (! t :next tnext))
+(define-fun .defnext_7 () Real (! a :next anext))
+(define-fun .defnext_8 () Bool (! loop :next loopnext))
+(define-fun .defnext_9 () Bool (! cont_trans :next cont_transnext))
+(define-fun .defnext_10 () Real (! delta :next deltanext))
+
+(define-fun stopdist () Real (/ (* v v) (* 2.0 b)))
+(define-fun acccompensation () Real (* (+ (/ maxA b) 1) (+ (* (/ maxA 2.0) ep ep) (* ep v)) ))
+(define-fun sb () Real (+ stopdist acccompensation))
+
+
+;; ADDED
+(define-fun stopdistnext () Real (/ (* vnext vnext) (* 2.0 bnext)))
+;; ADDED
+;; (>= (- m z) (/ (* v v) (* 2.0 b)) )
+;; ADDED
+;; (>= (- mnext znext) stopdistnext)
+
+
+(define-fun invarf () Bool
+  (and
+    (<= t ep) (>= v 0) (not (= b 0))
+  )
+)
+
+(define-fun initf () Bool
+  (and
+    invarf
+    (not loop)
+    (>= v 0)
+    (>= (- m z) stopdist)
+    (> b 0)
+    (>= maxA 0)
+    (>= ep 0)
+  )
+)
+
+(define-fun cont () Bool (=> cont_trans
+  (and
+    (= (- tnext t) delta)
+    (= (- vnext v) (* a delta))
+    (= (- znext z) (+ (* 0.5 a delta delta) (* v delta) ))
+    (= anext a)
+  )
+ )
+)
+
+(define-fun disc () Bool (=> (not cont_trans)
+  (and
+
+    (or
+      (and (<= (- m z) sb) (= anext (- b) ))
+      (and (>= (- m z) sb) (= anext maxA ))
+    )
+
+    (= tnext 0)
+    (= vnext v)
+    (= znext z)
+  )
+ )
+)
+
+
+(define-fun transf () Bool
+  (and
+    ;; invar
+    invarf
+    (<= tnext ep) (>= vnext 0) (not (= bnext 0))
+
+    ;; time does not pass if not in loop
+    (=> (not loop) (not cont_trans) )
+    (>= delta 0)
+
+    (=> cont_trans (not cont_transnext))
+    (=> cont_transnext (not cont_trans))
+
+    loopnext
+
+    ;;
+    cont
+    disc
+
+    ;; frame condition on frozenvar
+    (= epnext ep)
+    (= bnext b)
+    (= maxAnext maxA)
+    (= mnext m)
+  )
+)
+
+
+(define-fun propf () Bool (<= z m))
+
+
+(define-fun .init () Bool (! initf :init true))
+(define-fun .trans () Bool (! transf :trans true))
+(define-fun .prop () Bool (! propf :invar-property 0))
+
+
+(check-sat)

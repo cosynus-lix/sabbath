@@ -1,0 +1,23 @@
+[{
+  "antecedent": "(and (> (+ _x 2) 0) (<= 0 (+ _x (- _y) (- 0.5))))",
+  "consequent": "(> (+ (* (+ _x 2) (+ _x 2)) (* (+ _y 0.0) (+ _y 0.0)) (- 1) ) 0)",
+  "constraints": "true",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Liu Zhan Zhao Emsoft11 Example 25 new example",
+  "predicates": [
+    "(= (+ _x (- _y) (- 0.5)) 0)",
+    "(= (+ _x _y 0.5) 0)",
+    "(= (+ _x 2) 0)"
+],
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (* _x (* _x 1)) 0)", "(= (* (- 2) _y) 0)"]
+}]
+
+
+
+
+
+
+
+
+

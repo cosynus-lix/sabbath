@@ -47,7 +47,14 @@ def fromString(parser, string):
 
     output.write(string)
     output.seek(0)
-    script = parser.get_script(output)
+
+    try:
+        script = parser.get_script(output)
+    except Exception as e:
+        output.seek(0)
+        print("Error parsing the SMT expression %s" % output.getvalue())
+
+        raise e
     return script
 
 def fromStringFormula(parser, vars_decl_str, string):
@@ -65,7 +72,12 @@ def readVar(parser, var_decl, all_vars):
         elif cmd.name == smtcmd.DEFINE_FUN:
             (var, formals, typename, body) = cmd.args
 
-def parse_dyn_sys(env, problem_json, is_lzz = False, only_ode = False):
+def parse_dyn_sys(env, problem_json, is_check_problem = False, only_ode = False):
+    """
+    is_check_problem: true if the problem is to check if a differential invariant holds (so, need to read candidate and not antecendent and consequent)
+    only_ode: parse a dynamical system and not a hybrid system
+    """
+
     parser = SmtLibParser(env)
 
     # Read all the variables
@@ -80,7 +92,7 @@ def parse_dyn_sys(env, problem_json, is_lzz = False, only_ode = False):
     for var_decl in problem_json["contVars"]:
         readVar(parser, var_decl, cont_vars)
 
-    if (not is_lzz):
+    if (not is_check_problem):
         if not (only_ode):
             # Antecedent
             antecedent = fromStringFormula(parser, vars_decl_str, problem_json["antecedent"])
@@ -121,17 +133,17 @@ def parse_dyn_sys(env, problem_json, is_lzz = False, only_ode = False):
 
     dyn_sys = DynSystem(cont_vars, input_vars, [], odes, {}, False)
 
-    if (not is_lzz):
+    if (not is_check_problem):
         return (dyn_sys, invar, antecedent, consequent, predicates)
     else:
         return (dyn_sys, invar, candidate)
 
-def importLzz(json_stream, env):
+def importInvarCheck(json_stream, env):
     problem_json = json.load(json_stream)
     (dyn_sys, invar, candidate) = parse_dyn_sys(env, problem_json, True)
     return (problem_json["name"], candidate, dyn_sys, invar)
 
-def importInvar(json_stream, env):
+def importInvarVer(json_stream, env):
     problem_json_list = json.load(json_stream)
 
     results = []
@@ -145,21 +157,20 @@ def importInvar(json_stream, env):
     return results
 
 
-def _get_smt_vars(var, env):
+def get_smt_vars(var, env):
     var_cmd = SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[var])
     outstream = StringIO()
     var_cmd.serialize(outstream=outstream)
     return outstream.getvalue()
 
-def _get_smt_formula(formula, printer):
+def get_smt_formula(formula, printer):
     outstream = StringIO()
     printer = SmtDagPrinter(outstream)
     printer.printer(formula)
     return outstream.getvalue()
 
-def _get_smt_formula_pred(formula, printer):
-    return _get_smt_formula(Equals(formula, Real(0)), printer)
-
+def get_smt_formula_pred(formula, printer):
+    return get_smt_formula(Equals(formula, Real(0)), printer)
 
 def serializeInvar(outstream, invar_problems, env):
     """
@@ -168,16 +179,16 @@ def serializeInvar(outstream, invar_problems, env):
     invar_problems_json = []
     for invar_problem in invar_problems:
         name, antecedent, consequent, dyn_sys, invar, predicates = invar_problem
-        cont_vars_smt = [_get_smt_vars(v, env) for v in dyn_sys.states()]
+        cont_vars_smt = [get_smt_vars(v, env) for v in dyn_sys.states()]
         json_data = {
             "name" : name,
             "contVars" : cont_vars_smt,
-            "varsDecl" : cont_vars_smt + [_get_smt_vars(v, env) for v in dyn_sys.inputs()],
-            "antecedent": _get_smt_formula(antecedent, env),
-            "consequent": _get_smt_formula(consequent, env),
-            "constraints": _get_smt_formula(invar, env),
-            "predicates" : [_get_smt_formula_pred(p, env) for p in predicates],
-            "vectorField": [_get_smt_formula_pred(dyn_sys.get_ode(v), env) for v in dyn_sys.states()]
+            "varsDecl" : cont_vars_smt + [get_smt_vars(v, env) for v in dyn_sys.inputs()],
+            "antecedent": get_smt_formula(antecedent, env),
+            "consequent": get_smt_formula(consequent, env),
+            "constraints": get_smt_formula(invar, env),
+            "predicates" : [get_smt_formula_pred(p, env) for p in predicates],
+            "vectorField": [get_smt_formula_pred(dyn_sys.get_ode(v), env) for v in dyn_sys.states()]
         }
         invar_problems_json.append(json_data)
 

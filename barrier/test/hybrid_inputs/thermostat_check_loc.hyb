@@ -1,0 +1,24 @@
+{
+  "name" : "thermostat_alur_TECS2006_check_location",
+  "contVars": ["(declare-fun t () Real)","(declare-fun T () Real)"],
+  "varsDecl": ["(declare-fun t () Real)","(declare-fun T () Real)"],
+  "init" : {
+    "check" : "(and (= t 0) (= T 9))"
+  },
+  "locations" : {
+    "check" : {
+      "invar" : "(and (and (<= 0 t) (<= t 1)) (and (<= 0 T) (<= T 100)) )",
+      "vectorField": ["(= 1 0)", "(= (- 0.0 (* T (/ 1.0 2.0))) 0)"]
+    }
+  },
+  "edges" : {
+    "check" : []
+  },
+  "predicates" : ["(= t 0)", "(= (- t 1) 0)", "(= (- T 5) 0)", "(= (- T 9) 0)", "(= (- T 4.5) 0)","(= (- t (/ 1 5)) 0)","(= (- t (/ 2 5)) 0)","(= (- t (/ 3 5)) 0)","(= (- t (/ 4 5)) 0)",
+"(=  (* (- 2) T (- T 4.5)) 0) "],
+  "property" : "(> T 4.5)",
+  "property_by_loc" : {
+  }
+}
+
+

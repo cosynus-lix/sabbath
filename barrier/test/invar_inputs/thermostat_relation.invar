@@ -1,0 +1,11 @@
+[{
+  "name" : "thermostat_alur_dyn_TECS2006",
+  "contVars": ["(declare-fun t () Real)","(declare-fun T () Real)"],
+  "varsDecl": ["(declare-fun t () Real)","(declare-fun T () Real)"],
+  "antecedent" : "(and (= t 0) (< t 1) (= T 9) (> T 5))",
+  "consequent": "(> T 5)",
+  "constraints": "(and (and (<= 0 t) (<= t 1)) (and (<= 0 T) (<= T 100)))",
+  "vectorField" : ["(= 1 0)", "(= (- 0.0 (* T (/ 1.0 2.0))) 0)"],
+  "predicates" : ["(= t 0)", "(= (- t 1) 0)", "(= (- T 9) 0)", "(= (- T 5) 0)"]
+}]
+

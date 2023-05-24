@@ -18,7 +18,7 @@ from nose.plugins.attrib import attr
 from pysmt.shortcuts import Real
 
 import barrier.test
-from barrier.test import TestCase, skipIfSOSIsNotAvailable
+from barrier.test import TestCase, skipIfSOSIsNotAvailable, skipIfPicosIsNotAvailable
 
 from barrier.system import DynSystem
 from barrier.lyapunov.lyapunov import (
@@ -73,6 +73,7 @@ class TestLyapunov(TestCase):
                 self.assertTrue(validate_lyapunov(sys, lyapunov))
 
     @attr('sos')
+    @skipIfPicosIsNotAvailable()
     @skipIfSOSIsNotAvailable()
     def test_lyapunov_sos(self):
         # Test SOS formulation
@@ -90,6 +91,7 @@ class TestLyapunov(TestCase):
 
 
     @attr('sos')
+    @skipIfPicosIsNotAvailable()
     @skipIfSOSIsNotAvailable()
     def test_common_lyapunov(self):
         # Test SOS formulation

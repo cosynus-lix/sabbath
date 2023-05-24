@@ -264,6 +264,7 @@ class Derivator(object):
             return remainders
 
     def get_poly_degree(self, expr):
+        # TODO: Move in the sympy conversion class
         # Get the degree of a polynomial
         if expr in self._degree_memo:
             return self._degree_memo[expr]
@@ -275,18 +276,8 @@ class Derivator(object):
         return degree
 
     def add_poly_factors(self, expr, factor_set):
-        sympy_expr = self._get_sympy_expr(expr)
-        factor_predicateslist = []
-
-        # sympy_factor has type Int x (sympy_expr, inteter) List
-        # and represents the constant coefficient (the int)
-        # and a list of (factor, power pairs).
-        # The initial polynomial is equal to constant coefficient + factor * power + ...
-        sympy_factors =  factor_list(sympy_expr)
-        assert(len(sympy_factors) == 2)
-        for (factor_sympy, power) in sympy_factors[1]:
-            factor_set.add(self._get_pysmt_expr(factor_sympy))
-
+        add_poly_factors(self.pysmt2sympy, self.sympy2pysmt,
+                         expr, factor_set)
 
     def get_all_solutions_linear_system(self, equations, variables):
         """ Returns all the numeric solution of a linear system.
@@ -436,6 +427,21 @@ class Derivator(object):
 
 
 # EOC Derivator
+
+# Utilities for polynomials
+def add_poly_factors(pysmt2sympy, sympy2pysmt, expr, factor_set):
+    sympy_expr = pysmt2sympy.walk(expr)
+    factor_predicateslist = []
+
+    # sympy_factor has type Int x (sympy_expr, inteter) List
+    # and represents the constant coefficient (the int)
+    # and a list of (factor, power pairs).
+    # The initial polynomial is equal to constant coefficient + factor * power + ...
+    sympy_factors =  factor_list(sympy_expr)
+    assert(len(sympy_factors) == 2)
+    for (factor_sympy, power) in sympy_factors[1]:
+        factor_set.add(sympy2pysmt.walk(factor_sympy))
+
 
 class Pysmt2Sympy(DagWalker):
     def __init__(self, env=None, invalidate_memoization=None):

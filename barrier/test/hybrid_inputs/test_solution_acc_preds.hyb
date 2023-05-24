@@ -1,0 +1,23 @@
+{
+  "name" : "Test solutions (relational predicates, encode the change of quantities) - here encodes ETCS system",
+  "contVars": ["(declare-fun z () Real)", "(declare-fun v () Real)","(declare-fun t () Real)"],
+  "varsDecl": ["(declare-fun z () Real)", "(declare-fun v () Real)","(declare-fun t () Real)", "(declare-fun z0 () Real)", "(declare-fun v0 () Real)","(declare-fun t0 () Real)", "(declare-fun a () Real)"],
+  "init" : {
+    "init" : "(and (= t 0) (= v 0) (= t0 t) (= v0 v) (= z0 z) (= z 0) (= a 1))"
+  },
+  "locations" : {
+    "init" : {
+      "invar" : "(<= t 5)",
+      "vectorField" : ["(= v 0)", "(= a 0)", "(= 1 0)"]
+    }
+  },
+  "edges" : {
+    "init" : []
+  },
+  "predicates" : ["(= z 0)", "(= a 0)", "(= t 0)", "(= v 0)", "(= t0 0)", "(= v0 0)", "(= (- t0 t) 0)", "(= (- v0 t) 0)", "(= (- z0 z) 0)", "(= (- t 5) 0)", "(= (- v (* 5 a)) 0)", "(= (- v (+ v0 (* a (- t t0) ))) 0)", "(= (- z (+ (* (/ a 2) (- t t0) (- t t0) ) (* v0 (- t t0) ) z0 ) ) 0)"],
+  "property" : "(<= z (* 5 a a))"
+}
+
+
+
+

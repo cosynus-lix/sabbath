@@ -1,0 +1,21 @@
+[{
+  "antecedent": "(>= (+ _x _y) 0)",
+  "consequent": "(not (<= (+ (* (+ _x 1.9) (+ _x 1.9)) (* (+ _y 1) (+ _y 1)) ) 1))",
+  "constraints": "true",
+  "contVars": ["(declare-fun _y () Real)", "(declare-fun _x () Real)"],
+  "name": "Liu Zhan Zhao Emsoft11 Example 25 disjunctive",
+  "predicates": [
+    "(= (- _x 1.0) 0.0)",
+    "(= (- (/ 1 2) _y) 0.0)",
+    "(= _y 0.0)",
+    "(= _x 0.0)"],
+  "varsDecl": ["(declare-fun _x () Real)", "(declare-fun _y () Real)"],
+  "vectorField": ["(= (* _x (* _x 1)) 0)", "(= (* (- 2) _y) 0)"]
+}]
+
+
+
+
+
+
+

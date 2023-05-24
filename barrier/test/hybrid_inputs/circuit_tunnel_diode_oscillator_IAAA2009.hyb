@@ -1,0 +1,64 @@
+{
+  "name" : "circuit_tunnel_diode_oscillator from Integrating Abstraction Techniques for the Formal Verification of Analog Designs",
+  "contVars": ["(declare-fun V () Real)", "(declare-fun I () Real)"],
+  "varsDecl": ["(declare-fun V () Real)", "(declare-fun I () Real)"],
+  "init" : {
+    "0" : "false",
+    "1" : "false",
+    "2" : "(and (>= V 0.42) (<= V 0.52) (= I 0.0006) )"
+  },
+  "locations" : {
+    "0" : {
+      "invar" : "(and (>= V (- 0.1)) (<= V 0.055) (>= I (- 0.002)) (<= I 0.002) )",
+      "vectorField": [
+            "(+ (* 1000000000000 (* (- 1) (+ (* 6.0105 V V V) (* (- 0.9917) V V) (* 0.0545 V) ) ) ) I)",
+            "(* 1000000 (+ (- V) (- (* 200 I)) 0.3 ) )"
+      ]
+    },
+    "1" : {
+      "invar" : "(and (>= V 0.055) (<= V 0.35) (>= I (- 0.002)) (<= I 0.002) )",
+      "vectorField": [
+            "(+ (* 1000000000000 (* (- 1) (+ (* 0.0692 V V V) (* (- 0.0421) V V) (* 0.004 V) 0.00089579) ) ) I)",
+            "(* 1000000 (+ (- V) (- (* 200 I)) 0.3 ) )"
+      ]
+    },
+    "2" : {
+      "invar" : "(and (>= V 0.35) (<= V 0.6) (>= I (- 0.002)) (<= I 0.002) )",
+      "vectorField": [
+            "(+ (* 1000000000000 (* (- 1) (+ (* 0.2634 V V V) (* (- 0.2765) V V) (* 0.0968 V) (- 0.0112)) ) ) I)",
+            "(* 1000000 (+ (- V) (- (* 200 I)) 0.3 ) )"
+      ]
+    }
+  },
+  "edges" : {
+    "0" : [{"dst" : "1", "trans" : "(and (>= V 0.055) (>= I 0.0006) (= V V_next) (= I I_next))"}],
+    "1" : [{"dst" : "0", "trans" : "(and (<= V 0.055) (<= I 0.0006) (= V V_next) (= I I_next))"},
+           {"dst" : "2", "trans" : "(and (>= V 0.35)  (>= I 0.0006) (= V V_next) (= I I_next))"}],
+    "2" : [{"dst" : "1", "trans" : "(and (<= V 0.35)  (<= I 0.0006) (= V V_next) (= I I_next))"}]
+  },
+  "predicates" : [
+"(let ((.def_0 (=  V 0.0))) .def_0)",
+"(let ((.def_0 (- V (- (/ 1 10))))) (let ((.def_1 (= .def_0 0.0))) .def_1))",
+"(let ((.def_0 (- (/ 11 200) V))) (let ((.def_1 (= .def_0 0.0))) .def_1))",
+"(let ((.def_0 (- I (- (/ 1 500))))) (let ((.def_1 (= .def_0 0.0))) .def_1))",
+"(let ((.def_0 (- (/ 1 500) I))) (let ((.def_1 (= .def_0 0.0))) .def_1))",
+"(let ((.def_0 (- V (/ 27 50)))) (let ((.def_1 (= .def_0 0.0))) .def_1))",
+"(let ((.def_0 (* 50.0 V))) (let ((.def_1 (+ (- 27.0) .def_0))) (let ((.def_2 (= .def_1 0.0))) .def_2)))",
+"(let ((.def_0 (- (- (/ 3 2000)) I))) (let ((.def_1 (= .def_0 0.0))) .def_1))",
+"(let ((.def_0 (* 2000.0 I))) (let ((.def_1 (+ 3.0 .def_0))) (let ((.def_2 (= .def_1 0.0))) .def_2)))",
+"(let ((.def_0 (- I (/ 7 4000)))) (let ((.def_1 (= .def_0 0.0))) .def_1))",
+"(let ((.def_0 (* 4000.0 I))) (let ((.def_1 (+ (- 7.0) .def_0))) (let ((.def_2 (= .def_1 0.0))) .def_2)))",
+"(let ((.def_0 (* 25.0 V))) (let ((.def_1 (+ 1.0 .def_0))) (let ((.def_2 (= .def_1 0.0))) .def_2)))",
+"(let ((.def_0 (- (/ 3 5) V))) (let ((.def_1 (= .def_0 0.0))) .def_1))",
+"(let ((.def_0 (- V (/ 7 20)))) (let ((.def_1 (= .def_0 0.0))) .def_1))",
+"(let ((.def_0 (- (- (/ 1 25)) V))) (let ((.def_1 (= .def_0 0.0))) .def_1))",
+"(let ((.def_0 (* V V))) (let ((.def_1 (* 60105.0 .def_0))) (let ((.def_2 (* (- 9917.0) V))) (let ((.def_3 (+ 545.0 .def_2 .def_1))) (let ((.def_4 (= .def_3 0.0))) .def_4)))))",
+"(let ((.def_0 (* V V))) (let ((.def_1 (* .def_0 V))) (let ((.def_2 (* 6920000.0 .def_1))) (let ((.def_3 (* 400000.0 V))) (let ((.def_4 (* (- 4210000.0) .def_0))) (let ((.def_5 (+ 89579.0 .def_4 .def_3 .def_2))) (let ((.def_6 (= .def_5 0.0))) .def_6)))))))"
+],
+  "property" : "true",
+  "property_by_loc" : {
+    "0" : "(not (or (< I (- 0.0015)) (> I 0.00175) (< V (- 0.04)) ))",
+    "1" : "(not (or (< I (- 0.0015)) (> I 0.00175) ))",
+    "2" : "(not (or (< I (- 0.0015)) (> I 0.00175) (> V 0.54) ))"
+  }
+}
