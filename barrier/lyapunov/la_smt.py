@@ -14,7 +14,7 @@ from pysmt.shortcuts import (
 )
 import sympy as sp
 
-DEFAULT_PRECISION = 6
+DEFAULT_PRECISION = 16
 
 def myround(x, p=DEFAULT_PRECISION):
   ''' Rounding performed keeping p significant figures. '''

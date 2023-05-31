@@ -40,18 +40,22 @@ def build_dyn_systems_from_hs_file(problem):
     Acs = []
     bs = []
     Cc = []
-
-    for dyn_sys in problem.ha._locations.values():
-        (A, b) = get_matrices_from_linear_odes(dyn_sys.vector_field)
+    
+    for index_dyn_system in range(len(problem.ha._locations)):
+        (A, b) = get_matrices_from_linear_odes(problem.ha._locations[f"{index_dyn_system}"][1])
         Acs.append(A)
         bs.append(b)
+        (C, Theta) = get_vector_from_linear_constraint(problem.ha._locations[f"{index_dyn_system}"][0])
+        Cc.append(C)
+        if index_dyn_system == 0:
+            Theta_smt = Theta
     
     # Get Cc in some way
     
     dyn_systems = [get_dyn_sys(Acs[0], bs[0]),
                    get_dyn_sys(Acs[1], bs[1])]
 
-    Theta_smt = Real(myround(THETA, PRECISION))
+    Theta_smt = Real(myround(Theta, PRECISION))
 
     ### OLD CODE, DO WE NEED IT?
     # y0 = get_y0(dyn_systems[0], Cc)
@@ -66,15 +70,66 @@ def build_dyn_systems_from_hs_file(problem):
     ###
 
     # We get the switching predicate
-    # switching_predicate = get_switching_predicate_from_linear_odes(problem)
-    switching_predicate ="TODO"
+    switching_predicate = get_switching_predicate_from_linear_constraint(problem.ha._locations[f"{index_dyn_system}"][0])
     
-    # Do something to give this line a sense:
+    # Todo. Do something to give this line a sense:
     # config = Config(new_solver_f)
     config = "TODO"
 
     return (config, dyn_systems, switching_predicate, Theta_smt) # ,ref_values_smt)
 
+def get_switching_predicate_from_linear_constraint(linear_constraint):
+    if len(linear_constraint.arg(0).get_free_variables()) > 0:
+        return linear_constraint.arg(0)
+    else:
+        return Times(linear_constraint.arg(0), Real(-1))
+
+    
+def get_vector_from_linear_constraint(linear_constraint):
+    # We get symbolic vector from the location invariant when it is linear
+
+    if len(linear_constraint.arg(0).get_free_variables()) > 0:
+        linear_part = linear_constraint.arg(0)
+        Theta_pysmt = linear_constraint.arg(1)
+        multiply_by_minus_one = False
+    else:
+        linear_part = linear_constraint.arg(1)
+        Theta_pysmt = linear_constraint.arg(0)
+        multiply_by_minus_one = False
+
+    # Todo, support other node_types
+    if linear_constraint.node_type() not in [16,17]:
+        raise Exception("Node type not supported. We support < and <= for the moment.")
+    
+    num_vars = len(linear_constraint.get_free_variables())
+    C = np.zeros([1, num_vars])
+
+    for index_coordinate in range (num_vars):
+        substitution_dictionary = {}
+        ind_check_same_coord = 0 
+        for var in linear_part.get_free_variables(): 
+            if ind_check_same_coord == index_coordinate:
+                substitution_dictionary[var]=Real(1)
+            else:
+                substitution_dictionary[var]=Real(0)
+            ind_check_same_coord += 1
+        coeff_constraint_this_coord = linear_part.substitute(substitution_dictionary).simplify()
+        try:
+            C[0][index_coordinate] = sp.sympify(coeff_constraint_this_coord.constant_value())
+        except:
+            raise Exception("Coefficients of the linear constraint are not rationals. Consider approximating them.")
+    
+    Theta_pysmt_simpl = Theta_pysmt.simplify()
+    try:
+        Theta = sp.sympify(Theta_pysmt_simpl.constant_value())
+    except:
+        raise Exception("Coefficients of the linear constraint are not rationals. Consider approximating them.")
+
+    if multiply_by_minus_one:
+        C = -C
+        Theta = -Theta
+
+    return (np.asarray(C), Theta)
 
 def get_matrices_from_linear_odes(dyn_sys):
     # We get symbolic matrices from the ODEs system when it is linear
@@ -91,7 +146,7 @@ def get_matrices_from_linear_odes(dyn_sys):
         try:
             b[index_ode] = sp.sympify(coeff_ode_all_zero.constant_value())
         except:
-            raise Exception("Coefficient of the linear system are not rationals. Consider approximating them.")
+            raise Exception("Coefficients of the linear system are not rationals. Consider approximating them.")
         for index_coordinate in range (num_vars):
             substitution_dictionary = {}
             ind_check_same_coord = 0 
@@ -105,6 +160,6 @@ def get_matrices_from_linear_odes(dyn_sys):
             try:
                 A[index_ode, index_coordinate] = sp.sympify(coeff_ode_this_coord.constant_value()) - b[index_ode]
             except:
-                raise Exception("Coefficient of the linear system are not rationals. Consider approximating them.")
+                raise Exception("Coefficients of the linear system are not rationals. Consider approximating them.")
         index_ode += 1
     return (np.asarray(A), np.asarray(b))
