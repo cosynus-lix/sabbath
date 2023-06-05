@@ -50,8 +50,6 @@ def build_dyn_systems_from_hs_file(problem):
         if index_dyn_system == 0:
             Theta_smt = Theta
     
-    # Get Cc in some way
-    
     dyn_systems = [get_dyn_sys(Acs[0], bs[0]),
                    get_dyn_sys(Acs[1], bs[1])]
 
