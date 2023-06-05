@@ -11,7 +11,7 @@ import barrier.system as system
 
 # Maybe we want to do something about these global variables.
 THETA = 1
-PRECISION = 10
+PRECISION = 16
 
 
 def get_dyn_sys(A, b):

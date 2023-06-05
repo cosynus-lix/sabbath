@@ -76,15 +76,7 @@ def main():
     # if not can_be_studied_with_valu3s(problem):
     #     raise Exception("We are not ready to study stability of this Hybrud System.")
 
-    (A,B,C,D) = build_dyn_systems_from_hs_file(problem)
-
-
-
-
-
-
-
-
+    (config, dyn_systems, switching_predicate, Theta_smt) = build_dyn_systems_from_hs_file(problem)
 
 
 
@@ -123,7 +115,9 @@ def main():
         ts.to_vmt(f, p)
     with open(args.outpred, "w") as outstream:
         ts.dump_predicates(outstream, predicates)
+    ###
 
+    
 if __name__ == '__main__':
     main()
     sys.exit(os.EX_OK)

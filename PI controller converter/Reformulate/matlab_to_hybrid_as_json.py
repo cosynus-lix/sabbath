@@ -60,6 +60,7 @@ def main():
         num_controllers = HybridSystemMatlab["num_controllers"][0][0]
         num_outputs = HybridSystemMatlab["num_outputs"][0][0]
         reference_values = HybridSystemMatlab["reference_values"]
+        reference_values = np.asarray(np.matrix([[10],[5],[-1],[20]]))
         As = []
         Bs = []
         Cs = []
@@ -94,8 +95,9 @@ def main():
             bs_homo.append(b)
             Cs_homo.append(np.hstack([Cs[ind_mode], np.zeros([num_outputs, num_controllers])]))
             Guards_homo.append(np.hstack([Guards[ind_mode][:,:num_variables], np.zeros([len(Guards[ind_mode]), num_controllers]), Guards[ind_mode][:,[-1]] ]))
-        breakpoint()
-        # np.savez('prova.npz', As_homo=As_homo, bs_homo=bs_homo, Cs_homo=Cs_homo, Guards_homo=Guards_homo)
+        # breakpoint()
+        np.savez(f'variabili_size_{size_system}_refs_{np.transpose(reference_values)}.npz', As_homo=As_homo, bs_homo=bs_homo, Cs_homo=Cs_homo, Guards_homo=Guards_homo)
+        # np.savez(f'variabili_size_{size_system}.npz', As_homo=As_homo, bs_homo=bs_homo, Cs_homo=Cs_homo, Guards_homo=Guards_homo)
         export_to_matlab(As_homo, bs_homo, Cs_homo, Guards_homo)
         
         
