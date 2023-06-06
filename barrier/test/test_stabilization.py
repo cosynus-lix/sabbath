@@ -126,7 +126,10 @@ class TestStability(TestCase):
 
                 np_data = np.load(os.path.join(input_path_npz, f"variables_size_{size_system}.npz"))
 
-                self.assertTrue( ((np_data["As_homo"][ind_mode] -  A_homo) == np.zeros(np.shape(A_homo))).all() )
-                self.assertTrue( ((np_data["bs_homo"][ind_mode] -  b_homo) == np.zeros(np.shape(b_homo))).all() )
-                self.assertTrue( ((np_data["Cs_homo"][ind_mode] -  C_homo) == np.zeros(np.shape(C_homo))).all() )
-                self.assertTrue( ((np_data["Guards_homo"][ind_mode] -  Guard_homo) == np.zeros(np.shape(Guard_homo))).all() )
+                # The failing of the test could be due to numerical reasons.
+                # The algorithm involved in the multiplication of the matrices can change the result.
+                # Check the magnitude of the error in case this does not work (10^-10 cold not be enough, maybe).
+                self.assertTrue( np.linalg.norm((np_data["As_homo"][ind_mode] -  A_homo)) / np.linalg.norm(np_data["As_homo"][ind_mode]) < 1e-10 )
+                self.assertTrue( np.linalg.norm((np_data["bs_homo"][ind_mode] -  b_homo)) / np.linalg.norm(np_data["bs_homo"][ind_mode]) < 1e-10 )
+                self.assertTrue( np.linalg.norm((np_data["Cs_homo"][ind_mode] -  C_homo)) / np.linalg.norm(np_data["Cs_homo"][ind_mode]) < 1e-10 )
+                self.assertTrue( np.linalg.norm((np_data["Guards_homo"][ind_mode] -  Guard_homo)) / np.linalg.norm(np_data["Guards_homo"][ind_mode]) < 1e-10 )

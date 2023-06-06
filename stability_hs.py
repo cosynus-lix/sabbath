@@ -74,7 +74,7 @@ def main():
     
     # # Here we check if the hybrid system given can be studied with valu3s tools. Function must be added.
     # if not can_be_studied_with_valu3s(problem):
-    #     raise Exception("We are not ready to study stability of this Hybrud System.")
+    #     raise Exception("We are not ready to study stability of this Hybrid System.")
 
     (config, dyn_systems, switching_predicate, Theta_smt) = build_dyn_systems_from_hs_file(problem)
 
