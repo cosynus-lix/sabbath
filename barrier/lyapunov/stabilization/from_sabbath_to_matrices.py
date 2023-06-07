@@ -69,37 +69,36 @@ def build_dyn_systems_from_hs_file(problem):
 
     # We get the switching predicate
     switching_predicate = get_switching_predicate_from_linear_constraint(problem.ha._locations[f"{index_dyn_system}"][0])
-    
-    # Todo. Do something to give this line a sense:
-    # config = Config(new_solver_f)
-    config = "TODO"
 
-    return (config, dyn_systems, switching_predicate, Theta_smt) # ,ref_values_smt)
+    return (dyn_systems, switching_predicate, Theta_smt) # ,ref_values_smt)
 
 def get_switching_predicate_from_linear_constraint(linear_constraint):
-    if len(linear_constraint.arg(0).get_free_variables()) > 0:
-        return linear_constraint.arg(0)
-    else:
-        return Times(linear_constraint.arg(0), Real(-1))
+    breakpoint()
+    return Plus(linear_constraint.arg(0), Times(linear_constraint.arg(1), Real(-1)))
 
     
 def get_vector_from_linear_constraint(linear_constraint):
     # We get symbolic vector from the location invariant when it is linear
-
-    if len(linear_constraint.arg(0).get_free_variables()) > 0:
-        linear_part = linear_constraint.arg(0)
-        Theta_pysmt = linear_constraint.arg(1)
-        multiply_by_minus_one = False
-    else:
-        linear_part = linear_constraint.arg(1)
-        Theta_pysmt = linear_constraint.arg(0)
-        multiply_by_minus_one = False
-
+    
+    
     # Todo, support other node_types
     if linear_constraint.node_type() not in [16,17]:
         raise Exception("Node type not supported. We support < and <= for the moment.")
     
+    # We start getting Theta
+    linear_part = Plus(linear_constraint.arg(0), Times(linear_constraint.arg(1), Real(-1)))
     num_vars = len(linear_constraint.get_free_variables())
+    
+    substitution_dictionary = {}
+    for var in  linear_part.get_free_variables(): 
+        substitution_dictionary[var]=Real(0)
+    lin_part_all_zero = coordinate_ode.substitute(substitution_dictionary).simplify()
+    try:
+        Theta = sp.sympify(lin_part_all_zero.constant_value())
+    except:
+        raise Exception("Coefficients of the constraint system are not rationals. Consider approximating them.")
+  
+    # Now we get C
     C = np.zeros([1, num_vars])
 
     for index_coordinate in range (num_vars):
@@ -116,16 +115,6 @@ def get_vector_from_linear_constraint(linear_constraint):
             C[0][index_coordinate] = sp.sympify(coeff_constraint_this_coord.constant_value())
         except:
             raise Exception("Coefficients of the linear constraint are not rationals. Consider approximating them.")
-    
-    Theta_pysmt_simpl = Theta_pysmt.simplify()
-    try:
-        Theta = sp.sympify(Theta_pysmt_simpl.constant_value())
-    except:
-        raise Exception("Coefficients of the linear constraint are not rationals. Consider approximating them.")
-
-    if multiply_by_minus_one:
-        C = -C
-        Theta = -Theta
 
     return (np.asarray(C), Theta)
 
