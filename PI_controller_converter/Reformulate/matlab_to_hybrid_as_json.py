@@ -46,7 +46,7 @@ def string_no_change(num_variables):
     return result
 
 
-def reformulate_PI(A_or, B_or, C_or, Guard_or, KP_or, KI_or, num_var, num_con, num_out, ref_val):
+def reformulate_PI(A_or, B_or, C_or, Invar_or, KP_or, KI_or, num_var, num_con, num_out, ref_val):
     # We reformulate a PI controller of the form x' = A_or * x + B_or * u 
     # (_or stands for original)
     # in the new variable w = [x; u], obtaining the dynsys of the form
@@ -64,10 +64,10 @@ def reformulate_PI(A_or, B_or, C_or, Guard_or, KP_or, KI_or, num_var, num_con, n
     b_homo = np.vstack([np.zeros([num_var,1]), b_bot])
 
     C_homo = np.hstack([C_or, np.zeros([num_out, num_con])])
+    
+    Invar_geq0_homo = np.hstack([Invar_or[:,:num_var], np.zeros([len(Invar_or), num_con]), Invar_or[:,[-1]] ])
 
-    Guard_homo = np.hstack([Guard_or[:,:num_var], np.zeros([len(Guard_or), num_con]), Guard_or[:,[-1]] ])
-
-    return (A_homo, b_homo, C_homo, Guard_homo)
+    return (A_homo, b_homo, C_homo, Invar_geq0_homo)
 
 def main():
     
@@ -83,20 +83,20 @@ def main():
         num_controllers = HybridSystemMatlab["num_controllers"][0][0]
         num_outputs = HybridSystemMatlab["num_outputs"][0][0]
         reference_values = HybridSystemMatlab["reference_values"]
-        # reference_values = np.asarray(np.matrix([[10],[5],[-1],[20]]))
+        reference_values = np.asarray(np.matrix([[0.5],[0],[-1],[20]]))
         As = []
         Bs = []
         Cs = []
         KIs = []
         KPs = []
-        Guards = []
+        Invars_geq0 = []
         for ind_mode in range(num_modes):
             As.append(HybridSystemMatlab[f"A_{ind_mode}"])
             Bs.append(HybridSystemMatlab[f"B_{ind_mode}"])
             Cs.append(HybridSystemMatlab[f"C_{ind_mode}"])
             KIs.append(HybridSystemMatlab[f"KI_{ind_mode}"])
             KPs.append(HybridSystemMatlab[f"KP_{ind_mode}"])
-            Guards.append(HybridSystemMatlab[f"Guard_{ind_mode}"])
+            Invars_geq0.append(HybridSystemMatlab[f"Invar_{ind_mode}_geq0"])
 
         num_homo_variables = num_variables + num_controllers
 
@@ -104,23 +104,22 @@ def main():
         As_homo = []
         bs_homo = []
         Cs_homo = []
-        Guards_homo = []
+        Invars_geq0_homo = []
 
         for ind_mode in range(num_modes):
-
-            (A_homo, b_homo, C_homo, Guard_homo) = reformulate_PI(As[ind_mode], Bs[ind_mode], Cs[ind_mode], 
-                                                                    Guards[ind_mode], KPs[ind_mode], KIs[ind_mode], 
+            (A_homo, b_homo, C_homo, Invar_geq0_homo) = reformulate_PI(As[ind_mode], Bs[ind_mode], Cs[ind_mode], 
+                                                                    Invars_geq0[ind_mode], KPs[ind_mode], KIs[ind_mode], 
                                                                     num_variables, num_controllers, num_outputs, reference_values)
 
             As_homo.append(A_homo)
             bs_homo.append(b_homo)
             Cs_homo.append(C_homo)
-            Guards_homo.append(Guard_homo)
+            Invars_geq0_homo.append(Invar_geq0_homo)
         
-        # np.savez(f'variabili_size_{size_system}_refs_{np.transpose(reference_values)}.npz', As_homo=As_homo, bs_homo=bs_homo, Cs_homo=Cs_homo, Guards_homo=Guards_homo)
-        np.savez(f'variables_size_{size_system}.npz', As_homo=As_homo, bs_homo=bs_homo, Cs_homo=Cs_homo, Guards_homo=Guards_homo)
+        np.savez(f'variabili_size_{size_system}_refs_{np.transpose(reference_values)}.npz', As_homo=As_homo, bs_homo=bs_homo, Cs_homo=Cs_homo, Invars_geq0_homo=Invars_geq0_homo)
+        # np.savez(f'variables_size_{size_system}.npz', As_homo=As_homo, bs_homo=bs_homo, Cs_homo=Cs_homo, Invars_geq0_homo=Invars_geq0_homo)
 
-        export_to_matlab(As_homo, bs_homo, Cs_homo, Guards_homo)
+        export_to_matlab(As_homo, bs_homo, Cs_homo, Invars_geq0_homo)
         
         
         
@@ -168,22 +167,22 @@ def main():
         
         index_mode = 0
         problem["locations"][f"{index_mode}"] = {}
-        problem["locations"][f"{index_mode}"]["invar"] = "( < " + scalar_product(Guards_homo[0][0][:-1]) + f"{-Guards_homo[0][0][-1]}" + " )"
+        problem["locations"][f"{index_mode}"]["invar"] = "( < " + scalar_product(-Invars_geq0_homo[0][0][:-1]) + f"{Invars_geq0_homo[0][0][-1]}" + " )"
         problem["locations"][f"{index_mode}"]["vectorField"] = vector_field_description(As_homo[index_mode], bs_homo[index_mode])
         index_mode = 1
         problem["locations"][f"{index_mode}"] = {}
-        problem["locations"][f"{index_mode}"]["invar"] = "( >= " + scalar_product(Guards_homo[0][0][:-1]) + f"{-Guards_homo[0][0][-1]}" + " )"
+        problem["locations"][f"{index_mode}"]["invar"] = "( >= " + scalar_product(Invars_geq0_homo[1][0][:-1]) + f"{-Invars_geq0_homo[1][0][-1]}" + " )"
         problem["locations"][f"{index_mode}"]["vectorField"] = vector_field_description(As_homo[index_mode], bs_homo[index_mode])
 
         problem["edges"] = {}
         index_mode = 0
         problem["edges"][f"{index_mode}"]= [{}]
         problem["edges"][f"{index_mode}"][0]["dst"] = "1"
-        problem["edges"][f"{index_mode}"][0]["trans"] = "(and ( >= " + scalar_product(Guards_homo[0][0][:-1]) + f"{-Guards_homo[0][0][-1]}" + " ) " + string_no_change(num_homo_variables) + " )"
+        problem["edges"][f"{index_mode}"][0]["trans"] = "(and ( >= " + scalar_product(-Invars_geq0_homo[0][0][:-1]) + f"{Invars_geq0_homo[0][0][-1]}" + " ) " + string_no_change(num_homo_variables) + " )"
         index_mode = 1
         problem["edges"][f"{index_mode}"]= [{}]
         problem["edges"][f"{index_mode}"][0]["dst"] = "0"
-        problem["edges"][f"{index_mode}"][0]["trans"] = "(and ( < " + scalar_product(Guards_homo[0][0][:-1]) + f"{-Guards_homo[0][0][-1]}" + " ) " + string_no_change(num_homo_variables) + " )"
+        problem["edges"][f"{index_mode}"][0]["trans"] = "(and ( < " + scalar_product(Invars_geq0_homo[1][0][:-1]) + f"{-Invars_geq0_homo[1][0][-1]}" + " ) " + string_no_change(num_homo_variables) + " )"
 
 
         problem["predicates"]= []
