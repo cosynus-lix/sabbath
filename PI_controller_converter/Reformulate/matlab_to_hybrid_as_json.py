@@ -64,7 +64,7 @@ def reformulate_PI(A_or, B_or, C_or, Invar_or, KP_or, KI_or, num_var, num_con, n
     b_homo = np.vstack([np.zeros([num_var,1]), b_bot])
 
     C_homo = np.hstack([C_or, np.zeros([num_out, num_con])])
-    
+
     Invar_geq0_homo = np.hstack([Invar_or[:,:num_var], np.zeros([len(Invar_or), num_con]), Invar_or[:,[-1]] ])
 
     return (A_homo, b_homo, C_homo, Invar_geq0_homo)
@@ -83,7 +83,7 @@ def main():
         num_controllers = HybridSystemMatlab["num_controllers"][0][0]
         num_outputs = HybridSystemMatlab["num_outputs"][0][0]
         reference_values = HybridSystemMatlab["reference_values"]
-        reference_values = np.asarray(np.matrix([[0.5],[0],[-1],[20]]))
+        # reference_values = np.asarray(np.matrix([[0.5],[0],[-1],[20]]))
         As = []
         Bs = []
         Cs = []
@@ -116,8 +116,8 @@ def main():
             Cs_homo.append(C_homo)
             Invars_geq0_homo.append(Invar_geq0_homo)
         
-        np.savez(f'variabili_size_{size_system}_refs_{np.transpose(reference_values)}.npz', As_homo=As_homo, bs_homo=bs_homo, Cs_homo=Cs_homo, Invars_geq0_homo=Invars_geq0_homo)
-        # np.savez(f'variables_size_{size_system}.npz', As_homo=As_homo, bs_homo=bs_homo, Cs_homo=Cs_homo, Invars_geq0_homo=Invars_geq0_homo)
+        # np.savez(f'variabili_size_{size_system}_refs_{np.transpose(reference_values)}.npz', As_homo=As_homo, bs_homo=bs_homo, Cs_homo=Cs_homo, Invars_geq0_homo=Invars_geq0_homo)
+        np.savez(f'variables_size_{size_system}.npz', As_homo=As_homo, bs_homo=bs_homo, Cs_homo=Cs_homo, Invars_geq0_homo=Invars_geq0_homo)
 
         export_to_matlab(As_homo, bs_homo, Cs_homo, Invars_geq0_homo)
         

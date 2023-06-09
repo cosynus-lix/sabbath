@@ -107,21 +107,21 @@ class TestStability(TestCase):
             Cs = []
             KIs = []
             KPs = []
-            Guards = []
+            Invars_geq0 = []
             for ind_mode in range(num_modes):
                 As.append(HybridSystemMatlab[f"A_{ind_mode}"])
                 Bs.append(HybridSystemMatlab[f"B_{ind_mode}"])
                 Cs.append(HybridSystemMatlab[f"C_{ind_mode}"])
                 KIs.append(HybridSystemMatlab[f"KI_{ind_mode}"])
                 KPs.append(HybridSystemMatlab[f"KP_{ind_mode}"])
-                Guards.append(HybridSystemMatlab[f"Guard_{ind_mode}"])
+                Invars_geq0.append(HybridSystemMatlab[f"Invar_{ind_mode}_geq0"])
 
             # We check if the reformulated system has the same value as before
 
             for ind_mode in range(num_modes):
 
-                (A_homo, b_homo, C_homo, Guard_homo) = reformulate_PI(As[ind_mode], Bs[ind_mode], Cs[ind_mode], 
-                                                                        Guards[ind_mode], KPs[ind_mode], KIs[ind_mode], 
+                (A_homo, b_homo, C_homo, Invar_geq0_homo) = reformulate_PI(As[ind_mode], Bs[ind_mode], Cs[ind_mode], 
+                                                                        Invars_geq0[ind_mode], KPs[ind_mode], KIs[ind_mode], 
                                                                         num_variables, num_controllers, num_outputs, reference_values)
 
                 np_data = np.load(os.path.join(input_path_npz, f"variables_size_{size_system}.npz"))
@@ -132,4 +132,4 @@ class TestStability(TestCase):
                 self.assertTrue( np.linalg.norm((np_data["As_homo"][ind_mode] -  A_homo)) / np.linalg.norm(np_data["As_homo"][ind_mode]) < 1e-10 )
                 self.assertTrue( np.linalg.norm((np_data["bs_homo"][ind_mode] -  b_homo)) / np.linalg.norm(np_data["bs_homo"][ind_mode]) < 1e-10 )
                 self.assertTrue( np.linalg.norm((np_data["Cs_homo"][ind_mode] -  C_homo)) / np.linalg.norm(np_data["Cs_homo"][ind_mode]) < 1e-10 )
-                self.assertTrue( np.linalg.norm((np_data["Guards_homo"][ind_mode] -  Guard_homo)) / np.linalg.norm(np_data["Guards_homo"][ind_mode]) < 1e-10 )
+                self.assertTrue( np.linalg.norm((np_data["Invars_geq0_homo"][ind_mode] -  Invar_geq0_homo)) / np.linalg.norm(np_data["Invars_geq0_homo"][ind_mode]) < 1e-10 )
