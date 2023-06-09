@@ -92,7 +92,7 @@ def get_vector_from_linear_constraint(linear_constraint):
     substitution_dictionary = {}
     for var in  linear_part.get_free_variables(): 
         substitution_dictionary[var]=Real(0)
-    lin_part_all_zero = coordinate_ode.substitute(substitution_dictionary).simplify()
+    lin_part_all_zero = linear_part.substitute(substitution_dictionary).simplify()
     try:
         Theta = sp.sympify(lin_part_all_zero.constant_value())
     except:
