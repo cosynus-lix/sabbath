@@ -1062,7 +1062,7 @@ def find_stability_assumption(config,
     solver = config.solver_function()
     s0_in_m0 = solver.is_sat(m0_invar.substitute(stable[0]))
     s1_in_m0 = solver.is_sat(m0_invar.substitute(stable[1]))
-
+    
     ks = [None, None]
     if num_info_file:
         ks = get_k_candidates(num_info_file)
@@ -1171,6 +1171,7 @@ def find_stability_assumption(config,
         # print(evalpred)
 
         verify_po_logger.info("The stability point of m[0] is in m[1]!")
+        breakpoint()
         assumption = FALSE()
         raise NotImplementedError()
 
@@ -1209,7 +1210,7 @@ def main(args):
     env = get_env()
     with open(args.problem, "r") as f:
         problem = importHSVer(f, env)
-
+    
     if (args.solver == "z3"):
         new_solver_f = partial(Solver, logic=QF_NRA, name="z3")
     elif (args.solver == "mathsat"):
@@ -1283,6 +1284,7 @@ def main(args):
         stable, lyap = get_stable_and_lyapunov(dyn_systems, config.solver_function, gas_optss, num_info=num_info, only=only)
 
         if synthesize and only is None:
+
             assumptions, lyap = find_stability_assumption(config,
                                                           dyn_systems,
                                                           switching_predicate,

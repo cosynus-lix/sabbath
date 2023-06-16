@@ -66,14 +66,15 @@ def build_dyn_systems_from_hs_file(problem):
     # r0 - y0 - Theta
     # switching_predicate = r0 - y0 - Theta_smt
     ###
-
     # We get the switching predicate
-    switching_predicate = get_switching_predicate_from_linear_constraint(problem.ha._locations[f"{index_dyn_system}"][0])
+    switching_predicate = get_switching_predicate_from_linear_constraint(problem.ha._locations["0"][0])
 
     return (dyn_systems, switching_predicate, Theta_smt) # ,ref_values_smt)
 
 def get_switching_predicate_from_linear_constraint(linear_constraint):
-    breakpoint()
+    # Todo, support other node_types
+    if linear_constraint.node_type() not in [16,17]:
+        raise Exception("Node type not supported. We support < and <= for the moment.")
     return Plus(linear_constraint.arg(0), Times(linear_constraint.arg(1), Real(-1)))
 
     
