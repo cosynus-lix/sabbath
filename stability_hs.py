@@ -32,9 +32,6 @@ from barrier.mathematica.mathematica import (
     get_mathematica, exit_callback_print_time, OutOfTimeSolverError, MathematicaSession
 )
 
-
-### LUDO START OF COPIED INITIALIZATION
-
 import argparse
 import json
 import os
@@ -260,9 +257,10 @@ def main(args):
     if len(problem.ha._locations) > 2:
         raise Exception("We are not ready to study stability of a Hybrid System with more than 2 modes.")
     
-    # # Here we check if the hybrid system given can be studied with valu3s tools. TODO: Function must be added.
-    # if not is_piecewise_affine(problem):
-    #     raise Exception("We are not ready to study stability of this Hybrid System.")
+    # Here we check if the hybrid system given can be studied with valu3s tools.
+    if not is_piecewise_affine(problem):
+        raise Exception("We are not ready to study stability of this Hybrid System. At the moment we study\
+                        stability for piecewise affine systems with two modes.")
 
     (dyn_systems, switching_predicate, Theta_smt) = build_dyn_systems_from_hs_file(problem)
     
