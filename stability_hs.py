@@ -15,7 +15,7 @@ from barrier.decomposition.encoding import (
     DecompositionOptions, DecompositionEncoderHA
 )
 from barrier.decomposition.utils import get_unique_poly_list
-from barrier.lyapunov.stabilization.piecewise_affine_case import *
+from barrier.lyapunov.piecewise_affine_case import *
 
 
 from pysmt.shortcuts import (
@@ -105,6 +105,8 @@ from barrier.utils import get_cvc5_smtlib, get_mathsat_smtlib
 from barrier.mathematica.mathematica import (
     get_mathematica, exit_callback_print_time, OutOfTimeSolverError, MathematicaSession
 )
+
+from barrier.lyapunov.piecewise_quadratic_ludo import *
 
 THETA = 1
 PRECISION = 16
@@ -262,8 +264,11 @@ def main(args):
         raise Exception("We are not ready to study stability of this Hybrid System. At the moment we study\
                         stability for piecewise affine systems with two modes.")
 
-    (dyn_systems, switching_predicate, Theta_smt) = build_dyn_systems_from_hs_file(problem)
-    
+    (dyn_systems, switching_predicate_mode0_less0, vector_sw_pr_mode0_less0) = build_dyn_systems_from_hs_file(problem)
+
+    (lyap_fun0, lyap_fun1) = get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0)
+
+
     config = Config(new_solver_f)
     gas_optss = [
         # gas option for mode0
@@ -316,7 +321,7 @@ def main(args):
 
             assumptions, lyap = find_stability_assumption(config,
                                                           dyn_systems,
-                                                          switching_predicate,
+                                                          switching_predicate_mode0_less0,
                                                           stable, lyap,
                                                           num_info,
                                                           input_num_info_file)

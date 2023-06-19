@@ -45,31 +45,16 @@ def build_dyn_systems_from_hs_file(problem):
         (A, b) = get_matrices_from_linear_odes(problem.ha._locations[f"{index_dyn_system}"][1])
         Acs.append(A)
         bs.append(b)
-        (C, Theta) = get_vector_from_linear_constraint(problem.ha._locations[f"{index_dyn_system}"][0])
-        Cc.append(C)
         if index_dyn_system == 0:
-            Theta_smt = Theta
+            vector_sw_pr_mode0_less0 = get_vector_from_linear_constraint(problem.ha._locations[f"{index_dyn_system}"][0])
     
     dyn_systems = [get_dyn_sys(Acs[0], bs[0]),
                    get_dyn_sys(Acs[1], bs[1])]
 
-    Theta_smt = Real(myround(Theta, PRECISION))
 
-    ### OLD CODE, DO WE NEED IT?
-    # y0 = get_y0(dyn_systems[0], Cc)
-    # refvalues_smt = to_smt_vect(refs, PRECISION)
-
-    # verify_po_logger.info("Reference values: %s" % str(refvalues_smt))
-
-    # r0 = refvalues_smt[0]
-
-    # r0 - y0 - Theta
-    # switching_predicate = r0 - y0 - Theta_smt
-    ###
     # We get the switching predicate
-    switching_predicate = get_switching_predicate_from_linear_constraint(problem.ha._locations["0"][0])
-
-    return (dyn_systems, switching_predicate, Theta_smt) # ,ref_values_smt)
+    switching_predicate_mode0_less0 = get_switching_predicate_from_linear_constraint(problem.ha._locations["0"][0])
+    return (dyn_systems, switching_predicate_mode0_less0, vector_sw_pr_mode0_less0) # ,ref_values_smt)
 
 def get_switching_predicate_from_linear_constraint(linear_constraint):
     # Todo, support other node_types
@@ -100,7 +85,7 @@ def get_vector_from_linear_constraint(linear_constraint):
         raise Exception("Coefficients of the constraint system are not rationals. Consider approximating them.")
   
     # Now we get C
-    C = np.zeros([1, num_vars])
+    C = sp.zeros(1, num_vars)
 
     for index_coordinate in range (num_vars):
         substitution_dictionary = {}
@@ -113,11 +98,11 @@ def get_vector_from_linear_constraint(linear_constraint):
             ind_check_same_coord += 1
         coeff_constraint_this_coord = linear_part.substitute(substitution_dictionary).simplify()
         try:
-            C[0][index_coordinate] = sp.sympify(coeff_constraint_this_coord.constant_value())
+            C[0,index_coordinate] = sp.sympify(coeff_constraint_this_coord.constant_value()) - Theta
         except:
             raise Exception("Coefficients of the linear constraint are not rationals. Consider approximating them.")
 
-    return (np.asarray(C), Theta)
+    return (sp.Matrix.hstack(C,sp.Matrix([Theta])))
 
 def get_matrices_from_linear_odes(dyn_sys):
     # We get symbolic matrices from the ODEs system when it is linear

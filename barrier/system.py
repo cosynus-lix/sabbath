@@ -25,6 +25,7 @@ from barrier.formula_utils import FormulaHelper
 
 from barrier.ts import TS
 
+from barrier.lyapunov.stabilization.from_sabbath_to_matrices import get_matrices_from_linear_odes
 
 class MalformedSystem(Exception):
     pass
@@ -47,7 +48,6 @@ def matrix_times_vect_tmp(vect, matrix):
       index_term = index_term + Times(vect[column_index], coefficient)
     res.append(simplify(index_term))
   return res
-
 
 class DynSystem(object):
 
@@ -271,6 +271,12 @@ class DynSystem(object):
         for x in self._states:
             odes[x] = self._odes[x]
         return odes
+
+    def get_odes_matrix_and_vector(self):
+        if not self.is_linear():
+            raise Exception("Not a linear system. You cannot get the matrix.")
+        (A, b) = get_matrices_from_linear_odes(self)
+        return (A, b)
 
     def is_linear(self):
         """ Returns true if the system is linear (in all the variables, not only the state ones) """

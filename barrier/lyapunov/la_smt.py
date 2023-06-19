@@ -118,3 +118,56 @@ def to_sym_matrix(A, k = DEFAULT_PRECISION):
   for ind in range(0,len(A)):
     A_sympy.append(sp.Matrix([myround(x) for x in A[ind]]).transpose())
   return sp.Matrix(A_sympy)
+
+def is_positive_sylvester(A):
+  # Note: could be optimized
+  n = sp.shape(A)[0]
+  for i in range(n-1):
+    if sp.Determinant(A).doit() <= 0:
+      return False
+    A = A.minor_submatrix(0, 0)
+  return sp.Determinant(A).doit() > 0
+
+def is_semipositive_sylvester(A):
+  # Note: could be optimized
+  n = sp.shape(A)[0]
+  for i in range(n-1):
+    if sp.Determinant(A).doit() < 0:
+      return False
+    A = A.minor_submatrix(0, 0)
+  return sp.Determinant(A).doit() >= 0
+
+def augment_sp(A):
+    # Interprets a linear dynamical system in a dimension more.
+    n = sp.shape(A)[0]
+    A_aug = sp.zeros(n+1, n+1)
+    A_aug[0:n, 0:n] = A
+    return A_aug
+
+def augment(A):
+    # Interprets a linear dynamical system in a dimension more.
+    n = len(A)
+    A_aug = np.zeros([n+1, n+1])
+    A_aug[0:n, 0:n] = A
+    return A_aug
+
+def translate(A, b):
+    # Given the affine dynamical system A, translates it by the vector b
+    n = len(A)
+    change_coord = np.vstack([
+    np.hstack([np.identity(n-1), -np.transpose(np.asmatrix(b))]),
+    np.hstack([np.zeros([1,len(b)]), [[1]]])])
+    A_trans = np.transpose(change_coord) @ A @ change_coord
+    return A_trans
+
+def can_vec(index,dimension):
+    # Gives the dimension-th canonical vector of R^index.
+    x = np.matrix(np.zeros([dimension,1]))
+    x[index-1,0] = 1
+    return x
+
+def can_vec_sp(index,dimension):
+    # Gives the dimension-th canonical vector of R^index.
+    x = sp.zeros(dimension,1)
+    x[index-1,0] = 1
+    return x
