@@ -169,6 +169,23 @@ class DynSystem(object):
                             False)
         return inverse
 
+    def get_equilibrium_point(self):
+        """
+        Gets the equilibrium point. Only works for affine systems 
+        at the moment.
+        """
+
+        assert (self.is_linear())
+        assert (len(self._inputs) == 0)
+        assert (len(self._disturbances) == 0)
+        assert (len(self._dist_constraints) == 0)
+
+        # find equlibrium point(s)
+        solutions = self.get_derivator().get_all_solutions_linear_system(self._odes.values(),
+                                                                         self._states)
+        
+        return solutions
+
     def get_rescaled_by_equilibrium_point(self):
         """ Works on linear systems.
 

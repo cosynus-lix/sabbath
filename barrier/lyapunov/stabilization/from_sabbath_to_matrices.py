@@ -43,8 +43,8 @@ def build_dyn_systems_from_hs_file(problem):
     
     for index_dyn_system in range(len(problem.ha._locations)):
         (A, b) = get_matrices_from_linear_odes(problem.ha._locations[f"{index_dyn_system}"][1])
-        Acs.append(A)
-        bs.append(b)
+        Acs.append(np.asarray(A))
+        bs.append(np.asarray(b))
         if index_dyn_system == 0:
             vector_sw_pr_mode0_less0 = get_vector_from_linear_constraint(problem.ha._locations[f"{index_dyn_system}"][0])
     
@@ -135,4 +135,4 @@ def get_matrices_from_linear_odes(dyn_sys):
             except:
                 raise Exception("Coefficients of the linear system are not rationals. Consider approximating them.")
         index_ode += 1
-    return (np.asarray(A), np.asarray(b))
+    return (A, b)

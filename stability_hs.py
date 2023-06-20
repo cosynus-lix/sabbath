@@ -266,7 +266,27 @@ def main(args):
 
     (dyn_systems, switching_predicate_mode0_less0, vector_sw_pr_mode0_less0) = build_dyn_systems_from_hs_file(problem)
 
-    (lyap_fun0, lyap_fun1) = get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0)
+
+    #LUDO: Todo: add a check on the stable points (both in mode 0)
+    if args.validation_method in ['sympy', 'sylvester']:
+        validate_during_synth = True
+    else:
+        validate_during_synth = False
+
+    Candidate_lyap = get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify = validate_during_synth)
+    if validate_during_synth == True:
+        Certified_Lyap = Candidate_lyap
+    
+    else:
+        certified = certify_piecewise_lyap(dyn_systems, switching_predicate_mode0_less0, Candidate_lyap, solver = new_solver_f())
+        if certified == True:
+            logging.critical("The Piecewise-Quadratic Lyapunov Function was certified via SMT methods. The system IS STABLE.")
+            Certified_Lyap = Candidate_lyap
+        else:
+            logging.critical("The synthesized Piecewise-Quadratic Lyapunov Function was NOT certified via SMT methods. It is invalid.")
+    
+    
+
 
 
     config = Config(new_solver_f)
@@ -335,7 +355,7 @@ def main(args):
                 stability_hs_logger.info("WARNING: found inconsistent assumptions")
             else:
                 stability_hs_logger.info("WARNING: assumptions ARE consistent!")
-                if solver.is_sat(And(GT(switching_predicate, Real(0)), assumptions)):
+                if solver.is_sat(And(GT(switching_predicate_mode0_less0, Real(0)), assumptions)):
                     logging.critical(f"Assumptions intersects m1 invariant!")
                 else:
                     logging.critical("Assumptions DO NOT intersects m1 invariant!")

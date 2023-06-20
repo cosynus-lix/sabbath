@@ -171,3 +171,16 @@ def can_vec_sp(index,dimension):
     x = sp.zeros(dimension,1)
     x[index-1,0] = 1
     return x
+
+def from_sympy_to_smt_vector(vect):
+  res = []
+  for j in range(len(vect)):
+    res.append(Real(vect[j].numerator)/Real(vect[j].denominator))
+  return res
+
+def from_sympy_to_smt_matrix(sp_matrix):
+  smt_matrix = []
+  for i in range(sp.shape(sp_matrix)[0]):
+    res = from_sympy_to_smt_vector(sp_matrix[i, :])
+    smt_matrix.append(res)
+  return smt_matrix
