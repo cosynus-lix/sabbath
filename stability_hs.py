@@ -268,11 +268,12 @@ def main(args):
 
 
     #LUDO: Todo: add a check on the stable points (both in mode 0)
-    if args.validation_method in ['sympy', 'sylvester']:
-        validate_during_synth = True
-    else:
+    
+    if args.validation_method in ['smt']:
         validate_during_synth = False
-
+    else:
+        validate_during_synth = True
+    
     Candidate_lyap = get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify = validate_during_synth)
     if validate_during_synth == True:
         Certified_Lyap = Candidate_lyap

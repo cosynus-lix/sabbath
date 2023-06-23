@@ -223,6 +223,8 @@ def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify =
     sdp.add_constraint(eta2 >> 0)
 
     # # The following is a normalization condition. It needs to hold (easy to see with Sylvester method).
+    # # Sometimes the solver does not provide a solution if we give it this condition, but does provide
+    # # a solution if we do not. This is strange and could be investigated.
     # sdp.add_constraint((P1b[0,0]) >> 1)
 
     # Cond1 = P1b - gamma * I
@@ -263,7 +265,8 @@ def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify =
     # sdp.add_constraint(Cond7 >> 0)
     # sdp.add_constraint(Cond8 >> 0)
 
-
+    # ACHTUNG: notice that if we do not give condition P[0,0] > 1, the solution where everything is zero is a valid solution for the SDP problem
+    # but is not validated by the SymPy checks. 
     sol = sdp.solve()
 
     new_P1b = P1b.np
@@ -271,10 +274,10 @@ def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify =
     # Start validation
 
     P1_sym = to_sym_matrix(np.asarray(P1b.np))
-    A1bar
-    A2bar
-    # I_sym = to_sym_matrix(np.asarray(Ibar))
-    QQ2
+    # A1bar
+    # A2bar
+    # # I_sym = to_sym_matrix(np.asarray(Ibar))
+    # QQ2
     mu2_sym = myround(mu2.np)
     eta2_sym = myround(eta2)
     P2_sym = deepcopy(P1_sym)
@@ -284,23 +287,34 @@ def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify =
     assert(mu2_sym >= 0)
     assert(eta2_sym >= 0)
 
-    # assert(is_semipositive_sylvester(P1_sym))
-    # assert(is_semipositive_sylvester(P2_sym - mu2_sym * QQ2))
-    # assert(is_semipositive_sylvester(-(sp.transpose(A1bar) @ P1_sym + P1_sym @ A1bar)))
-    # assert(is_semipositive_sylvester(-(sp.transpose(A2bar) @ P2_sym + P2_sym @ A2bar + eta2_sym * QQ2)))
-
     P1_sym_old_coord = translation.transpose() @ P1_sym @ (translation)
     P2_sym_old_coord = translation.transpose() @ P2_sym @ (translation)
 
     if certify == True:
-        if not all([is_semipositive_sylvester(P1_sym_old_coord),
-                   is_semipositive_sylvester(P2_sym_old_coord - mu2_sym * QQ2A),
-                   is_semipositive_sylvester(-(sp.transpose(A1bar_old) @ P1_sym_old_coord + P1_sym_old_coord @ A1bar_old)),
-                   is_semipositive_sylvester(-(sp.transpose(A2bar_old) @ P2_sym_old_coord + P2_sym_old_coord @ A2bar_old + eta2_sym * QQ2A))]):
+        if not all( [ P1_sym[-1,:] == sp.zeros(1,n),  P1_sym[:,-1] == sp.zeros(n,1), A1bar[-1,:] == sp.zeros(1,n),  A1bar[:,-1] == sp.zeros(n,1) ] ):
+            logging.critical("There are errors in the matrices obtained.")
+            return None
+        P1_help = P1_sym[0:-1, 0:-1]
+        A1bar_help = A1bar[0:-1, 0:-1]
+        if not all([is_positive_sylvester(P1_help),
+                   is_positive_sylvester(P2_sym - mu2_sym * QQ2),
+                   is_positive_sylvester(-(sp.transpose(A1bar_help) @ P1_help + P1_help @ A1bar_help)),
+                   is_positive_sylvester(-(sp.transpose(A2bar) @ P2_sym + P2_sym @ A2bar + eta2_sym * QQ2))]):
             logging.critical("The Piecewise-Quadratic Lyapunov Function was numerically synthesized but is not valid.")
-        else:
-            logging.critical("Found a valid Piecewise-Quadratic Lyapunov Function for the system. The system IS STABLE.")
-
+            return None
+        # The following checks are just double-checks. They check if something is wrong with the translation. They are removed but can be used to debug.
+        # if not all([is_semipositive_sylvester(P1_sym_old_coord),
+        #            is_semipositive_sylvester(P2_sym_old_coord - mu2_sym * QQ2A),
+        #            is_semipositive_sylvester(-(sp.transpose(A1bar_old) @ P1_sym_old_coord + P1_sym_old_coord @ A1bar_old)),
+        #            is_semipositive_sylvester(-(sp.transpose(A2bar_old) @ P2_sym_old_coord + P2_sym_old_coord @ A2bar_old + eta2_sym * QQ2A))]):
+        #     logging.critical("The Piecewise-Quadratic Lyapunov Function was numerically synthesized but is not valid.")
+        #     return None
+        # else:
+            # logging.critical("Found a valid Piecewise-Quadratic Lyapunov Function for the system. The system IS STABLE.")
+        logging.critical("Found a valid Piecewise-Quadratic Lyapunov Function for the system. The system IS STABLE.")
+    
+    
+    # The following can be used to save the results in an external file.
     # import pickle
     # with open('lf0_old_coord.pickle','wb') as f:
     #     pickle.dump(P1_sym_old_coord,f)
