@@ -284,8 +284,9 @@ def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify =
     for index in range(n):
         P2_sym = P2_sym + myround(lambdas[index].np) * Qcd[index]
     
-    assert(mu2_sym >= 0)
-    assert(eta2_sym >= 0)
+    if not all([mu2_sym >= 0, eta2_sym >= 0]):
+      logging.critical("The solution given by the sdp solver is not valid: some constants that should be greater or equal to zero are negative.")
+      return None
 
     P1_sym_old_coord = translation.transpose() @ P1_sym @ (translation)
     P2_sym_old_coord = translation.transpose() @ P2_sym @ (translation)
