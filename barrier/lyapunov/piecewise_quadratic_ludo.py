@@ -120,6 +120,16 @@ class Piecewise_Quadratic_Function():
         V_m = dot_product_smt(app, smt_vars_app)
 
         return V_m
+    
+    def serialize_mat(self, filename):
+        from scipy.io import savemat
+        data = {
+            "LF0" : self.matrices[0],
+            "LF1" : self.matrices[1],
+            "vector_sw_pr_mode0_less0" : self.vector_sw_pr_mode0_less0
+        }
+
+        savemat(filename, data)
 
 def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify = False):
     # We get the piecewise Lyapunov for the system.
