@@ -290,6 +290,8 @@ def main(args):
             output_file_path = args.output
             logging.critical("Saving the Certified Lyapunov in %s..." % output_file_path)
             Certified_Lyap.serialize_mat(output_file_path)
+            if args.solver == "mathematica":
+                MathematicaSession.terminate_session()
             return Certified_Lyap
         else:
             logging.critical("The synthesized Piecewise-Quadratic Lyapunov Function was NOT certified via SMT methods. It is invalid.")
