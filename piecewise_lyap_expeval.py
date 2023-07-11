@@ -270,13 +270,8 @@ def main(args):
 
     #LUDO: Todo: add a check on the stable points (both in mode 0)
     
-    if args.validation_method in ['smt']:
-        validate_during_synth = False
-    else:
-        validate_during_synth = True
-    
-    Candidate_lyap = get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify = validate_during_synth, normalize = normalize_lyap_in_sdp_problem)
-    if validate_during_synth == True:
+    Candidate_lyap = get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify = args.validation_method, normalize = args.normalize_lyap_in_sdp_problem, sdp_solver = args.sdp_solver)
+    if args.validation_method != 'smt':
         if Candidate_lyap == None:
             return 0
         Certified_Lyap = Candidate_lyap
