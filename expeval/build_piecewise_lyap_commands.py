@@ -17,7 +17,6 @@ if __name__ == "__main__":
     singpath = '/home/lbattista/piecewise_lyap/semialgebraic_invariants/sing'
     run_sing = Path.home() / 'run_singularity.sh'
     verifypath = share_dir.resolve() / 'piecewise_lyap_expeval.py'
-    # main_cmd = f"{run_sing} exec --writable {singpath} timeout {TO}s python3 {verifypath}"
     main_cmd = f"{run_sing} exec --writable {singpath} python3 {verifypath}"
 
     fout = open("run.sh", 'w')
@@ -33,7 +32,7 @@ if __name__ == "__main__":
         mem = '60000' if solver == 'mathematica' else '16000'
 
         fout.write(f"{scmd} --mem={mem} --job-name=valu3s --output={out} --error={log} ")
-        fout.write(f"{main_cmd} Reformulated_systems/reformulation_size_{n}.hyb --solver {solver} --validation-method {validation_method} ")
+        fout.write(f"{main_cmd} /home/lbattista/piecewise_lyap/semialgebraic_invariants/Reformulated_systems/reformulation_size_{n}.hyb --solver {solver} --validation-method {validation_method} ")
         fout.write(f"--output {outputname}")
         fout.write("\n")
     # eof
