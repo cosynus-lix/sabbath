@@ -39,7 +39,7 @@ if __name__ == "__main__":
     for n in [5]: # [3,5,10,15,18]
         for validation_method in ['smt']: # ['sylvester', 'sympy', 'smt']
             for normalization in [False]: # ['True', 'False']
-                for sdp_solver in ['mosek', 'smcp']: # ['cvxopt', 'mosek', 'smcp']
+                for sdp_solver in ['mosek', 'smcp', 'cvxopt']: # ['cvxopt', 'mosek', 'smcp']
                     if validation_method == "smt":
                         for solver in ['mathematica']: # ['mathematica', 'z3', 'mathsat', 'cvc5']
                             write(n, validation_method, solver, normalization, sdp_solver)
