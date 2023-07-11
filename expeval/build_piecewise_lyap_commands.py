@@ -33,7 +33,7 @@ if __name__ == "__main__":
         mem = '60000' if solver == 'mathematica' else '16000'
 
         fout.write(f"{scmd} --mem={mem} --job-name=valu3s --output={out} --error={log} ")
-        fout.write(f"{main_cmd} Reformulated_systems/reformulation_size_{n}.hyb --solver {solver} --validation-method {validation_method}")
+        fout.write(f"{main_cmd} Reformulated_systems/reformulation_size_{n}.hyb --solver {solver} --validation-method {validation_method} ")
         fout.write(f"--output {outputname}")
         fout.write("\n")
     # eof
