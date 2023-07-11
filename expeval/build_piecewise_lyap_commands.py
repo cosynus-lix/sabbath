@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     fout = open("run.sh", 'w')
 
-    def write(n, validation_method, solver, normalization):
+    def write(n, validation_method, solver, normalization, sdp_solver):
         name = f"model_{n}_validation_method_{validation_method}_solver_{solver}"
 
         out = (resdir / f"{name}.out").resolve()
@@ -33,16 +33,17 @@ if __name__ == "__main__":
 
         fout.write(f"{scmd} --mem={mem} --job-name=valu3s --output={out} --error={log} ")
         fout.write(f"{main_cmd} /home/lbattista/piecewise_lyap/semialgebraic_invariants/Reformulated_systems/reformulation_size_{n}.hyb --solver {solver} --validation-method {validation_method} ")
-        fout.write(f"--output {outputname} --normalize_lyap_in_sdp_problem {normalization} ")
+        fout.write(f"--output {outputname} --normalize_lyap_in_sdp_problem {normalization} --sdp-solver {sdp_solver} ")
         fout.write("\n")
     # eof
     for n in Ns:
-        for validation_method in ['smt', 'sympy', 'sylvester']:
-            for normalization in [True, False]:
-                if validation_method == "smt":
-                    for solver in ['mathematica', 'z3']:
-                        write(n, validation_method, solver, normalization)
-                else:
-                    write(n, validation_method, 'z3', normalization)
+        for validation_method in ['sylvester']: # ['sylvester', 'sympy', 'smt']
+            for normalization in [False]: # ['True', 'False']
+                for sdp_solver in ['cvxopt', 'mosek', 'smcp']: # ['cvxopt', 'mosek', 'smcp']
+                    if validation_method == "smt":
+                        for solver in ['z3']: # ['mathematica', 'z3', 'mathsat', 'cvc5']
+                            write(n, validation_method, solver, normalization, sdp_solver)
+                    else:
+                        write(n, validation_method, 'z3', normalization, sdp_solver)
 
     fout.close()
