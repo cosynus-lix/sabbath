@@ -14,7 +14,7 @@ if __name__ == "__main__":
     share_dir = expeval_dir.parent
     resdir = expeval_dir / 'piecewise_lyap_results'
 
-    singpath = '/home/abecchi/valu3s/model_checking_paper/share/sing'
+    singpath = '/home/lbattista/piecewise_lyap/semialgebraic_invariants/sing'
     run_sing = Path.home() / 'run_singularity.sh'
     verifypath = share_dir.resolve() / 'piecewise_lyap_expeval.py'
     # main_cmd = f"{run_sing} exec --writable {singpath} timeout {TO}s python3 {verifypath}"
