@@ -1,0 +1,1 @@
+{"test_file": "model_15_float_simple-smcp", "matfile": "/home/anna/work/git-stuff/ESProject/model_checking_paper/share/expeval/synthesis_results/model_15_float_simple-smcp.mat", "precision": 6, "n": 15, "type": "float", "method": "simple", "robust": null, "sdpsolver": "smcp", "vol": [8.5693, 1154000.0], "robust_eps": [2.8714e-05, 6.81e-05], "synth_time": [784.28, 1354.55]}

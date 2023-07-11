@@ -1,0 +1,1 @@
+{"test_file": "model_5_int_simple-smcp", "matfile": "/home/anna/work/git-stuff/ESProject/model_checking_paper/share/expeval/synthesis_results/model_5_int_simple-smcp.mat", "precision": 6, "n": 5, "type": "int", "method": "simple", "robust": null, "sdpsolver": "smcp", "vol": [36.2902, 0.0], "robust_eps": [9.7324e-06, null], "synth_time": [5.97, 4.9]}

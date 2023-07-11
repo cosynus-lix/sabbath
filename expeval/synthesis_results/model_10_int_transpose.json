@@ -1,0 +1,1 @@
+{"test_file": "model_10_int_transpose", "matfile": "/home/anna/work/git-stuff/ESProject/model_checking_paper/share/expeval/synthesis_results/model_10_int_transpose.mat", "precision": 6, "n": 10, "type": "int", "method": "transpose", "robust": null, "sdpsolver": null, "vol": [8.1187e-10, 0.0], "robust_eps": [3.6496e-06, null], "synth_time": [11.12, 2.28]}

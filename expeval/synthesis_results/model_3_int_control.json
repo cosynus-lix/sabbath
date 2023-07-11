@@ -1,0 +1,1 @@
+{"test_file": "model_3_int_control", "matfile": "/home/anna/work/git-stuff/ESProject/model_checking_paper/share/expeval/synthesis_results/model_3_int_control.mat", "precision": 6, "n": 3, "type": "int", "method": "control", "robust": null, "sdpsolver": null, "vol": [3.55, 2897500.0], "robust_eps": [6.7338e-06, 5.6257e-05], "synth_time": [0.9, 0.37]}

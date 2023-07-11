@@ -1,0 +1,9 @@
+>> Read matrices
+A size 18x18
+B size 18x3
+C size 4x18
+>> Controller matrices
+KP1 size 3x4
+KP2 size 3x4
+KI1 size 3x4
+KI2 size 3x4

@@ -1,0 +1,177 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{mathtools}
+
+\newtheorem{lemma}{Lemma}
+\theoremstyle{definition}
+\newtheorem{fact}[lemma]{Fact}
+\newtheorem{consideration}[lemma]{Consideration}
+\newtheorem{prop}[lemma]{Proposition}
+\newtheorem{obs}[lemma]{Observation}
+\DeclarePairedDelimiter{\set}{\{}{\}}
+\DeclarePairedDelimiter{\norm}{\lVert }{\rVert}
+\DeclarePairedDelimiter{\spam}{\langle}{\rangle}
+\newcommand{\R}{\mathbb{R}}
+\renewcommand{\epsilon}{\varepsilon}
+\DeclareMathOperator{\dist}{dist}
+
+\title{Valu3s robustness parameters changes}
+\author{Ludovico Battista}
+\date{March 2023}
+
+\begin{document}
+\maketitle
+
+\section{Setting}
+
+Suppose we have a hybrid dynamical system of the form
+\[ \dot{w} =\begin{cases}
+		A_0 w + B_0 r, & \text{if $hw<c$}\\
+            A_1 w + B_1 r, & \text{otherwise}
+		 \end{cases} \]
+where:
+\begin{itemize}
+    \item $w$ is a vector in $\mathbb{R}^n$ ;
+    \item $A_0, A_1$ are real stable matrices (\emph{i.e.}, the real parts of their eigenvalues are negative) of dimension $n \times n$;
+    \item $B_0, B_1$ are real matrices of dimension $n \times m$;
+    \item $r$ is a vector in $\mathbb{R}^m$;
+    \item $h$ is a row vector in $\mathbb{R}^n$;
+    \item $c$ is a real constant.
+\end{itemize}
+We call $M_0$ or \emph{mode 0} the set $\set{w | hw<c}$, and $M_1$ or \emph{mode 1} its complement. We focus only on mode 0, all the results can be generalized to mode 1 in a straightforward way.
+
+Let 
+\[ ss_0^r = - A_0^{-1}B_0r  \]
+be the stable point of mode 0.
+Suppose we have an affine quadratic form given by
+\[ V_0^r(x) = (x - ss_0^r)^T P_0 (x - ss_0^r), \]
+that is a Lyapunov function for mode 0. The matrix $P_0$ depends only on $A_0$.
+
+We already know how to find a stable region for the hybrid dynamical system: let
+
+\[ C_0^r = \set{ x \in \R^n | hx = c} \cap \set{ x \in \R^n |  h(A_0 x + B_0 r) > 0 },\]
+or, equivalently
+\[ C_0^r = \set{ x \in \R^n | hx = c} \cap \set{ x \in \R^n |  h A_0 x > - h B_0 r   }; \]
+and define
+\[ k_0^r = \sup \set{k \in \R \ | \ \set{V_0^r(x) \leq k} \cap C_0^r = \emptyset }= \inf_{x \in C_0^r} \set{ V_0^r(x) }. \]
+We know that 
+\[ S_0^r = \set{w \in \R^n | V_0(w) \leq k_0 \wedge hw<c} \]
+is a stable region.
+
+\section{Assumptions}
+
+We will assume that the stable point of each region lies in the interior part of the region. For mode 0, this means that 
+    \[ -hA_0^{-1} B_0 r < c. \]
+\section{The goal}
+
+We want to prove that there exist a $\epsilon > 0$ such that, if
+\[ \norm{r' - r} < \epsilon  \]
+then
+\[ ss_0^{r} \in S_0^{r'}.\]
+
+
+
+
+\section{The method}
+
+
+When we substitute $r$ with $r'$, there are many objects that change. In particular, the stable point $ss_0^r$ becomes
+    \[ ss_0^{r'} = - A_0^{-1}B_0{r'};  \]
+    notice that if $\norm{r' - r} < \epsilon$, then  \[\norm{ss_0^{r'} - ss_0^r} = \norm{A_0^{-1}B_0(r'-r)} \leq \norm{A_0^{-1}B_0}_2 \norm{r' - r} < \norm{A_0^{-1}B_0}_2 \epsilon,\] where by $\norm{\cdot}_2 $ we mean the spectral norm of a matrix.
+    
+    We now consider two cases. Let $hA_0 = \sigma h + g$ be the orthogonal decomposition of $hA_0$ in the spaces $\spam{h}, h^\perp$. 
+    
+    \subsection{First case: $g = 0$}  It follows that $C_0^r$ is empty, since the map
+    \[ x \longmapsto  h(A_0 x + B_0 r) = \sigma h x + h B_0 r \]
+    is constant on $\set{x | hx=c  }$, and using the fact that $ss_0^r \in M_0$ its value is
+    \[ \sigma c + h B_0 r = \sigma c + \sigma h A_0^{-1} B_0 r < 0. \]
+    In this case, the stable region $S_0^r$ is the whole $M_0$. This happens for every reference value $r'$ for which the stable point $ss_0^{r'}$ is in $M_0$, hence we just have to check this condition.
+    Since \[\norm{ss_0^{r'} - ss_0^r} = \norm{A_0^{-1}B_0(r'-r)} \leq \norm{A_0^{-1}B_0}_2 \norm{r' - r}, \]
+    we can make sure that $ss_0^{r'} \in M_0$ by taking
+    \[ \epsilon =  \frac{ \dist(ss_0^r, \set{x \in \R^n \ | \ hx = c})} {\norm{A_0^{-1} B_0}_2 } .\]
+
+    
+    \subsection{Second case: $g \neq 0$} The set $C_0^{r}$ changes in the following way:
+    \[ C_0^{r'} = \set{ x \in \R^n | hx = c} \cap \set{ x \in \R^n |  h A_0 x > - h B_0 r'   }. \]
+    Notice that if $\norm{r' - r} < \epsilon$, then  $\norm{h B_0 r' - h B_0 r} < \norm{h B_0} \epsilon $, hence 
+    \[ C_0^{r'} \subset D_0^{r} = \set{ x \in \R^n | hx = c} \cap \set{ x \in \R^n |  h A_0 x > - h B_0 r -  \norm{h B_0} \epsilon }. \]
+    
+We notice the following:
+
+\begin{obs}
+It holds:
+\[ \max_{x \in D_0^{r}} \dist(x,C_0^r) \leq \frac{\norm{h B_0} }{\norm{g}} \epsilon. \]
+\end{obs}
+\begin{proof}
+Recall that $h A_0 = \sigma h + g $ where $g$ is a vector in $h^\perp$ different from 0. For an element in $D_0^{r}$, it holds
+\[  h A_0 x =\sigma h x + g x = \sigma c + g x.\]
+Take $x \in D_0^{r}$ and consider $y = x + \frac{g^T}{\norm{g}^2}\norm{h B_0} \epsilon $. We can show directly that $y \in C_0^r$, since
+\[ h A_0 y = h A_0 x + \sigma \frac{h g^T}{\norm{g}^2}\norm{h B_0} \epsilon +  \frac{g g^T}{\norm{g}^2}\norm{h B_0} \epsilon = \]
+\[ = \sigma c + g x + \norm{h B_0} \epsilon > - h B_0 r -  \norm{h B_0} \epsilon +  \norm{h B_0} \epsilon = - h B_0 r. \]
+Since the norm of $\frac{g^T}{\norm{g}^2}\norm{h B_0} \epsilon $ is exactly $\frac{\norm{h B_0} \epsilon}{\norm{g}}$, the proof is finished.
+\end{proof}
+
+We also need another ingredient to conclude. Recall that $P_0$ is the matrix that defines the Lyapunov function $V_0$. Recall that exists an orthogonal change of coordinates such that the matrix $P_0$ is diagonal. In this basis, the function $V_0(x)$ is of the form:
+\[ V_0(x + ss_0^r) = \mu_1 x(1)^2 + \mu_2  x(2)^2 + \ldots + \mu_n x(n)^2, \]
+where $\mu_1 \geq  \mu_2  \geq \ldots \geq \mu_n > 0$ are the eigenvalues of $P_0$.
+\begin{obs}
+Consider a sublevel of the function $V_0^{r'}(x)$:
+\[ L_k = \set{x \in \R^n \ | \ V_0^{r'}(x) \leq k}.  \]
+If $L_k$ contains a point at distance $a$ from $ss_0^r$, then it contains the whole ball centered in $ss_0^r$ of radius 
+\[ a \sqrt{\frac{\mu_n}{\mu_1}}.\]
+\end{obs}
+
+\begin{proof}
+    Notice that \[ V_0^{r'}(x + ss_0^{r'}) = \mu_1 x(1)^2 + \mu_2  x(2)^2 + \ldots + \mu_n x(n)^2 \geq \mu_n \norm{x}^2.\]
+    Since $L_k$ contains a point at distance $a$ from $ss_0^r$, it follows that
+    \[ k \geq \mu_n a^2.\]
+    On the other hand
+    \[ V_0^{r'}(x + ss_0^{r'}) = \mu_1 x(1)^2 + \mu_2  x(2)^2 + \ldots + \mu_n x(n)^2 \leq \mu_1 \norm{x}^2,\]
+    hence for all $x$ with norm squared less or equal than $ a^2 \frac{\mu_n}{\mu_1}  $ we have that
+    \[ V_0^{r'}(x + ss_0^{r'}) \leq \mu_1 \norm{x}^2 \leq \mu_1 a^2 \frac{\mu_n}{\mu_1} =  a^2  \mu_n \leq k. \]
+    This implies the thesis.
+\end{proof}
+
+\subsubsection{Conclusion}
+
+We fix some notation:
+\begin{itemize}
+    \item let $\alpha > 0$ be a positive real number such that the ball centered in $ss_0$ with radius $\alpha$ is contained in $S_0^r$. There are various effective ways to compute the optimal such $\alpha$ (knowing $P_0$, $k_0$ and $h$);
+    \item let $\beta = \norm{A_0^{-1} B_0}_2  > 0$;
+    \item let $\gamma = \frac{\norm{h B_0}}{\norm{g}} > 0$;
+    \item let $\delta = \dist(ss_0^r, \set{x \in \R^n \ | \ hx = c}) > 0$;
+    \item let $\mu = \sqrt{\frac{\mu_n}{\mu_1}} > 0.$
+\end{itemize}
+Using the previous consideration we can prove the following:
+
+\begin{prop}
+Let 
+\[ \epsilon = \min \set*{\frac{\alpha \mu}{\mu( \beta + \gamma) + \beta}, \frac{\delta}{\beta}  } > 0.\]
+If $\norm{r - r'} < \epsilon$, then $ss_0^{r} \in S_0^{r'}$.
+\end{prop}
+\begin{proof}
+    Since $\norm{r - r'} <  \frac{\delta}{\beta}$, we know that $\norm{ss_0^{r'} - ss_0^r} < \beta \frac{\delta}{\beta} = \delta$, hence $ss_0^{r'}$ is in mode 0.
+
+    Since $B(ss_0^r, \alpha)$ is contained in $S_0^r$, we know that $\dist(ss_0^r, C_0^r) >\alpha$. We already noticed that $\dist(ss_0^r, ss_0^{r'}) < \beta \epsilon$. Since $ C_0^{r'} \subset D_0^{r}$, we know that $\dist(x,  C_0^{r'}) > \dist(x, D_0^{r})$. 
+    
+    We now prove that the sublevel $ \set{V_0^{r'}(w) \leq k_0}$ contains a point at distance $\alpha - \epsilon (\gamma+ \beta)$ from $ss_0^{r'}$.
+    
+    Taking together the previous results with Observation 1 we notice that:
+    \[ \dist(ss_0^{r'}, C_0^{r'})>  \dist(ss_0^{r'}, D_0^{r}) > \dist(ss_0^{r}, D_0^{r}) -\dist(ss_0^{r'}, ss_0^{r}) >\]\[> (\dist(ss_0^{r}, C_0^r) - \gamma\epsilon) - \beta \epsilon> \alpha - \gamma\epsilon - \beta\epsilon = \alpha - \epsilon (\gamma+ \beta). \]
+    
+    This tells us that the sublevel 
+    \[ \set{V_0^{r'}(w) \leq k_0}  \]
+    contains a point at distance at least $\alpha - \epsilon (\gamma+ \beta)$. Using Observation 2 we can conclude that it contains the whole ball centered in $ss_0^{r'}$ of radius
+    \[ \mu (\alpha - \epsilon (\gamma+ \beta)). \]
+    It is now left to prove that this radius is greater or equal than the distance $\dist(ss_0^r, ss_0^{r'})$. In particular we want to show that
+    \[  \mu (\alpha - \epsilon (\gamma+ \beta)) - \dist(ss_0^r, ss_0^{r'}) > 0.   \]
+    We proceed as follows:
+    \[   \mu (\alpha - \epsilon (\gamma+ \beta)) - \dist(ss_0^r, ss_0^{r'}) > \mu (\alpha - \epsilon (\gamma+ \beta)) - \beta \epsilon = \mu \alpha - \epsilon ( \mu (\gamma+ \beta) + \beta) \geq \] \[ \geq  \mu \alpha - \frac{\alpha \mu}{\mu( \beta + \gamma) + \beta} ( \mu (\gamma+ \beta) + \beta) = 0;  \]
+    this concludes the proof.
+
+\end{proof}
+
+\end{document}

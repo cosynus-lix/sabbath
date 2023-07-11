@@ -1,0 +1,1 @@
+{"test_file": "model_10_float_transpose", "matfile": "/home/anna/work/git-stuff/ESProject/model_checking_paper/share/expeval/synthesis_results/model_10_float_transpose.mat", "precision": 6, "n": 10, "type": "float", "method": "transpose", "robust": null, "sdpsolver": null, "vol": [1.2252e-09, 0.0013], "robust_eps": [4.3956e-06, 1.5338e-05], "synth_time": [23.95, 22.58]}

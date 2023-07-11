@@ -1,0 +1,1 @@
+{"test_file": "model_5_float_control", "matfile": "/home/anna/work/git-stuff/ESProject/model_checking_paper/share/expeval/synthesis_results/model_5_float_control.mat", "precision": 6, "n": 5, "type": "float", "method": "control", "robust": null, "sdpsolver": null, "vol": [3.4911e-05, 1.9307e-08], "robust_eps": [1.1549e-06, 5.7278e-07], "synth_time": [1.72, 1.58]}

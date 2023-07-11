@@ -1,0 +1,1 @@
+{"test_file": "model_15_float_simple-cvxopt", "matfile": "/home/anna/work/git-stuff/ESProject/model_checking_paper/share/expeval/synthesis_results/model_15_float_simple-cvxopt.mat", "precision": 6, "n": 15, "type": "float", "method": "simple", "robust": null, "sdpsolver": "cvxopt", "vol": [8.4241, 1290000.0], "robust_eps": [2.8136e-05, 6.897e-05], "synth_time": [302.07, 307.33]}

@@ -1,0 +1,1 @@
+{"test_file": "model_3_int_simple-mosek", "matfile": "/home/anna/work/git-stuff/ESProject/model_checking_paper/share/expeval/synthesis_results/model_3_int_simple-mosek.mat", "precision": 6, "n": 3, "type": "int", "method": "simple", "robust": null, "sdpsolver": "mosek", "vol": [6.552, 2992200.0], "robust_eps": [3.1285e-05, 0.0002053], "synth_time": [0.7, 0.28]}
