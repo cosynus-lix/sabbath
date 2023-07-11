@@ -22,7 +22,7 @@ if __name__ == "__main__":
     fout = open("run.sh", 'w')
 
     def write(n, validation_method, solver, normalization, sdp_solver):
-        name = f"model_{n}_validation_method_{validation_method}_solver_{solver}"
+        name = f"model_{n}_validation_method_{validation_method}_solver_{solver}_normalization_{normalization}_sdp_solver_{sdp_solver}"
 
         out = (resdir / f"{name}.out").resolve()
         log = (resdir / f"{name}.log").resolve()
