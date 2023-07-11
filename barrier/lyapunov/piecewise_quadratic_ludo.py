@@ -318,19 +318,19 @@ def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify =
                     (P2_sym - mu2_sym * QQ2).is_positive_definite,
                     (-(sp.transpose(A1bar_help) @ P1_help + P1_help @ A1bar_help)).is_positive_definite,
                     (-(sp.transpose(A2bar) @ P2_sym + P2_sym @ A2bar + eta2_sym * QQ2)).is_positive_definite]
-          if not all(checks):
-              logging.critical("The Piecewise-Quadratic Lyapunov Function was numerically synthesized but is not valid.")
-              return None
-          # The following checks are just double-checks. They check if something is wrong with the translation. They are removed but can be used to debug.
-          # if not all([is_semipositive_sylvester(P1_sym_old_coord),
-          #            is_semipositive_sylvester(P2_sym_old_coord - mu2_sym * QQ2A),
-          #            is_semipositive_sylvester(-(sp.transpose(A1bar_old) @ P1_sym_old_coord + P1_sym_old_coord @ A1bar_old)),
-          #            is_semipositive_sylvester(-(sp.transpose(A2bar_old) @ P2_sym_old_coord + P2_sym_old_coord @ A2bar_old + eta2_sym * QQ2A))]):
-          #     logging.critical("The Piecewise-Quadratic Lyapunov Function was numerically synthesized but is not valid.")
-          #     return None
-          # else:
-              # logging.critical("Found a valid Piecewise-Quadratic Lyapunov Function for the system. The system IS STABLE.")
-          logging.critical("Found a valid Piecewise-Quadratic Lyapunov Function for the system. The system IS STABLE.")
+        if not all(checks):
+            logging.critical("The Piecewise-Quadratic Lyapunov Function was numerically synthesized but is not valid.")
+            return None
+        # The following checks are just double-checks. They check if something is wrong with the translation. They are removed but can be used to debug.
+        # if not all([is_semipositive_sylvester(P1_sym_old_coord),
+        #            is_semipositive_sylvester(P2_sym_old_coord - mu2_sym * QQ2A),
+        #            is_semipositive_sylvester(-(sp.transpose(A1bar_old) @ P1_sym_old_coord + P1_sym_old_coord @ A1bar_old)),
+        #            is_semipositive_sylvester(-(sp.transpose(A2bar_old) @ P2_sym_old_coord + P2_sym_old_coord @ A2bar_old + eta2_sym * QQ2A))]):
+        #     logging.critical("The Piecewise-Quadratic Lyapunov Function was numerically synthesized but is not valid.")
+        #     return None
+        # else:
+            # logging.critical("Found a valid Piecewise-Quadratic Lyapunov Function for the system. The system IS STABLE.")
+        logging.critical("Found a valid Piecewise-Quadratic Lyapunov Function for the system. The system IS STABLE.")
     
     # The following can be used to save the results in an external file.
     # import pickle
