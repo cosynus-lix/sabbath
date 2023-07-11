@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-scmd = "sbatch --nice=100 --partition=identical-4 --cpus-per-task=2"
+scmd = "sbatch --nice=100 --partition=cpu-generic --cpus-per-task=2"
 if __name__ == "__main__":
 
     Ns = [3, 5, 10, 15, 18]
@@ -37,7 +37,7 @@ if __name__ == "__main__":
         fout.write(f"--output {outputname}")
         fout.write("\n")
     # eof
-    for n in Ns:
+    for n in [3, 10]:
         for validation_method in validation_methods:
             if validation_method == "smt":
                 for solver in ['mathematica', 'z3']:
