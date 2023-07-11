@@ -41,7 +41,7 @@ if __name__ == "__main__":
             for normalization in [False]: # ['True', 'False']
                 for sdp_solver in ['cvxopt', 'mosek', 'smcp']: # ['cvxopt', 'mosek', 'smcp']
                     if validation_method == "smt":
-                        for solver in ['z3']: # ['mathematica', 'z3', 'mathsat', 'cvc5']
+                        for solver in ['z3', 'mathematica']: # ['mathematica', 'z3', 'mathsat', 'cvc5']
                             write(n, validation_method, solver, normalization, sdp_solver)
                     else:
                         write(n, validation_method, 'z3', normalization, sdp_solver)
