@@ -33,15 +33,16 @@ if __name__ == "__main__":
 
         fout.write(f"{scmd} --mem={mem} --job-name=valu3s --output={out} --error={log} ")
         fout.write(f"{main_cmd} /home/lbattista/piecewise_lyap/semialgebraic_invariants/Reformulated_systems/reformulation_size_{n}.hyb --solver {solver} --validation-method {validation_method} ")
-        fout.write(f"--output {outputname}")
+        fout.write(f"--output {outputname} --normalize_lyap_in_sdp_problem {normalization} ")
         fout.write("\n")
     # eof
-    for n in [3, 5]:
-        for validation_method in ['smt']:
-            if validation_method == "smt":
-                for solver in ['mathematica', 'z3']:
-                    write(n, validation_method, solver)
-            else:
-                write(n, validation_method, 'z3')
+    for n in Ns:
+        for validation_method in ['smt', 'sympy', 'sylvester']:
+            for normalization in [True, False]:
+                if validation_method == "smt":
+                    for solver in ['mathematica', 'z3']:
+                        write(n, validation_method, solver, normalization)
+                else:
+                    write(n, validation_method, 'z3', normalization)
 
     fout.close()
