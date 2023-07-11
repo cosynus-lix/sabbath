@@ -36,8 +36,8 @@ if __name__ == "__main__":
         fout.write(f"--output {outputname}")
         fout.write("\n")
     # eof
-    for n in [3, 10]:
-        for validation_method in ['sympy']:
+    for n in [3, 5]:
+        for validation_method in ['smt']:
             if validation_method == "smt":
                 for solver in ['mathematica', 'z3']:
                     write(n, validation_method, solver)
