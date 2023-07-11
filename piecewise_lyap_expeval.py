@@ -187,6 +187,7 @@ def handle_args():
 
     parser.add_argument('--skip-validation', dest='validate_lyapunov', action='store_false')
     parser.add_argument('--skip-synthesis', dest='synthesize', action='store_false')
+    parser.add_argument('--normalize_lyap_in_sdp_problem', dest='normalize_lyap_in_sdp_problem', default='False', choices=['False', 'True'])
 
     args = parser.parse_args()
 
@@ -274,7 +275,7 @@ def main(args):
     else:
         validate_during_synth = True
     
-    Candidate_lyap = get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify = validate_during_synth)
+    Candidate_lyap = get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify = validate_during_synth, normalize = normalize_lyap_in_sdp_problem)
     if validate_during_synth == True:
         if Candidate_lyap == None:
             return 0

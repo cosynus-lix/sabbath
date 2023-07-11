@@ -131,7 +131,7 @@ class Piecewise_Quadratic_Function():
 
         savemat(filename, data)
 
-def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify = False):
+def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify = False, normalize = False):
     # We get the piecewise Lyapunov for the system.
     As = []
     bs = []
@@ -232,10 +232,11 @@ def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify =
     eta2 = pc.RealVariable("eta2")
     sdp.add_constraint(eta2 >> 0)
 
-    # # The following is a normalization condition. It needs to hold (easy to see with Sylvester method).
-    # # Sometimes the solver does not provide a solution if we give it this condition, but does provide
-    # # a solution if we do not. This is strange and could be investigated.
-    # sdp.add_constraint((P1b[0,0]) >> 1)
+    if normalize == True:
+      # The following is a normalization condition. It needs to hold (easy to see with Sylvester method).
+      # Sometimes the solver does not provide a solution if we give it this condition, but does provide
+      # a solution if we do not. This is strange and could be investigated.
+      sdp.add_constraint((P1b[0,0]) >> 1)
 
     # Cond1 = P1b - gamma * I
     # Cond2 = P2b - mu2 * Q2 - gamma * I
