@@ -43,6 +43,6 @@ if __name__ == "__main__":
                 for solver in ['mathematica', 'z3']:
                     write(n, validation_method, solver)
             else:
-                write(n, validation_method, 'mathematica')
+                write(n, validation_method, 'z3')
 
     fout.close()
