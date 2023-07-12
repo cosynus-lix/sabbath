@@ -34,8 +34,6 @@ from barrier.lyapunov.piecewise_quadratic import (PiecewiseQuadraticLF,
                                                   _get_lyapunov_smt,
                                                   validate_single_mode_smt)
 
-THETA = 1
-PRECISION = 16
 logging.basicConfig(level=logging.CRITICAL)
 stability_hs_logger = logging.getLogger(__name__)
 
@@ -120,7 +118,7 @@ def is_piecewise_affine(dyn_sys):
     return all(linearity_values)
 
 
-def get_y0(dyn_sys, C):
+def get_y0(dyn_sys, C, PRECISION=16):
     """
     Get only the first output y0. The outputs Y = C x.
     """
@@ -483,14 +481,14 @@ def get_stable_and_lyapunov(dyn_systems, get_solver, gas_optss, num_info=None, o
 
     return (stable, lyap)
 
-def set_dyn_system_numeric_info(num_info, Acs, bs, Cc, refs, ctl, mod):
+def set_dyn_system_numeric_info(num_info, Acs, bs, Cc, refs, ctl, mod, THETA = 1):
     num_info.stables = [np.linalg.solve(Acs[i], -bs[i]) for i in range(len(Acs))]
     num_info.switching_pred = np.hstack([-Cc[0], - THETA + refs[0]])
     num_info.As = Acs
     n = mod.dimension()
     num_info.bs = [np.vstack([np.zeros([n,len(refs)]), ctl.KI[mode]]) for mode in range(ctl.modes)]
 
-def build_dyn_systems(mod, ctl, refs, new_solver_f, num_info=None):
+def build_dyn_systems(mod, ctl, refs, new_solver_f, num_info=None, THETA = 1, PRECISION=16):
     (Acs, bs, bprimes, Cc) = reformulate.reformulate(mod, ctl, refs)
 
     if num_info:
