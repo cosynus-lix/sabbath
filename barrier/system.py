@@ -25,6 +25,7 @@ from barrier.formula_utils import FormulaHelper
 
 from barrier.ts import TS
 
+from barrier.lyapunov.la_smt import *
 
 class MalformedSystem(Exception):
     pass
@@ -50,6 +51,27 @@ def matrix_times_vect_tmp(vect, matrix):
 
 
 class DynSystem(object):
+
+    @staticmethod
+    def get_dyn_sys_affine_description(A, b, PRECISION = 16):
+        """
+        Construct the dynamical system for der(x) = Ax + b
+        """
+        states = [Symbol("x_%d" % i, REAL) for i in range(len(A))]
+
+        # dictionary from variable to the ODE right-hand side
+        ode_map = {}
+        for i in range(len(A)):
+            ode_i = Real(0)
+            row_i = A[i]
+            for j in range(len(row_i)):
+                row_i_smt = Real(myround(row_i[j], PRECISION))
+
+                ode_i = ode_i + Times(row_i_smt, states[j])
+
+            ode_map[states[i]] = ode_i + Real(myround(b[i], PRECISION))
+
+        return DynSystem(states, [], [], ode_map, {})
 
     @staticmethod
     def get_from_matrix(states, A, B):

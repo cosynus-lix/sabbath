@@ -7,29 +7,6 @@ from collections import namedtuple
 from barrier.lyapunov.la_smt import myround
 import barrier.system as system
 
-
-def get_dyn_sys(A, b, PRECISION = 16):
-    """
-    Construct the dynamical system for der(x) = Ax + b
-    """
-    states = [Symbol("x_%d" % i, REAL) for i in range(len(A))]
-
-    # dictionary from variable to the ODE right-hand side
-    ode_map = {}
-    for i in range(len(A)):
-        ode_i = Real(0)
-        row_i = A[i]
-        for j in range(len(row_i)):
-            row_i_smt = Real(myround(row_i[j], PRECISION))
-
-            ode_i = ode_i + Times(row_i_smt, states[j])
-
-        ode_map[states[i]] = ode_i + Real(myround(b[i], PRECISION))
-
-    dyn = system.DynSystem(states, [], [], ode_map, {})
-    return dyn
-
-
 def build_dyn_systems_from_hs_file(problem, PRECISION = 16):
     Acs = []
     bs = []
@@ -44,8 +21,8 @@ def build_dyn_systems_from_hs_file(problem, PRECISION = 16):
         if index_dyn_system == 0:
             Theta_smt = Theta
     
-    dyn_systems = [get_dyn_sys(Acs[0], bs[0]),
-                   get_dyn_sys(Acs[1], bs[1])]
+    dyn_systems = [system.DynSystem.get_dyn_sys_affine_description(Acs[0], bs[0]),
+                   system.DynSystem.get_dyn_sys_affine_description(Acs[1], bs[1])]
 
     Theta_smt = Real(myround(Theta, PRECISION))
 

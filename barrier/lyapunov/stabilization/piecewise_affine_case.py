@@ -589,8 +589,8 @@ def build_dyn_systems(mod, ctl, refs, new_solver_f, num_info=None):
     if num_info:
         set_dyn_system_numeric_info(num_info, Acs, bs, Cc, refs, ctl, mod)
 
-    dyn_systems = [get_dyn_sys(Acs[0], bs[0]),
-                   get_dyn_sys(Acs[1], bs[1])]
+    dyn_systems = [system.DynSystem.get_dyn_sys_affine_description(Acs[0], bs[0]),
+                   system.DynSystem.get_dyn_sys_affine_description(Acs[1], bs[1])]
     
     Theta_smt = Real(myround(THETA, PRECISION))
     y0 = get_y0(dyn_systems[0], Cc)
