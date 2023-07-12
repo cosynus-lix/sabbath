@@ -1,110 +1,38 @@
-import sys
-import argparse
+import functools
 import logging
 import os
-import signal
-import sys
-
-from barrier.lzz.lzz import LzzOpt
-from barrier.serialization.hybrid_serialization import importHSVer
-from barrier.decomposition.predicates import AbsPredsTypes, get_polynomials_ha
-from barrier.decomposition.encoding import (
-    DecompositionOptions, DecompositionEncoderHA
-)
-from barrier.decomposition.utils import get_unique_poly_list
-from barrier.lyapunov.stabilization.piecewise_affine_case import *
-
-
-from pysmt.shortcuts import (
-    get_env
-)
-
-from functools import partial
-
-from barrier.lyapunov.stabilization.from_sabbath_to_matrices import  build_dyn_systems_from_hs_file
-
-# These are for the SMT solvers
-from barrier.utils import get_cvc5_smtlib, get_mathsat_smtlib
-from barrier.mathematica.mathematica import (
-    get_mathematica, exit_callback_print_time, OutOfTimeSolverError, MathematicaSession
-)
-
-
-### LUDO START OF COPIED INITIALIZATION
-
-import argparse
-import json
-import os
-import functools
-from enum import Enum
 import time
+from enum import Enum
+
+from pysmt.shortcuts import get_env
+
+from barrier.lyapunov.stabilization.piecewise_affine_case import *
 
 try:
     import reformulate
     import svl_single_mode
-    from serialization import serializeSynthesis, importSynthesis
 except:
     # Dirty trick to get around the current structure
     # and still have tests.
     from . import reformulate
     from . import svl_single_mode
-    from .serialization import serializeSynthesis, importSynthesis
 
-import sys
-from fractions import Fraction
-from functools import partial
 import logging
-import collections
-from dataclasses import dataclass
+from fractions import Fraction
 
 import numpy as np
 import sympy as sp
-
-from pysmt.logics import QF_NRA, QF_LRA
+from pysmt.shortcuts import *
 from pysmt.typing import REAL
-from pysmt.shortcuts import (
-    get_env,
-    Symbol, Real,
-    Times, Minus, Plus,
-    GE, LE, GT, LT, Equals,
-    TRUE, FALSE,
-    Not, And, Or, Implies, Iff,
-    Exists,ForAll,
-    qelim,
-    get_model,
-    is_valid,
-    Solver,
-)
-
 
 import barrier.system as system
-
-from barrier.formula_utils import (
-    get_max_poly_degree, FormulaHelper
-)
-
+from barrier.formula_utils import FormulaHelper, get_max_poly_degree
+from barrier.lyapunov.la_smt import (myround, to_smt_vect,
+                                     to_sym_matrix)
 from barrier.lyapunov.lyapunov import synth_lyapunov_linear
-
-from barrier.lyapunov.la_smt import (
-    to_smt_vect, myround, to_sym_matrix, DEFAULT_PRECISION
-)
-
-from barrier.lyapunov.piecewise_quadratic import (
-    _get_lyapunov_smt, PiecewiseQuadraticLF,
-    validate_single_mode_smt
-)
-
-
-from barrier.lzz.lzz import (
-    lzz, lzz_with_cex, LzzOpt, get_lzz_encoding,
-    get_inf_dnf, get_ivinf_dnf
-)
-
-from barrier.utils import get_cvc5_smtlib, get_mathsat_smtlib
-
-from barrier.mathematica.mathematica import (
-    get_mathematica, exit_callback_print_time, OutOfTimeSolverError, MathematicaSession
-)
+from barrier.lyapunov.piecewise_quadratic import (PiecewiseQuadraticLF,
+                                                  _get_lyapunov_smt,
+                                                  validate_single_mode_smt)
 
 THETA = 1
 PRECISION = 16
