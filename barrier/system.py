@@ -459,15 +459,15 @@ class HybridAutomaton(object):
     """
     Tells if the hybrid automaton is piecewise affine.
     """
-    linearity_values = []
     for index_mode in range(len(self._locations)):
         for ode in self._locations[f"{index_mode}"][1].get_odes().values():
-            linearity_values.append(is_linear_formula(ode))
+            if not(is_linear_formula(ode)):
+                return False
         constraint = self._locations[f"{index_mode}"][0]
         switch = Plus(constraint.arg(0), Times(constraint.arg(1), Real(-1)))
-        linearity_values.append( is_linear_formula(switch))
-    
-    return all(linearity_values)
+        if not(is_linear_formula(switch)):
+            return False
+    return True
 
 HaProp = namedtuple("HaProp", "global_prop prop_by_loc")
 HaVerProblem = namedtuple("HaVerProblem", "name ha prop predicates")
