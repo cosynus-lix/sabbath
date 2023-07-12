@@ -26,37 +26,28 @@ def build_dyn_systems_from_hs_file(problem, PRECISION = 16):
 
     Theta_smt = Real(myround(Theta, PRECISION))
 
-    ### OLD CODE, DO WE NEED IT?
-    # y0 = get_y0(dyn_systems[0], Cc)
-    # refvalues_smt = to_smt_vect(refs, PRECISION)
-
-    # verify_po_logger.info("Reference values: %s" % str(refvalues_smt))
-
-    # r0 = refvalues_smt[0]
-
-    # r0 - y0 - Theta
-    # switching_predicate = r0 - y0 - Theta_smt
-    ###
     # We get the switching predicate
     switching_predicate = get_switching_predicate_from_linear_constraint(problem.ha._locations["0"][0])
 
     return (dyn_systems, switching_predicate, Theta_smt) # ,ref_values_smt)
 
 def get_switching_predicate_from_linear_constraint(linear_constraint):
-    # Todo, support other node_types
-    if linear_constraint.node_type() not in [16,17]:
-        raise Exception("Node type not supported. We support < and <= for the moment.")
-    return Plus(linear_constraint.arg(0), Times(linear_constraint.arg(1), Real(-1)))
+    if linear_constraint.is_lt() or linear_constraint.is_le():
+        return Plus(linear_constraint.arg(0), Times(linear_constraint.arg(1), Real(-1)))
+    elif linear_constraint.is_gt() or linear_constraint.is_ge():
+        return Plus(Times(linear_constraint.arg(0), Real(-1)), linear_constraint.arg(1))
+    else:
+        raise Exception("Node type not recognized. We should support <, <=, > and >=.")
 
     
 def get_vector_from_linear_constraint(linear_constraint):
     # We get symbolic vector from the location invariant when it is linear
-    
-    
-    # Todo, support other node_types
-    if linear_constraint.node_type() not in [16,17]:
-        raise Exception("Node type not supported. We support < and <= for the moment.")
-    
+
+    if linear_constraint.is_gt():
+        linear_constraint = LT(Times(linear_constraint.arg(0), Real(-1)), Times(linear_constraint.arg(1), Real(-1)))
+    if linear_constraint.is_ge():
+        linear_constraint = LE(Times(linear_constraint.arg(0), Real(-1)), Times(linear_constraint.arg(1), Real(-1)))
+
     # We start getting Theta
     linear_part = Plus(linear_constraint.arg(0), Times(linear_constraint.arg(1), Real(-1)))
     num_vars = len(linear_constraint.get_free_variables())
