@@ -281,7 +281,7 @@ def main(args):
         raise Exception("We are not ready to study stability of a Hybrid System with more than 2 modes.")
     
     # Here we check if the hybrid system given can be studied with valu3s tools.
-    if not is_piecewise_affine(problem):
+    if not problem.ha.is_piecewise_affine:
         raise Exception("We are not ready to study stability of this Hybrid System. At the moment we study\
                         stability for piecewise affine systems with two modes.")
 

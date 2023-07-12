@@ -27,6 +27,8 @@ from barrier.ts import TS
 
 from barrier.lyapunov.la_smt import *
 
+from barrier.lyapunov.stabilization.piecewise_affine_case import is_linear_formula
+
 class MalformedSystem(Exception):
     pass
 
@@ -452,6 +454,20 @@ class HybridAutomaton(object):
     #     print("Locations")
     #     for k,v in self._locations.items():
     #         print("  %s: %s" % (k, v.invar))
+
+    def is_piecewise_affine(self):
+    """
+    Tells if the hybrid automaton is piecewise affine.
+    """
+    linearity_values = []
+    for index_mode in range(len(self._locations)):
+        for ode in self._locations[f"{index_mode}"][1].get_odes().values():
+            linearity_values.append(is_linear_formula(ode))
+        constraint = self._locations[f"{index_mode}"][0]
+        switch = Plus(constraint.arg(0), Times(constraint.arg(1), Real(-1)))
+        linearity_values.append( is_linear_formula(switch))
+    
+    return all(linearity_values)
 
 HaProp = namedtuple("HaProp", "global_prop prop_by_loc")
 HaVerProblem = namedtuple("HaVerProblem", "name ha prop predicates")
