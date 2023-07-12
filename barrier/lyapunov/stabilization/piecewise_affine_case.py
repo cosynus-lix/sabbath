@@ -1,3 +1,8 @@
+"""
+This module contains the main functions to study piecewise affine dynamical systems.
+The main entry points are get_gas_lyapunov and find_stability_assumption.
+"""
+
 import functools
 import logging
 import os
@@ -88,15 +93,14 @@ def is_linear_formula(formula):
     formula = formula.simplify()
     if formula.is_symbol() or formula.is_real_constant():
         return True
-    if formula.node_type() == 13 or formula.node_type() == 14:
+    if formula.is_plus() or formula.is_minus():
         return is_linear_formula(formula.arg(0)) and is_linear_formula(formula.arg(1))
-    elif formula.node_type() == 15:
+    elif formula.is_times() == 15:
         if formula.arg(0).is_symbol():
             if formula.arg(1).is_real_constant():
                 return True
         if formula.arg(0).is_real_constant():
             return is_linear_formula(formula.arg(1))
-    breakpoint()
     return False
 
 
