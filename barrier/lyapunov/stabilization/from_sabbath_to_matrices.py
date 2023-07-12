@@ -7,8 +7,6 @@ from collections import namedtuple
 from barrier.lyapunov.la_smt import myround
 import barrier.system as system
 
-# Maybe we want to do something about these global variables.
-THETA = 1
 
 def get_dyn_sys(A, b, PRECISION = 16):
     """
