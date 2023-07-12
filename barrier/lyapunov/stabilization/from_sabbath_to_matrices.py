@@ -9,10 +9,8 @@ import barrier.system as system
 
 # Maybe we want to do something about these global variables.
 THETA = 1
-PRECISION = 16
 
-
-def get_dyn_sys(A, b):
+def get_dyn_sys(A, b, PRECISION = 16):
     """
     Construct the dynamical system for der(x) = Ax + b
     """
@@ -34,7 +32,7 @@ def get_dyn_sys(A, b):
     return dyn
 
 
-def build_dyn_systems_from_hs_file(problem):
+def build_dyn_systems_from_hs_file(problem, PRECISION = 16):
     Acs = []
     bs = []
     Cc = []
