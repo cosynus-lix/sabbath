@@ -464,8 +464,7 @@ class HybridAutomaton(object):
             if not(is_linear_formula(ode)):
                 return False
         constraint = self._locations[f"{index_mode}"][0]
-        switch = Plus(constraint.arg(0), Times(constraint.arg(1), Real(-1)))
-        if not(is_linear_formula(switch)):
+        if not(is_linear_formula(constraint.arg(0))) or not(is_linear_formula(constraint.arg(1))):
             return False
     return True
 
