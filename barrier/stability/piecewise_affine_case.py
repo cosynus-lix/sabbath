@@ -38,6 +38,7 @@ from barrier.lyapunov.lyapunov import synth_lyapunov_linear
 from barrier.lyapunov.piecewise_quadratic import (PiecewiseQuadraticLF,
                                                   _get_lyapunov_smt,
                                                   validate_single_mode_smt)
+import collections
 
 logging.basicConfig(level=logging.CRITICAL)
 stability_hs_logger = logging.getLogger(__name__)

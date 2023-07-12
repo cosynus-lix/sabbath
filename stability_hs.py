@@ -29,7 +29,6 @@ except:
     # and still have tests.
     from .serialization import serializeSynthesis, importSynthesis
 
-import collections
 import logging
 import sys
 from functools import partial
