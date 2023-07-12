@@ -219,10 +219,10 @@ def build_dyn_systems_from_switched_ha(problem_ha, PRECISION = 16):
     Cc = []
     
     for index_dyn_system in range(len(problem_ha._locations)):
-        (A, b) = get_matrices_from_linear_odes(problem.ha._locations[f"{index_dyn_system}"][1])
+        (A, b) = get_matrices_from_linear_odes(problem_ha._locations[f"{index_dyn_system}"][1])
         Acs.append(A)
         bs.append(b)
-        (C, Theta) = get_vector_from_linear_constraint(problem.ha._locations[f"{index_dyn_system}"][0])
+        (C, Theta) = get_vector_from_linear_constraint(problem_ha._locations[f"{index_dyn_system}"][0])
         Cc.append(C)
         if index_dyn_system == 0:
             Theta_smt = Theta
