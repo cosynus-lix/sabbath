@@ -1,11 +1,10 @@
+from collections import namedtuple
+
 import numpy as np
 import sympy as sp
 from pysmt.shortcuts import *
-from pysmt.typing import REAL
-from scipy import io
-from collections import namedtuple
+
 from barrier.lyapunov.la_smt import myround
-import barrier.system as system
 
 
 def get_switching_predicate_from_linear_constraint(linear_constraint):
