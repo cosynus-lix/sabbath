@@ -191,27 +191,6 @@ def is_piecewise_affine(dyn_sys):
     
     return all(linearity_values)
 
-def get_dyn_sys(A, b):
-    """
-    Construct the dynamical system for der(x) = Ax + b
-    """
-    states = [Symbol("x_%d" % i, REAL) for i in range(len(A))]
-
-    # dictionary from variable to the ODE right-hand side
-    ode_map = {}
-    for i in range(len(A)):
-        ode_i = Real(0)
-        row_i = A[i]
-        for j in range(len(row_i)):
-            row_i_smt = Real(myround(row_i[j], PRECISION))
-
-            ode_i = ode_i + Times(row_i_smt, states[j])
-
-        ode_map[states[i]] = ode_i + Real(myround(b[i], PRECISION))
-
-    dyn = system.DynSystem(states, [], [], ode_map, {})
-    return dyn
-
 
 def get_y0(dyn_sys, C):
     """
