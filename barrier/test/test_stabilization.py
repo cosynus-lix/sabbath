@@ -1,34 +1,20 @@
 """ Test the stabilization functions"""
 
-
-import logging
-import unittest
 import os
-from functools import partial, reduce
-from fractions import Fraction
+
 import numpy as np
 
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
-from unittest import skip
-
-from nose.plugins.attrib import attr
-
-from barrier.test import TestCase
-
-from barrier.serialization.hybrid_serialization import importHSVer
-
-from pysmt.shortcuts import get_env, reset_env
-
-from barrier.lyapunov.stabilization.from_sabbath_to_matrices import get_matrices_from_linear_odes
-
 import sympy as sp
-
+from pysmt.shortcuts import get_env, reset_env
 from scipy import io
 
-from PI_controller_converter.Reformulate.matlab_to_hybrid_as_json import reformulate_PI
+from barrier.lyapunov.stabilization.from_sabbath_to_matrices import \
+    get_matrices_from_linear_odes
+from barrier.serialization.hybrid_serialization import importHSVer
+from barrier.test import TestCase
+from PI_controller_converter.Reformulate.matlab_to_hybrid_as_json import \
+    reformulate_PI
+
 
 def are_equal_sympy_matrices(A, B):
     if sp.shape(A) != sp.shape(B):
