@@ -1,11 +1,9 @@
 import numpy as np
 import sympy as sp
-import pysmt
 from pysmt.shortcuts import *
 from pysmt.typing import REAL
 from scipy import io
 from collections import namedtuple
-import json
 from barrier.lyapunov.la_smt import myround
 import barrier.system as system
 
