@@ -46,21 +46,11 @@ from barrier.mathematica.mathematica import (MathematicaSession,
                                              get_mathematica)
 from barrier.utils import get_cvc5_smtlib, get_mathsat_smtlib
 
+from barrier.lyapunov.stabilization import (Config, GASOptions)
+
 PRECISION = 16
 logging.basicConfig(level=logging.CRITICAL)
 stability_hs_logger = logging.getLogger(__name__)
-
-
-GASOptions = collections.namedtuple(
-    'GASOptions', ['use_linear', 'use_transpose', 'use_control', 'sdp_simple', 'sdp_exponential', 'read_from_file', 'write_on_file', 'validate_lyapunov', 'sdp_solver', 'alpha0', 'no_robust', 'use_determinant', 'validation_method']
-)
-
-# I do not know why we need this class.
-class Config:
-    """ Configurations for computing the assumptions """
-    def __init__(self, solver_function):
-        self.solver_function = solver_function
-
 
 
 def handle_args():

@@ -42,6 +42,15 @@ from barrier.lyapunov.piecewise_quadratic import (PiecewiseQuadraticLF,
 logging.basicConfig(level=logging.CRITICAL)
 stability_hs_logger = logging.getLogger(__name__)
 
+GASOptions = collections.namedtuple(
+    'GASOptions', ['use_linear', 'use_transpose', 'use_control', 'sdp_simple', 'sdp_exponential', 'read_from_file', 'write_on_file', 'validate_lyapunov', 'sdp_solver', 'alpha0', 'no_robust', 'use_determinant', 'validation_method']
+)
+
+class Config:
+    """ Configurations for computing the assumptions """
+    def __init__(self, solver_function):
+        self.solver_function = solver_function
+
 class Result(Enum):
     STABLE = True
     UNSTABLE = False
