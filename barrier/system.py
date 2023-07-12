@@ -27,8 +27,6 @@ from barrier.ts import TS
 
 from barrier.lyapunov.la_smt import *
 
-from barrier.lyapunov.stabilization.piecewise_affine_case import is_linear_formula
-
 class MalformedSystem(Exception):
     pass
 
@@ -409,6 +407,22 @@ class DynSystem(object):
         )
 
 
+def is_linear_formula(formula):
+    """
+    Tells if a formula is piecewise affine.
+    """
+    formula = formula.simplify()
+    if formula.is_symbol() or formula.is_real_constant():
+        return True
+    if formula.is_plus() or formula.is_minus():
+        return is_linear_formula(formula.arg(0)) and is_linear_formula(formula.arg(1))
+    elif formula.is_times() == 15:
+        if formula.arg(0).is_symbol():
+            if formula.arg(1).is_real_constant():
+                return True
+        if formula.arg(0).is_real_constant():
+            return is_linear_formula(formula.arg(1))
+    return False
 
 class HybridAutomaton(object):
     """
@@ -459,14 +473,15 @@ class HybridAutomaton(object):
         """
         Tells if the hybrid automaton is piecewise affine.
         """
+        linearity_values = []
         for index_mode in range(len(self._locations)):
             for ode in self._locations[f"{index_mode}"][1].get_odes().values():
-                if not(is_linear_formula(ode)):
-                    return False
+                linearity_values.append(is_linear_formula(ode))
             constraint = self._locations[f"{index_mode}"][0]
-            if not(is_linear_formula(constraint.arg(0))) or not(is_linear_formula(constraint.arg(1))):
-                return False
-        return True
+            switch = Plus(constraint.arg(0), Times(constraint.arg(1), Real(-1)))
+            linearity_values.append( is_linear_formula(switch))
+        
+        return all(linearity_values)
 
 HaProp = namedtuple("HaProp", "global_prop prop_by_loc")
 HaVerProblem = namedtuple("HaVerProblem", "name ha prop predicates")

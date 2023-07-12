@@ -86,23 +86,6 @@ class NumericInfo:
             })
         savemat(filename, data)
 
-def is_linear_formula(formula):
-    """
-    Tells if the system is piecewise affine.
-    """
-    formula = formula.simplify()
-    if formula.is_symbol() or formula.is_real_constant():
-        return True
-    if formula.is_plus() or formula.is_minus():
-        return is_linear_formula(formula.arg(0)) and is_linear_formula(formula.arg(1))
-    elif formula.is_times() == 15:
-        if formula.arg(0).is_symbol():
-            if formula.arg(1).is_real_constant():
-                return True
-        if formula.arg(0).is_real_constant():
-            return is_linear_formula(formula.arg(1))
-    return False
-
 def get_y0(dyn_sys, C, PRECISION=16):
     """
     Get only the first output y0. The outputs Y = C x.
