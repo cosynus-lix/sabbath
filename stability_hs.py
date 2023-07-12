@@ -24,7 +24,9 @@ from pysmt.shortcuts import (
 
 from functools import partial
 
-from barrier.lyapunov.stabilization.from_sabbath_to_matrices import  build_dyn_systems_from_hs_file
+from barrier.lyapunov.stabilization.from_sabbath_to_matrices import  (get_switching_predicate_from_linear_constraint,
+                                                                      get_vector_from_linear_constraint,
+                                                                      get_matrices_from_linear_odes)
 
 # These are for the SMT solvers
 from barrier.utils import get_cvc5_smtlib, get_mathsat_smtlib
@@ -211,7 +213,29 @@ def handle_args():
 
     return args
 
+def build_dyn_systems_from_switched_ha(problem_ha, PRECISION = 16):
+    Acs = []
+    bs = []
+    Cc = []
+    
+    for index_dyn_system in range(len(problem_ha._locations)):
+        (A, b) = get_matrices_from_linear_odes(problem.ha._locations[f"{index_dyn_system}"][1])
+        Acs.append(A)
+        bs.append(b)
+        (C, Theta) = get_vector_from_linear_constraint(problem.ha._locations[f"{index_dyn_system}"][0])
+        Cc.append(C)
+        if index_dyn_system == 0:
+            Theta_smt = Theta
+    
+    dyn_systems = [system.DynSystem.get_dyn_sys_affine_description(Acs[0], bs[0]),
+                   system.DynSystem.get_dyn_sys_affine_description(Acs[1], bs[1])]
 
+    Theta_smt = Real(myround(Theta, PRECISION))
+
+    # We get the switching predicate
+    switching_predicate = get_switching_predicate_from_linear_constraint(problem_ha._locations["0"][0])
+
+    return (dyn_systems, switching_predicate, Theta_smt) # ,ref_values_smt)
 
 def main(args):
     preds_from_model = False
@@ -261,7 +285,7 @@ def main(args):
         raise Exception("We are not ready to study stability of this Hybrid System. At the moment we study\
                         stability for piecewise affine systems with two modes.")
 
-    (dyn_systems, switching_predicate, Theta_smt) = build_dyn_systems_from_hs_file(problem)
+    (dyn_systems, switching_predicate, Theta_smt) = build_dyn_systems_from_switched_ha(problem.ha)
     
     config = Config(new_solver_f)
     gas_optss = [

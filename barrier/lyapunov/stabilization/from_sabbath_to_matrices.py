@@ -7,29 +7,6 @@ from collections import namedtuple
 from barrier.lyapunov.la_smt import myround
 import barrier.system as system
 
-def build_dyn_systems_from_hs_file(problem, PRECISION = 16):
-    Acs = []
-    bs = []
-    Cc = []
-    
-    for index_dyn_system in range(len(problem.ha._locations)):
-        (A, b) = get_matrices_from_linear_odes(problem.ha._locations[f"{index_dyn_system}"][1])
-        Acs.append(A)
-        bs.append(b)
-        (C, Theta) = get_vector_from_linear_constraint(problem.ha._locations[f"{index_dyn_system}"][0])
-        Cc.append(C)
-        if index_dyn_system == 0:
-            Theta_smt = Theta
-    
-    dyn_systems = [system.DynSystem.get_dyn_sys_affine_description(Acs[0], bs[0]),
-                   system.DynSystem.get_dyn_sys_affine_description(Acs[1], bs[1])]
-
-    Theta_smt = Real(myround(Theta, PRECISION))
-
-    # We get the switching predicate
-    switching_predicate = get_switching_predicate_from_linear_constraint(problem.ha._locations["0"][0])
-
-    return (dyn_systems, switching_predicate, Theta_smt) # ,ref_values_smt)
 
 def get_switching_predicate_from_linear_constraint(linear_constraint):
     if linear_constraint.is_lt() or linear_constraint.is_le():
