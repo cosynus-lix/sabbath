@@ -106,7 +106,6 @@ from barrier.mathematica.mathematica import (
     get_mathematica, exit_callback_print_time, OutOfTimeSolverError, MathematicaSession
 )
 
-THETA = 1
 PRECISION = 16
 logging.basicConfig(level=logging.CRITICAL)
 stability_hs_logger = logging.getLogger(__name__)
