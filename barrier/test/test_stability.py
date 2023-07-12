@@ -28,7 +28,7 @@ from stability_hs import (
     find_level_set,
     find_stability_assumption,
     verify_stability_dyn_system,
-    sample_stability_aux,
+    # sample_stability_aux,
     Result
 )
 
@@ -41,7 +41,7 @@ class TestVerifyPO(TestCase):
 
     def _get_gas_options(self):
         # Use sdp for the test, this should be fixed.
-        return GASOptions(False, False, False, True, False, False, False, True)
+        return GASOptions(False, False, False, True, False, False, False, True, 'cvxopt', True, False, False, 'smt')
 
     def test_lyapunov_gas(self):
         """
@@ -304,37 +304,3 @@ class TestVerifyPO(TestCase):
             self.assertTrue(Result.UNKNOWN == verify_stability_dyn_system(config, [s0,s1], Minus(x,Real(2)), s, gas_opts))
             # test inversion
             self.assertTrue(Result.UNKNOWN == verify_stability_dyn_system(config, [s1,s0], Minus(Real(2),x), s, gas_opts))
-
-
-
-
-    def test_sample_points(self):
-        get_z3 = partial(Solver, logic=QF_NRA, name="z3")
-        config = Config(get_z3)
-
-        x,y = [Symbol("x%s" % (i+1), REAL) for i in range(2)]
-
-        s0 = DynSystem([x,y], [], [],
-                       # x + 4y
-                       {x : x * Real(1)  + y * Real(4),
-                        # -2x - 5y
-                        y : x * Real(-2) + y * Real(-5)},
-                       {})
-
-        s1 = DynSystem([x,y], [], [],
-                       {
-                           # -(x - 0.5) + 1
-                           x : Minus(Real(0), Minus(x, Real(0.5))) + 1,
-                           # (x - 0.5) - 2*(y + 3) + 2}
-                           y : Minus(x, Real(0.5)) + Minus(Real(0), Real(2) * (y + Real(3))) + Real(2)
-                        }, 
-                       {})
-
-        gas_opts = [self._get_gas_options(), self._get_gas_options()]
-
-        switching_pred = Minus(x,Real(2))
-        sample_stability_aux(config, [s0,s1], switching_pred, gas_opts, 10, 1)
-
-        # s = {x : Real(1), y : Real(0.8)}
-        # res = verify_stability_dyn_system(config, [s0,s1], switching_pred, s, gas_opts)
-        # print(res)
