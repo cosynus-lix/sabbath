@@ -8,7 +8,7 @@ import sympy as sp
 from pysmt.shortcuts import get_env, reset_env
 from scipy import io
 
-from barrier.lyapunov.stabilization.from_sabbath_to_matrices import \
+from barrier.stability.from_sabbath_to_matrices import \
     get_matrices_from_linear_odes
 from barrier.serialization.hybrid_serialization import importHSVer
 from barrier.test import TestCase

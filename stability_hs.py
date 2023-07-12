@@ -10,11 +10,11 @@ from functools import partial
 from pysmt.shortcuts import get_env
 
 from barrier.decomposition.predicates import AbsPredsTypes
-from barrier.lyapunov.stabilization.from_sabbath_to_matrices import (
+from barrier.stability.from_sabbath_to_matrices import (
     get_matrices_from_linear_odes,
     get_switching_predicate_from_linear_constraint,
     get_vector_from_linear_constraint)
-from barrier.lyapunov.stabilization.piecewise_affine_case import *
+from barrier.stability.piecewise_affine_case import *
 from barrier.mathematica.mathematica import (MathematicaSession,
                                              exit_callback_print_time,
                                              get_mathematica)
@@ -45,8 +45,6 @@ from barrier.mathematica.mathematica import (MathematicaSession,
                                              exit_callback_print_time,
                                              get_mathematica)
 from barrier.utils import get_cvc5_smtlib, get_mathsat_smtlib
-
-from barrier.lyapunov.stabilization import (Config, GASOptions)
 
 PRECISION = 16
 logging.basicConfig(level=logging.CRITICAL)

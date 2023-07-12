@@ -11,7 +11,7 @@ from enum import Enum
 
 from pysmt.shortcuts import get_env
 
-from barrier.lyapunov.stabilization.piecewise_affine_case import *
+from barrier.stability.piecewise_affine_case import *
 
 try:
     import reformulate
