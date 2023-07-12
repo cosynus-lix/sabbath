@@ -35,6 +35,7 @@ from stability_hs import (
 from . import TestCase
 
 class TestVerifyPO(TestCase):
+    @attr('mathematica')
     def tearDown(self):
         MathematicaSession.terminate_session()
 
