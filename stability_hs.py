@@ -264,16 +264,6 @@ def main(args):
 
             stability_hs_logger.info("Found an assumption.") #, assumptions.serialize())
 
-            # DEBUG
-            solver = config.solver_function()
-            if (not solver.is_sat(assumptions)):
-                stability_hs_logger.info("WARNING: found inconsistent assumptions")
-            else:
-                stability_hs_logger.info("WARNING: assumptions ARE consistent!")
-                if solver.is_sat(And(GT(switching_predicate, Real(0)), assumptions)):
-                    logging.critical(f"Assumptions intersects m1 invariant!")
-                else:
-                    logging.critical("Assumptions DO NOT intersects m1 invariant!")
         else:
             assumptions = None
 
