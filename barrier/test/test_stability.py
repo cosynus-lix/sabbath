@@ -244,8 +244,8 @@ class TestVerifyPO(TestCase):
         # just check it's not empty and hope for the best
         self.assertTrue(get_z3().is_sat(assumptions))
 
-
-    def test_verify_stability(self):
+    @attr('mathematica')
+    def test_verify_stability_mathematica(self):
         get_z3 = partial(Solver, logic=QF_NRA, name="z3")
 
         # Test:
@@ -257,6 +257,62 @@ class TestVerifyPO(TestCase):
 
         config = Config(get_z3)
 
+
+        x,y = [Symbol("x%s" % (i+1), REAL) for i in range(2)]
+
+        s0 = DynSystem([x,y], [], [],
+                       # x + 4y
+                       {x : x * Real(1)  + y * Real(4),
+                        # -2x - 5y
+                        y : x * Real(-2) + y * Real(-5)},
+                       {})
+
+        s1 = DynSystem([x,y], [], [],
+                       {
+                           # -(x - 0.5) + 1
+                           x : Minus(Real(0), Minus(x, Real(0.5))) + 1,
+                           # (x - 0.5) - 2*(y + 3) + 2}
+                           y : Minus(x, Real(0.5)) + Minus(Real(0), Real(2) * (y + Real(3))) + Real(2)
+                        }, 
+                       {})
+
+        stable_points = [
+            # First case
+#            {x : Real(0), y : Real(0)},
+#            {x : Real(-2), y : Real(2)},
+#            {x : Real(1), y : Real(-2)},
+            # Second case
+            {x : Real(2.2), y : Real(-2)},
+            # 
+            {x : Real(0.01), y : Real(0.01)},
+        ]
+
+        unknown_stable_points = [
+            {x : Real(-2), y : Real(-2)},
+            {x : Real(1), y : Real(2)},
+            # Second case
+            {x : Real(4), y : Real(0)},
+            {x : Real(3), y : Real(0)},
+        ]
+
+        gas_opts = [self._get_gas_options(), self._get_gas_options()]
+
+        for s in stable_points:
+            self.assertTrue(Result.STABLE == verify_stability_dyn_system(config, [s0,s1], Minus(x,Real(2)), s, gas_opts))
+            # Test inversion
+            self.assertTrue(Result.STABLE == verify_stability_dyn_system(config, [s1,s0], Minus(Real(2),x), s, gas_opts))
+
+
+        for s in unknown_stable_points:
+            self.assertTrue(Result.UNKNOWN == verify_stability_dyn_system(config, [s0,s1], Minus(x,Real(2)), s, gas_opts))
+            # test inversion
+            self.assertTrue(Result.UNKNOWN == verify_stability_dyn_system(config, [s1,s0], Minus(Real(2),x), s, gas_opts))
+
+
+    def test_verify_stability(self):
+        get_z3 = partial(Solver, logic=QF_NRA, name="z3")
+
+        config = Config(get_z3)
 
         x,y = [Symbol("x%s" % (i+1), REAL) for i in range(2)]
 
