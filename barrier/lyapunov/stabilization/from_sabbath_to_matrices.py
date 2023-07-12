@@ -1,10 +1,6 @@
-from collections import namedtuple
-
 import numpy as np
 import sympy as sp
 from pysmt.shortcuts import *
-
-from barrier.lyapunov.la_smt import myround
 
 
 def get_switching_predicate_from_linear_constraint(linear_constraint):
