@@ -96,7 +96,6 @@ def parse_hs(env, problem_json):
         loc_invar = fromStringFormula(parser, vars_decl_str, loc_data["invar"])
         odes = {}
         for var, ode_str in zip(cont_vars, loc_data["vectorField"]):
-            # print(ode_str)
             ode_eq_0 = fromStringFormula(parser, vars_decl_str, ode_str)
             ode = ode_eq_0.args()[0]
             odes[var] = ode
