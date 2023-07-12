@@ -103,25 +103,6 @@ def is_linear_formula(formula):
             return is_linear_formula(formula.arg(1))
     return False
 
-
-def is_piecewise_affine(dyn_sys):
-    """
-    Tells if the system is piecewise affine.
-    """
-    if len(dyn_sys.ha._locations) != 2:
-        return False
-    
-    linearity_values = []
-    for index_mode in range(2):
-        for ode in dyn_sys.ha._locations[f"{index_mode}"][1].get_odes().values():
-            linearity_values.append(is_linear_formula(ode))
-        constraint = dyn_sys.ha._locations[f"{index_mode}"][0]
-        switch = Plus(constraint.arg(0), Times(constraint.arg(1), Real(-1)))
-        linearity_values.append( is_linear_formula(switch))
-    
-    return all(linearity_values)
-
-
 def get_y0(dyn_sys, C, PRECISION=16):
     """
     Get only the first output y0. The outputs Y = C x.
