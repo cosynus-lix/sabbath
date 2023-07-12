@@ -456,17 +456,17 @@ class HybridAutomaton(object):
     #         print("  %s: %s" % (k, v.invar))
 
     def is_piecewise_affine(self):
-    """
-    Tells if the hybrid automaton is piecewise affine.
-    """
-    for index_mode in range(len(self._locations)):
-        for ode in self._locations[f"{index_mode}"][1].get_odes().values():
-            if not(is_linear_formula(ode)):
+        """
+        Tells if the hybrid automaton is piecewise affine.
+        """
+        for index_mode in range(len(self._locations)):
+            for ode in self._locations[f"{index_mode}"][1].get_odes().values():
+                if not(is_linear_formula(ode)):
+                    return False
+            constraint = self._locations[f"{index_mode}"][0]
+            if not(is_linear_formula(constraint.arg(0))) or not(is_linear_formula(constraint.arg(1))):
                 return False
-        constraint = self._locations[f"{index_mode}"][0]
-        if not(is_linear_formula(constraint.arg(0))) or not(is_linear_formula(constraint.arg(1))):
-            return False
-    return True
+        return True
 
 HaProp = namedtuple("HaProp", "global_prop prop_by_loc")
 HaVerProblem = namedtuple("HaVerProblem", "name ha prop predicates")
