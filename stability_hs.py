@@ -69,13 +69,6 @@ def handle_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("problem",help="Verification problem file")
 
-    parser.add_argument("--abstraction",
-                        choices=["factors","lie","invar","prop","preds_from_model"],
-                        action='append', nargs='+',
-                        help="Polynomials to use in the abstraction")
-
-    parser.add_argument("--outvmt", help="Output vmt file")
-    parser.add_argument("--outpred", help="Output predicates file")
     parser.add_argument("--solver",
                         choices=["z3","mathsat","cvc5","mathematica"],
                         default="mathematica",
@@ -86,26 +79,12 @@ def handle_args():
         help="Name of the output file"
     )
 
-    # parser.add_argument(
-    #     '-sp', '--sample-points', dest='sample_points', action='store_true'
-    # )
-    # parser.add_argument('--simulation-file', dest='simulation_file')
-
-    parser.add_argument(
-        '--input-num-info', dest='input_num_info', type=str,
-        help="Name of the input matlab file where to find k0 and k1"
-    )
-
     parser.add_argument('--use-linear', dest='use_linear', action='store_true')
     parser.add_argument('--use-transpose', dest='use_transpose', action='store_true')
     parser.add_argument('--use-control', dest='use_control', action='store_true')
     parser.add_argument('--use-exponential', dest='sdp_exponential', action='store_true')
     parser.add_argument('--use-simple', dest='sdp_simple', action='store_true')
     parser.add_argument('--no-determinant-opt', dest='use_determinant', action='store_false')
-    parser.add_argument('--read-from-file0', dest='read_from_file0')
-    parser.add_argument('--read-from-file1', dest='read_from_file1')
-    parser.add_argument('--write-on-file0', dest='write_on_file0')
-    parser.add_argument('--write-on-file1', dest='write_on_file1')
 
     parser.add_argument(
         '--validation-method', dest='validation_method',
