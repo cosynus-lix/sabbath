@@ -34,6 +34,8 @@ from stability_hs import (
 
 from . import TestCase
 
+from nose.plugins.attrib import attr
+
 class TestVerifyPO(TestCase):
     @attr('mathematica')
     def tearDown(self):
