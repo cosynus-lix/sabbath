@@ -14,27 +14,15 @@ from barrier.stability.from_sabbath_to_matrices import (
     get_matrices_from_linear_odes,
     get_switching_predicate_from_linear_constraint,
     get_vector_from_linear_constraint)
+
 from barrier.stability.piecewise_affine_case import *
 from barrier.mathematica.mathematica import (MathematicaSession,
                                              exit_callback_print_time,
                                              get_mathematica)
 from barrier.serialization.hybrid_serialization import importHSVer
-# These are for the SMT solvers
+
 from barrier.utils import get_cvc5_smtlib, get_mathsat_smtlib
 
-try:
-    from serialization import importSynthesis, serializeSynthesis
-except:
-    # Dirty trick to get around the current structure
-    # and still have tests.
-    from .serialization import serializeSynthesis, importSynthesis
-
-import logging
-import sys
-from functools import partial
-
-import numpy as np
-import sympy as sp
 from pysmt.logics import QF_NRA
 from pysmt.shortcuts import *
 
@@ -60,7 +48,7 @@ def handle_args():
                         choices=["z3","mathsat","cvc5","mathematica"],
                         default="mathematica",
                         help="SMT solver to use")
-    
+
     parser.add_argument(
         '-o', '--output', dest='output', type=str, default="numeric_info.mat",
         help="Name of the output file"
@@ -72,12 +60,16 @@ def handle_args():
     parser.add_argument('--use-exponential', dest='sdp_exponential', action='store_true')
     parser.add_argument('--use-simple', dest='sdp_simple', action='store_true')
     parser.add_argument('--no-determinant-opt', dest='use_determinant', action='store_false')
+    parser.add_argument('--read-from-file0', dest='read_from_file0')
+    parser.add_argument('--read-from-file1', dest='read_from_file1')
+    parser.add_argument('--write-on-file0', dest='write_on_file0')
+    parser.add_argument('--write-on-file1', dest='write_on_file1')
 
     parser.add_argument(
         '--validation-method', dest='validation_method',
         choices=['smt', 'sympy', 'sylvester'], default='smt'
     )
-    
+
     # For exp eval: use non optimal values in get gas with --use-exponential
     parser.add_argument('--alpha0', dest='alpha0', action='store_true')
     parser.add_argument('--no-robust', dest='no_robust', action='store_true')
@@ -90,6 +82,11 @@ def handle_args():
 
     parser.add_argument('--skip-validation', dest='validate_lyapunov', action='store_false')
     parser.add_argument('--skip-synthesis', dest='synthesize', action='store_false')
+
+    parser.add_argument(
+        '--input-num-info', dest='input_num_info', type=str,
+        help="Name of the input matlab file where to find k0 and k1"
+    )
 
     args = parser.parse_args()
 
@@ -121,7 +118,7 @@ def build_dyn_systems_from_switched_ha(problem_ha, PRECISION = 16):
     Acs = []
     bs = []
     Cc = []
-    
+
     for index_dyn_system in range(len(problem_ha._locations)):
         (A, b) = get_matrices_from_linear_odes(problem_ha._locations[f"{index_dyn_system}"][1])
         Acs.append(A)
@@ -130,7 +127,7 @@ def build_dyn_systems_from_switched_ha(problem_ha, PRECISION = 16):
         Cc.append(C)
         if index_dyn_system == 0:
             Theta_smt = Theta
-    
+
     dyn_systems = [system.DynSystem.get_dyn_sys_affine_description(Acs[0], bs[0]),
                    system.DynSystem.get_dyn_sys_affine_description(Acs[1], bs[1])]
 
@@ -142,30 +139,12 @@ def build_dyn_systems_from_switched_ha(problem_ha, PRECISION = 16):
     return (dyn_systems, switching_predicate, Theta_smt) # ,ref_values_smt)
 
 def main(args):
-    preds_from_model = False
-    abs_type = AbsPredsTypes.NONE.value
-    if args.abstraction:
-        for l in args.abstraction:
-            for t in l:
-                if t == "factors":
-                    abs_type = abs_type | AbsPredsTypes.FACTORS.value
-                elif t == "prop":
-                    abs_type = abs_type | AbsPredsTypes.PROP.value
-                elif t == "lie":
-                    abs_type = abs_type | AbsPredsTypes.LIE.value
-                elif t == "invar":
-                    abs_type = abs_type | AbsPredsTypes.INVAR.value
-                elif t == "preds_from_model":
-                    preds_from_model = True
-                else:
-                    raise Exception("Unknown abstraction type %s " % t)
-    
     # Read HS
     print("Parsing problem...")
     env = get_env()
     with open(args.problem, "r") as f:
         problem = importHSVer(f, env)
-    
+
     if (args.solver == "z3"):
         new_solver_f = partial(Solver, logic=QF_NRA, name="z3")
     elif (args.solver == "mathsat"):
@@ -183,14 +162,14 @@ def main(args):
     # Improve methods for more than 2 modes
     if len(problem.ha._locations) > 2:
         raise Exception("We are not ready to study stability of a Hybrid System with more than 2 modes.")
-    
+
     # Here we check if the hybrid system given can be studied with valu3s tools.
     if not problem.ha.is_piecewise_affine:
         raise Exception("We are not ready to study stability of this Hybrid System. At the moment we study\
                         stability for piecewise affine systems with two modes.")
 
     (dyn_systems, switching_predicate, Theta_smt) = build_dyn_systems_from_switched_ha(problem.ha)
-    
+
     config = Config(new_solver_f)
     gas_optss = [
         # gas option for mode0
@@ -232,12 +211,16 @@ def main(args):
 
 
     num_info = NumericInfo()
-    output_file_path=args.output
-    input_num_info_file=args.input_num_info
+    output_file_path = args.output
+    input_num_info_file = args.input_num_info if args.input_num_info else None
     synthesize=args.synthesize
     only=args.only
     try:
-        stable, lyap = get_stable_and_lyapunov(dyn_systems, config.solver_function, gas_optss, num_info=num_info, only=only)
+        stable, lyap = get_stable_and_lyapunov(dyn_systems,
+                                               config.solver_function,
+                                               gas_optss,
+                                               num_info=num_info,
+                                               only=only)
 
         if synthesize and only is None:
 
@@ -260,10 +243,10 @@ def main(args):
 
     stability_hs_logger.info("Serializing the results in %s..." % output_file_path)
     num_info.serialize_mat(output_file_path)
-    
+
     return assumptions
 
-    
+
 if __name__ == '__main__':
     args = handle_args()
     main(args)

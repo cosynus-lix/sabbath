@@ -15,15 +15,13 @@ def get_switching_predicate_from_linear_constraint(linear_constraint):
 def get_vector_from_linear_constraint(linear_constraint):
     # We get symbolic vector from the location invariant when it is linear
 
-    if linear_constraint.is_gt():
-        linear_constraint = LT(Times(linear_constraint.arg(0), Real(-1)), Times(linear_constraint.arg(1), Real(-1)))
-    if linear_constraint.is_ge():
-        linear_constraint = LE(Times(linear_constraint.arg(0), Real(-1)), Times(linear_constraint.arg(1), Real(-1)))
+    if (not (linear_constraint.is_lt() or linear_constraint.is_le())):
+        raise Exception("Unsupported constraint for ", linear_constraint)
 
     # We start getting Theta
     linear_part = Plus(linear_constraint.arg(0), Times(linear_constraint.arg(1), Real(-1)))
     num_vars = len(linear_constraint.get_free_variables())
-    
+
     substitution_dictionary = {}
     for var in  linear_part.get_free_variables(): 
         substitution_dictionary[var]=Real(0)
@@ -32,7 +30,7 @@ def get_vector_from_linear_constraint(linear_constraint):
         Theta = sp.sympify(lin_part_all_zero.constant_value())
     except:
         raise Exception("Coefficients of the constraint system are not rationals. Consider approximating them.")
-  
+
     # Now we get C
     C = np.zeros([1, num_vars])
 
