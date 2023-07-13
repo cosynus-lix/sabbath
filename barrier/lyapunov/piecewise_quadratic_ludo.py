@@ -30,7 +30,7 @@ import sympy as sp
 from .la_smt import *
 
 #LUDO: do I need an empty class for PQ functions???
-def _check_implication_full(solver, smt_vars, implication, print_model=True):
+def _check_implication_full(solver, smt_vars, implication, print_model=False):
   """
   Check if an implication is valid, printing counterexample for debug if it's not.
   """

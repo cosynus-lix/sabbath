@@ -195,6 +195,9 @@ def handle_args():
     if args.problem == None and args.size == None:
         raise Exception("Must provide a problem. Enter the argument --size for standard ones.")
 
+    if args.problem != None and args.size != None:
+        raise Exception("Choose either one problem file or a size for a standard problem.")
+    
     if args.size != None:
         args.problem = f"PI_controller_converter/Reformulate/hybrid_reformulation/reformulation_size_{args.size}.hyb"
 
@@ -284,11 +287,14 @@ def main(args):
     
     Candidate_lyap = get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify = args.validation_method)
     if validate_during_synth == True:
-        Certified_Lyap = Candidate_lyap
-        output_file_path = args.output
-        logging.critical("Saving the Certified Lyapunov in %s..." % output_file_path)
-        Certified_Lyap.serialize_mat(output_file_path)
-        return Certified_Lyap
+        if Candidate_lyap == None:
+            logging.critical("The synthesized Piecewise-Quadratic Lyapunov Function was NOT certified via symbolic methods. It is invalid.")
+        else:
+            Certified_Lyap = Candidate_lyap
+            output_file_path = args.output
+            logging.critical("Saving the Certified Lyapunov in %s..." % output_file_path)
+            Certified_Lyap.serialize_mat(output_file_path)
+            return Certified_Lyap
     
     else:
         certified = certify_piecewise_lyap(dyn_systems, switching_predicate_mode0_less0, Candidate_lyap, solver = new_solver_f())
