@@ -136,7 +136,7 @@ def build_dyn_systems_from_switched_ha(problem_ha, PRECISION = 16):
     # We get the switching predicate
     switching_predicate = get_switching_predicate_from_linear_constraint(problem_ha._locations["0"][0])
 
-    return (dyn_systems, switching_predicate, Theta_smt) # ,ref_values_smt)
+    return (dyn_systems, switching_predicate, Theta_smt)
 
 def main(args):
     # Read HS
@@ -232,7 +232,7 @@ def main(args):
                                                           input_num_info_file)
             stability_hs_logger.info("Assumption computation completed...")
 
-            stability_hs_logger.info("Found an assumption.") #, assumptions.serialize())
+            stability_hs_logger.info("Found an assumption.")
 
         else:
             assumptions = None
