@@ -2,6 +2,9 @@ import numpy as np
 from scipy import io
 from collections import namedtuple
 import json
+import logging
+logging.basicConfig(level=logging.CRITICAL)
+mat_to_hyp_as_json_logger = logging.getLogger(__name__)
 
 def vector_field_description(A, b):
     # We convert the matricial formalism into SMT-LIB strings
@@ -75,6 +78,7 @@ def main():
     # be addressed.
     # FIXME fare in modo di poter passare un argomento
     for size_system in [3,5,10,15,18]:
+        mat_to_hyp_as_json_logger.critical(f"Working on size {size_system}")
         HybridSystemMatlab = io.loadmat(f"./data_matlab/data_to_python_size_{size_system}")
         
         # We format the loaded data in python files
@@ -107,6 +111,7 @@ def main():
         Invars_geq0_homo = []
 
         for ind_mode in range(num_modes):
+            mat_to_hyp_as_json_logger.critical(f"Reformulating PI controller as closed loop for mode {ind_mode}...")
             (A_homo, b_homo, C_homo, Invar_geq0_homo) = reformulate_PI(As[ind_mode], Bs[ind_mode], Cs[ind_mode], 
                                                                     Invars_geq0[ind_mode], KPs[ind_mode], KIs[ind_mode], 
                                                                     num_variables, num_controllers, num_outputs, reference_values)
@@ -189,6 +194,7 @@ def main():
         problem["property"]= []
 
         with open(f'./hybrid_reformulation/reformulation_size_{size_system}.hyb', 'w', encoding='utf-8') as f:
+            mat_to_hyp_as_json_logger.critical(f"Exporting as .hyb file in ./hybrid_reformulation/reformulation_size_{size_system}.hyb...")
             json.dump(problem, f, ensure_ascii=False, indent=2)
 
         # We create the file .invar for each mode to give the problem to Sabbath
@@ -207,6 +213,7 @@ def main():
             problem["predicates"]= []
             problem["vectorField"] = vector_field_description(As_homo[index_mode], bs_homo[index_mode])
             with open(f"./single_mode_reformulation/mode_{index_mode}_size_{size_system}.invar", "w", encoding='utf-8') as f:
+                mat_to_hyp_as_json_logger.critical(f"Exporting mode {index_mode} as .invar file in ./single_mode_reformulation/mode_{index_mode}_size_{size_system}.invar...")
                 json.dump([problem], f, ensure_ascii=False, indent=2)
 
     return 0
