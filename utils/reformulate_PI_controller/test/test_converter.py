@@ -12,6 +12,7 @@ from barrier.stability.from_sabbath_to_matrices import \
     get_matrices_from_linear_odes
 from barrier.serialization.hybrid_serialization import importHSVer
 from barrier.test import TestCase
+
 from utils.reformulate_PI_controller.matlab_to_hybrid_as_json import \
     reformulate_PI
 
@@ -22,14 +23,14 @@ def are_equal_sympy_matrices(A, B):
     breakpoint()
     return (sp.simplify(A-B) == 0).all()
 
-class TestStability(TestCase):
+class TestPIConverter(TestCase):
 
 
     def test_get_matrix_coefficients_odes(self):
         input_path_npz = os.path.dirname(os.path.abspath(__file__))+"/affine_hybrid_inputs_npz"
         input_path_hyb = os.path.dirname(os.path.abspath(__file__))+"/affine_hybrid_inputs_hyb"
 
-        
+
 
         for size in [3,5,10,15,18]:
 
@@ -40,22 +41,22 @@ class TestStability(TestCase):
             with open(os.path.join(input_path_hyb, f"reformulation_size_{size}.hyb"), "r") as f:
                 problem = importHSVer(f, env)
             Acs = []
-            
+
             for index_dyn_system in range(len(problem.ha._locations)):
                 (A, b) = get_matrices_from_linear_odes(problem.ha._locations[f"{index_dyn_system}"][1])
                 Acs.append(A)
-            
+
             np_data = np.load(os.path.join(input_path_npz, f"variables_size_{size}.npz"))
 
             for mode in [0,1]:
                 self.assertTrue( ((np_data["As_homo"][mode] - Acs[mode]) == np.zeros(np.shape(Acs[mode]))).all() )
-                
+
 
     def test_get_b_odes(self):
         input_path_npz = os.path.dirname(os.path.abspath(__file__))+"/affine_hybrid_inputs_npz"
         input_path_hyb = os.path.dirname(os.path.abspath(__file__))+"/affine_hybrid_inputs_hyb"
 
-        
+
 
         for size in [3,5,10,15,18]:
 
@@ -66,11 +67,11 @@ class TestStability(TestCase):
             with open(os.path.join(input_path_hyb, f"reformulation_size_{size}.hyb"), "r") as f:
                 problem = importHSVer(f, env)
             bs = []
-            
+
             for index_dyn_system in range(len(problem.ha._locations)):
                 (A, b) = get_matrices_from_linear_odes(problem.ha._locations[f"{index_dyn_system}"][1])
                 bs.append(b)
-            
+
             np_data = np.load(os.path.join(input_path_npz, f"variables_size_{size}.npz"))
 
             for mode in [0,1]:
@@ -106,8 +107,8 @@ class TestStability(TestCase):
 
             for ind_mode in range(num_modes):
 
-                (A_homo, b_homo, C_homo, Invar_geq0_homo) = reformulate_PI(As[ind_mode], Bs[ind_mode], Cs[ind_mode], 
-                                                                        Invars_geq0[ind_mode], KPs[ind_mode], KIs[ind_mode], 
+                (A_homo, b_homo, C_homo, Invar_geq0_homo) = reformulate_PI(As[ind_mode], Bs[ind_mode], Cs[ind_mode],
+                                                                        Invars_geq0[ind_mode], KPs[ind_mode], KIs[ind_mode],
                                                                         num_variables, num_controllers, num_outputs, reference_values)
 
                 np_data = np.load(os.path.join(input_path_npz, f"variables_size_{size_system}.npz"))

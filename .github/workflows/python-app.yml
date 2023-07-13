@@ -37,3 +37,4 @@ jobs:
     - name: Test with nosetests
       run: |
         nosetests -v --eval-attr='(not msatic3) and (not mathematica) and (not sos) and (not long)'
+      run: nosetests -v --eval-attr='(not msatic3) and (not mathematica) and (not sos) and (not long)' ./utils/reformulate_PI_controller
