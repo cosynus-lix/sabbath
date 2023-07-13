@@ -1,0 +1,25 @@
+{
+  "name" : "thermo",
+  "contVars": ["(declare-fun x () Real)"],
+  "varsDecl": ["(declare-fun x () Real)"],
+  "init" : {
+    "1" : "(= x 0)",
+    "2" : "false"
+  },
+  "locations" : {
+    "1" : {
+      "invar" : "(<= x 10)",
+      "vectorField": ["(= x 0)"]
+    },
+    "2" : {
+      "invar" : "(>= x 0)",
+      "vectorField": ["(= (- x) 0)"]
+    }
+  },
+  "edges" : {
+    "1" : [{"dst" : "2", "trans" : "(and (= x 10) (= x_next 10))"}],
+    "2" : [{"dst" : "1", "trans" : "(and (= x 0) (= x_next 0))"}]
+  },
+  "property" : "(and (>= x 0) (<= x 10))"
+}
+

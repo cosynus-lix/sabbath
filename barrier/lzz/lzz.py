@@ -22,12 +22,20 @@ from pysmt.shortcuts import (
     Real,
 )
 
+# [SM] Still in Testing - the Inf should distribute over an arbitrary boolean combination (according to the journal paper from Ghorbal and Sogokon)
+AVOID_DNF_CONVERSION = False
+
 class LzzOpt:
     def __init__(self, ivinf_via_inf = False, use_remainder = False):
         # remainder without inverting ivinf is not implemented now
         assert ((not use_remainder) or ivinf_via_inf)
         self.ivinf_via_inf = ivinf_via_inf
         self.use_remainder = use_remainder
+
+    def __str__(self):
+        return "ivinf_via_inf = %s\n" \
+            "use_remainder = %s\n" % (str(self.ivinf_via_inf),
+                                      str(self.use_remainder))
 
 def debug_print_max_degree(logger, formula):
     if (logger.level <= logging.DEBUG):
@@ -63,6 +71,7 @@ def get_generic_set(poly, derivator, op, sign_mult, rank = None):
     #          ...
     # op should be <,>,=
     #
+    # sign_mult = True should encode IvInf...
 
     def get_lie_op_term(lie, op, sign_mult, i):
         if (sign_mult and i % 2 != 0):
@@ -110,10 +119,13 @@ def get_inf_op_remainders(derivator, poly, op):
     #          | (r_0 = 0 & r_1 = 0 & r_2 op 0)
     #          ...)
 
+    logger = logging.getLogger(__name__)
+    logger.debug("Get remainders")
     remainders = derivator.get_remainders_list(poly)
     trans_f_p = FALSE()
     index = 0
     for r in remainders:
+        logger.debug("Get remainders, iteration %d" % index)
         j = 0
         disjunct = op(r, Real(0))
         while (j < index):
@@ -122,6 +134,8 @@ def get_inf_op_remainders(derivator, poly, op):
 
         trans_f_p = Or(trans_f_p, disjunct)
         index = index + 1
+
+    logger.debug("Computed reminders, reached index %d" % index)
     return (len(remainders) - 1, trans_f_p)
 
 
@@ -140,7 +154,7 @@ def get_trans_f_p(poly, dyn_sys):
     at x will exit p >= 0 immediately.
     """
 
-    return get_generic_set(poly, dyn_sys.get_derivator(), LT, False)
+    return get_generic_set(poly, dyn_sys.get_derivator(), LT, False, None)
 
 
 def is_p_invar(solver, predicate, dyn_sys, init, invar):
@@ -214,18 +228,27 @@ def get_lie_eq_0(derivator, predicate, rank):
     return all_eq_0
 
 # IN_{f,<}
-def get_inf_lt_pred(derivator, predicate):
+def get_inf_lt_pred(derivator, bound, predicate):
     predicate = change_sign(predicate)
-    return get_generic_set(predicate, derivator, GT, False)
+    rank = derivator.get_lie_rank(predicate) if bound is None else bound
+    return get_generic_set(predicate, derivator, GT, False, rank)
 
 # IN_{f,<=}
-def get_inf_le_pred(derivator, predicate):
+def get_inf_le_pred(derivator, bound, predicate):
     predicate = change_sign(predicate)
-    rank = derivator.get_lie_rank(predicate)
+    rank = derivator.get_lie_rank(predicate) if bound is None else bound
     first_disjunct = get_generic_set(predicate, derivator, GT, False, rank)
     all_eq_0 = get_lie_eq_0(derivator, predicate, rank)
     res = Or(first_disjunct, all_eq_0)
     return res
+
+# IN_{f,=}
+# TODO: add specific encoding for equalities
+def get_inf_eq_pred(derivator, bound, predicate):
+    return And(get_inf_le_pred(derivator, bound, predicate),
+               get_inf_le_pred(derivator, bound, Minus(Real(0), predicate)),
+               )
+
 
 # IN_{f,<}
 def get_inf_lt_pred_remainders(derivator, predicate):
@@ -241,10 +264,17 @@ def get_inf_le_pred_remainders(derivator, predicate):
     res = Or(inf, all_eq_0)
     return res
 
+# IN_{f,=}
+# TODO: add specific encoding for equalities
+def get_inf_eq_pred_remainders(derivator, predicate):
+    return And(get_inf_le_pred_remainders(derivator, predicate),
+               get_inf_le_pred_remainders(derivator, Minus(Real(0), predicate)),
+               )
+
 # IvIN_{f,<}
 def get_ivinf_lt_pred(derivator, predicate):
     predicate = change_sign(predicate)
-    return get_generic_set(predicate, derivator, GT, True)
+    return get_generic_set(predicate, derivator, GT, True, None)
 
 # IvIN_{f,<=}
 def get_ivinf_le_pred(derivator, predicate):
@@ -255,18 +285,27 @@ def get_ivinf_le_pred(derivator, predicate):
     res = Or(first_disjunct, all_eq_0)
     return res
 
-def unsupported(pred):
-    raise Exception("Unsupported predicate")
+# TODO: improve, simplify for equality
+# IvIN_{f,=}
+def get_ivinf_eq_pred(derivator, predicate):
+    return And(get_ivinf_le_pred(derivator,predicate),
+               get_ivinf_le_pred(derivator,Minus(Real(0), predicate)))
 
-def get_inf_dnf(lzz_opt, derivator, formula):
+
+def unsupported(pred):
+    raise Exception("Unsupported predicate ", pred.serialize())
+
+def get_inf_dnf(lzz_opt, derivator, bound, formula):
     if (not lzz_opt.use_remainder):
-        op_map = {pysmt_op.LT : partial(get_inf_lt_pred, derivator),
-                  pysmt_op.LE : partial(get_inf_le_pred, derivator),
-                  pysmt_op.EQUALS : unsupported }
+        op_map = {pysmt_op.LT : partial(get_inf_lt_pred, derivator, bound),
+                  pysmt_op.LE : partial(get_inf_le_pred, derivator, bound),
+                  pysmt_op.EQUALS : partial(get_inf_eq_pred, derivator, bound) }
     else:
+        # We still did not implement the bounded version when using remainders
+        assert bound is None
         op_map = {pysmt_op.LT : partial(get_inf_lt_pred_remainders, derivator),
                   pysmt_op.LE : partial(get_inf_le_pred_remainders, derivator),
-                  pysmt_op.EQUALS : unsupported }
+                  pysmt_op.EQUALS : partial(get_inf_eq_pred_remainders, derivator) }
 
     app = ApplyPredicate(op_map)
     inf_dnf = app.walk(formula)
@@ -278,19 +317,20 @@ def get_inf_dnf(lzz_opt, derivator, formula):
 # The main drawback is that we will not reuse the memoization of the
 # rank for a polynomial, since the vector field changes.
 #
-def get_ivinf_dnf(lzz_opt, derivator, formula):
+def get_ivinf_dnf(lzz_opt, derivator, bound, formula):
     if lzz_opt.ivinf_via_inf:
         inverse_derivator = derivator.get_inverse()
-        return get_inf_dnf(lzz_opt, inverse_derivator, formula)
+        return get_inf_dnf(lzz_opt, inverse_derivator, bound, formula)
     else:
         assert not lzz_opt.use_remainder
+        assert bound is None
         app = ApplyPredicate({pysmt_op.LT : partial(get_ivinf_lt_pred, derivator),
                               pysmt_op.LE : partial(get_ivinf_le_pred, derivator),
-                              pysmt_op.EQUALS : unsupported })
+                              pysmt_op.EQUALS : partial(get_ivinf_eq_pred, derivator) })
         ivinf_dnf = app.walk(formula)
         return ivinf_dnf
 
-def lzz(lzz_opt, solver, candidate, derivator, init, invar):
+def lzz_with_cex(lzz_opt, solver, candidate, derivator, init, invar, bound=None, get_model=False):
     """ Implement the LZZ procedure.
 
     Check if the candidate an invariant for derivator, starting from
@@ -309,36 +349,49 @@ def lzz(lzz_opt, solver, candidate, derivator, init, invar):
     if (solver.is_valid(c1)):
         # Check condition on the differential equation
 
-        c = DNFConverter()
-        candidate_dnf = c.get_dnf(candidate)
-        invar_dnf = c.get_dnf(invar)
+        if AVOID_DNF_CONVERSION:
+            candidate_dnf = candidate
+            invar_dnf = invar
+        else:
+            c = DNFConverter()
+            candidate_dnf = c.get_dnf(candidate)
+            invar_dnf = c.get_dnf(invar)
 
+        logger.debug("Constructing c2...")
         c2 = Implies(And(candidate, invar,
-                         get_inf_dnf(lzz_opt, derivator, invar_dnf)),
-                     get_inf_dnf(lzz_opt, derivator, candidate_dnf))
+                         get_inf_dnf(lzz_opt, derivator, bound, invar_dnf)),
+                     get_inf_dnf(lzz_opt, derivator, bound, candidate_dnf))
 
         logger.debug("Checking c2...")
         debug_print_max_degree(logger, c2)
 
         if solver.is_valid(c2):
+            logger.debug("Constructing c3...")
             c3 = Implies(And(Not(candidate), invar,
-                             get_ivinf_dnf(lzz_opt, derivator, invar_dnf)),
-                         Not(get_ivinf_dnf(lzz_opt, derivator, candidate_dnf)))
+                             get_ivinf_dnf(lzz_opt, derivator, bound, invar_dnf)),
+                         Not(get_ivinf_dnf(lzz_opt, derivator, bound, candidate_dnf)))
 
             logger.debug("Checking c3...")
             debug_print_max_degree(logger, c3)
             if solver.is_valid(c3):
-                return True
+                return (True, None)
             else:
                 logger.debug("c3 failed!")
-                return False
+                model = solver.get_model() if get_model else None
+                return (False, model)
         else:
             logger.debug("c2 failed!")
-            return False
+            model = solver.get_model() if get_model else None
+            return (False, model)
     else:
         logger.debug("%s is not an invariant (initial "
                      "condition failed)" % candidate)
-        return False
+        model = solver.get_model() if get_model else None
+        return (False, model)
+
+def lzz(lzz_opt, solver, candidate, derivator, init, invar, bound=None):
+    return lzz_with_cex(lzz_opt, solver, candidate, derivator, init, invar, bound, False)
+
 
 
 def get_lzz_encoding(lzz_opt, candidate, derivator, invar):
@@ -349,9 +402,13 @@ def get_lzz_encoding(lzz_opt, candidate, derivator, invar):
     """
 
     # TODO: Factor with lzz checks
-    c = DNFConverter()
-    candidate_dnf = c.get_dnf(candidate)
-    invar_dnf = c.get_dnf(invar)
+    if AVOID_DNF_CONVERSION:
+        candidate_dnf = candidate
+        invar_dnf = invar
+    else:
+        c = DNFConverter()
+        candidate_dnf = c.get_dnf(candidate)
+        invar_dnf = c.get_dnf(invar)
 
     c2 = Implies(And(candidate, invar,
                      get_inf_dnf(lzz_opt, derivator, invar_dnf)),
@@ -371,6 +428,7 @@ def lzz_fast(lzz_opt, solver, candidate, derivator, init, invar):
     """
 
     logger = logging.getLogger(__name__)
+    bound = None
 
     # candidate is an invariant of the dynamical system if:
     #
@@ -383,19 +441,24 @@ def lzz_fast(lzz_opt, solver, candidate, derivator, init, invar):
     debug_print_max_degree(logger, c1)
     if (solver.is_valid(c1)):
         # Check condition on the differential equation
-        c = DNFConverter()
-        candidate_dnf = c.get_dnf(candidate)
-        invar_dnf = c.get_dnf(invar)
+
+        if AVOID_DNF_CONVERSION:
+            candidate_dnf = candidate
+            invar_dnf = invar
+        else:
+            c = DNFConverter()
+            candidate_dnf = c.get_dnf(candidate)
+            invar_dnf = c.get_dnf(invar)
 
         c2 = Implies(And(candidate, invar),
-                     get_inf_dnf(lzz_opt, derivator, candidate_dnf))
+                     get_inf_dnf(lzz_opt, derivator, bound, candidate_dnf))
 
         logger.debug("Checking c2 (fast)...")
         debug_print_max_degree(logger, c2)
 
         if solver.is_valid(c2):
             c3 = Implies(And(Not(candidate), invar),
-                         Not(get_ivinf_dnf(lzz_opt, derivator, candidate_dnf)))
+                         Not(get_ivinf_dnf(lzz_opt, derivator, bound, candidate_dnf)))
 
             logger.debug("Checking c3 (fast)...")
             debug_print_max_degree(logger, c3)

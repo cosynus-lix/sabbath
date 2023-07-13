@@ -1,0 +1,20 @@
+{
+  "name" : "disc",
+  "contVars": [],
+  "varsDecl": ["(declare-fun x () Real)"],
+  "init" : {
+    "1" : "(= x 0)"
+  },
+  "locations" : {
+    "1" : {
+      "invar" : "(<= x 10)",
+      "vectorField": []
+    }
+  },
+  "edges" : {
+    "1" : [{"dst" : "1", "trans" : "(and (<= x 10) (= x_next (+ x 1)))"}]
+  },
+  "predicates" : ["(= x 0)"],
+  "property" : "(and (>= x 0) (<= x 11))"
+}
+

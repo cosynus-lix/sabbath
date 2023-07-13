@@ -16,7 +16,7 @@ from nose.plugins.attrib import attr
 from pysmt.typing import BOOL
 from pysmt.shortcuts import Symbol, TRUE, FALSE, get_env, GE, Real
 from pysmt.shortcuts import Not, And, Or, Implies, Iff, ExactlyOne
-from pysmt.shortcuts import is_valid, is_sat
+from pysmt.shortcuts import is_valid, is_sat, reset_env
 from pysmt.typing import REAL
 from pysmt.exceptions import SolverAPINotFound
 
@@ -26,12 +26,16 @@ from barrier.msatic3 import MSatic3
 
 class TestSystem(TestCase):
 
+    def setUp(self):
+        print("SETUP")
+        self.env = reset_env()
+
     def test_ts(self):
-        def test_ts_impl(ts, safe):
+        def test_ts_impl(ts, safe, env):
             outstream = StringIO()
             ts.to_vmt(outstream, safe)
             outstream.seek(0)
-            (ts_new, safe_new) = TS.from_vmt(outstream)
+            (ts_new, safe_new) = TS.from_vmt(outstream, env)
             self.assertTrue(is_valid(Iff(ts.init, ts_new.init)))
             self.assertTrue(is_valid(Iff(ts.trans, ts_new.trans)))
             self.assertTrue(is_valid(Iff(safe, safe_new)))
@@ -39,28 +43,46 @@ class TestSystem(TestCase):
         def test_ts_file(filename):
             with open(filename, "r") as f:
                 (ts, safe) = TS.from_vmt(f)
-                test_ts_impl(ts, safe)
+                test_ts_impl(ts, safe, self.env)
 
-        env = get_env()
+        self.env = get_env()
 
         x,y,z = Symbol("x"), Symbol("y"), Symbol("z")
         next_x,next_y,next_z = Symbol("x_next"), Symbol("y_next"), Symbol("z_next")
 
         next_f = lambda l : {x : next_x, y : next_y, z : next_z }[l]
 
-        ts = TS(env,
+        ts = TS(self.env,
                 [x,y,z], next_f,
                 And(x,y),
                 And(And(Iff(next_x, x), Implies(x, next_y)),
                     Iff(z, Not(next_x))))
-        test_ts_impl(ts, TRUE())
-
+        test_ts_impl(ts, TRUE(), self.env)
 
         current_path = os.path.dirname(os.path.abspath(__file__))
         input_path = os.path.join(current_path, "vmt_models")
         for f in os.listdir(input_path):
             if f.endswith("smt2") or f.endswith("vmt"):
                 test_ts_file(os.path.join(input_path, f))
+
+
+
+    def test_serialize_to_mcmt(self):
+        current_path = os.path.dirname(os.path.abspath(__file__))
+        input_path = os.path.join(current_path, "vmt2mcmt_models")
+
+        #for f in os.listdir(input_path):
+        #    if f.endswith("smt2") or f.endswith("vmt"):
+
+        vmt_model_filename = os.path.join(input_path, "etcs.vmt")
+        with open(vmt_model_filename, "r") as f:
+            (ts, safe) = TS.from_vmt(f)
+
+            outstream = StringIO()
+            ts.to_mcmt(outstream, safe)
+            outstream.seek(0)
+
+            print(outstream.getvalue())
 
 
     @attr('msatic3')

@@ -14,7 +14,7 @@ import os
 
 from pysmt.shortcuts import get_env
 
-from barrier.lzz.serialization import importInvar, serializeInvar
+from barrier.serialization.invar_serialization import importInvarVer, serializeInvar
 from barrier.decomposition.predicates import AbsPredsTypes, get_predicates
 
 
@@ -64,7 +64,7 @@ def main():
             continue
 
         with open(os.path.join(input_path, invar_file), "r") as json_stream:
-            problem_list = importInvar(json_stream, env)
+            problem_list = importInvarVer(json_stream, env)
 
             new_problem_list = []
             for problem in problem_list:

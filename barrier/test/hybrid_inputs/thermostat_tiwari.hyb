@@ -1,0 +1,26 @@
+{
+  "name" : "Thermostat, Example 1 and 4 - Abstractions for Hybrid Systems, Tiwaro FMSD 2008",
+  "contVars": ["(declare-fun x () Real)"],
+  "varsDecl": ["(declare-fun x () Real)"],
+  "init" : {
+    "off" : "(and (< 70 x) (< x 80))",
+    "on" : "false"
+  },
+  "locations" : {
+    "off" : {
+      "invar" : "(> x 68)",
+      "vectorField": ["(= (- x) 0)"]
+    },
+    "on" : {
+      "invar" : "(and (< x 82) )",
+      "vectorField": ["(= (- 100 x) 0)"]
+    }
+  },
+  "edges" : {
+    "on" : [{"dst" : "off", "trans" : "(and (>= x 80) (= x x_next) )"}],
+    "off" : [{"dst" : "on", "trans" : "(and (<= x 70) (= x x_next))"}]
+  },
+  "predicates" : [],
+  "property" : "(and (< x 82) (< 68 x) )"
+}
+

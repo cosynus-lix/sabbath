@@ -9,10 +9,12 @@ from pysmt.shortcuts import (
     Real,
     Minus,
     Not, And, Or, Implies, Iff, Equals,
+    EqualsOrIff,
     Equals, GE, GT, LT, LE,
     Exists,
     Symbol,
-    get_atoms
+    get_atoms,
+    ExactlyOne
 )
 
 from pysmt.typing import BOOL, REAL
@@ -56,11 +58,12 @@ def _get_preds_ia_list(poly):
     )
 
 def _get_lzz_in(opt, derivator, preds_list, next_f, lzz_f):
+    bound = None
     current_impl = lambda p : Implies(p, lzz_f(p))
     next_impl = lambda p : Implies(next_f(p),
-                                   get_inf_dnf(opt, derivator, lzz_f(p)))
+                                   get_inf_dnf(opt, derivator, bound, lzz_f(p)))
     and_not_inf = lambda p : And(p,
-                                 Not(get_inf_dnf(opt, derivator, lzz_f(p))))
+                                 Not(get_inf_dnf(opt, derivator, bound, lzz_f(p))))
 
     return And([And(list(map(current_impl, preds_list))),
                 And(list(map(next_impl, preds_list))),
@@ -68,7 +71,8 @@ def _get_lzz_in(opt, derivator, preds_list, next_f, lzz_f):
 
 
 def _get_lzz_out(opt, derivator, preds_list, next_f, lzz_f):
-    current_impl = lambda p : Implies(p, get_ivinf_dnf(opt, derivator, lzz_f(p)))
+    bound = None
+    current_impl = lambda p : Implies(p, get_ivinf_dnf(opt, derivator, bound, lzz_f(p)))
     next_impl = lambda p : Implies(next_f(p), lzz_f(p))
     and_not_inf = lambda p : And(p, Not(lzz_f(p)))
 
@@ -295,7 +299,7 @@ class DecompositionEncoder:
           - init: initial state expressed over the abstraction predicates
           - prop: property expressed over the abstraction predicates
           - trans: the transition relation
-        - List of abstraction polynomials
+          - List of abstraction polynomials (to be used in verification)
         """
         new_trans = self._get_trans_enc()
         new_init = And([self.init, self.invar])
@@ -335,61 +339,57 @@ class DecompositionEncoder:
                 new_prop)
 
     def _get_trans_enc(self):
+        return DecompositionEncoder._get_dyn_sys_enc(self.dyn_sys,
+                                                     self.next_f, self.lzz_f,
+                                                     self.poly, self.preds,
+                                                     self.invar,
+                                                     self.options,
+                                                     self.stats_stream)
+
+    @staticmethod
+    def _get_dyn_sys_enc(dyn_sys,next_f,lzz_f,poly,preds,invar,
+                         options,stats_stream):
+        """
+        sys: dynamical system
+        """
         logger = logging.getLogger(__name__)
         logger.debug("Encoding transition using lzz...")
 
-        sys = self.dyn_sys.get_renamed(self.lzz_f)
-
+        sys = dyn_sys.get_renamed(lzz_f)
         derivator = sys.get_derivator()
-        # Not needed
-        # sort_poly_by_degree(derivator, self.poly)
 
-        if (not self.stats_stream is None):
-            print_abs_stats(self.stats_stream, derivator, self.poly)
+        if (not stats_stream is None):
+            print_abs_stats(stats_stream, derivator, poly)
 
-        if (len(self.preds) > 0):
-            if (not self.options.explicit_encoding):
-                lzz_in = _get_lzz_in(self.options.lzz_opt, derivator, self.preds,
-                                     self.next_f, self.lzz_f)
+        if (len(preds) > 0 and len(sys._states) > 0):
+            if (not options.explicit_encoding):
+                lzz_in = _get_lzz_in(options.lzz_opt, derivator, preds,
+                                     next_f, lzz_f)
 
-                lzz_out = _get_lzz_out(self.options.lzz_opt, derivator, self.preds,
-                                       self.next_f, self.lzz_f)
-
-#                 # DEBUG
-#                 print("Checking trans is sat")
-#                 from pysmt.shortcuts import Solver
-#                 from pysmt.logics import QF_NRA
-#                 from barrier.mathematica.mathematica import get_mathematica
-#                 from pysmt.shortcuts import get_env
-#                 solver = get_mathematica(get_env())
-#                 solver = Solver(logic=QF_NRA, name="z3")
-#                 print("check in...")
-#                 print(lzz_in.serialize())
-#                 assert(solver.is_sat(lzz_in))
-#                 print("check out...")
-#                 assert(solver.is_sat(lzz_out))
-#                 print("checked trans...")
+                lzz_out = _get_lzz_out(options.lzz_opt, derivator, preds,
+                                       next_f, lzz_f)
 
                 lzz_encoding = Or(lzz_in, lzz_out)
             else:
                 lzz_encoding = _get_explicit_encoding(derivator,
-                                                      self.poly,
-                                                      self.next_f,
-                                                      self.lzz_f)
+                                                      poly,
+                                                      next_f,
+                                                      lzz_f)
         else:
             # corner case
             lzz_encoding = TRUE()
 
         # frame condition for the time-independent parameters
-        fc_list = [Equals(var, self.next_f(var)) for var in sys.inputs()]
+        fc_list = [Equals(var, next_f(var)) for var in sys.inputs()]
+
         if (len(fc_list) == 0):
             fc = TRUE()
         else:
             fc = And(fc_list)
 
-        res = And([_get_neigh_encoding(self.poly, self.next_f),
-                   self.invar,
-                   self.next_f(self.invar),
+        res = And([_get_neigh_encoding(poly, next_f),
+                   invar,
+                   next_f(invar),
                    fc,
                    lzz_encoding])
 
@@ -399,3 +399,149 @@ class DecompositionEncoder:
         return res
 
 # EOC DecompositionEncoder
+
+class DecompositionEncoderHA:
+
+    def __init__(self, env, ha, poly, ha_prop,
+                 options = DecompositionOptions(),
+                 stats_stream = None):
+        logger = logging.getLogger(__name__)
+
+        self.env = env
+        self.ha = ha
+        self.options = options
+
+        # TODO: add implementation for initial predicates
+        self.poly = poly
+        self.poly = get_unique_poly_list(self.poly)
+        logger.debug("Total of polynomials %d" % len(self.poly))
+
+        self.preds = _get_preds_list(self.poly)
+
+        self.ha_prop = ha_prop
+        self.stats_stream = stats_stream
+
+        # Declare the variables
+        def _get_locs(env, ha):
+            loc_vars = {}
+            for loc in ha._locations:
+                loc_name = "loc_%s" % str(loc)
+                loc_var = FormulaHelper.get_fresh_var_name(env.formula_manager, loc_name)
+                loc_vars[loc] = loc_var
+            return loc_vars
+
+        self.loc_vars_map = _get_locs(env, ha)
+        self.disc_vars = [var for var in ha._disc_vars]
+        self.disc_vars += [v for (k,v) in self.loc_vars_map.items()]
+        self.cont_vars = [var for var in ha._cont_vars]
+        self.vars = self.disc_vars + self.cont_vars
+
+        self.next_f = lambda x : partial(FormulaHelper.rename_formula,
+                                         env = env,
+                                         vars = self.vars,
+                                         suffix = "_next")(formula=x)
+        self.lzz_f = lambda x : partial(FormulaHelper.rename_formula,
+                                        env = env,
+                                        vars = self.cont_vars,
+                                        suffix = "_lzz")(formula=x)
+
+
+    def get_ts_ia(self):
+        """
+        Get the implicit abstraction encoding for the hybrid automaton.
+        """
+
+        safe = self.ha_prop.global_prop
+        for loc, loc_prop in self.ha_prop.prop_by_loc.items():
+            safe = And(safe, Implies(self.loc_vars_map[loc], loc_prop))
+
+        # Invar
+        # - exactly one location
+        # - invar for every location
+        one_loc = ExactlyOne([v for (k,v) in self.loc_vars_map.items()])
+        new_invar = one_loc
+        for (q,loc) in self.ha._locations.items():
+            new_invar = And(new_invar,
+                            Implies(self.loc_vars_map[q], loc.invar))
+
+        # Init
+        # - init for every location
+        new_init = new_invar
+        for q,init in self.ha._init.items():
+            new_init = And(new_init, Implies(self.loc_vars_map[q], init))
+
+        # Trans_disc
+        trans_list_disc = []
+        for q, edges in self.ha._edges.items():
+            for edge in edges:
+                trans_list_disc.append(And([self.loc_vars_map[q],
+                                            self.next_f(self.loc_vars_map[edge.dst]),
+                                            edge.trans]))
+        # Cont_trans
+        trans_list_cont = []
+        for q, loc in self.ha._locations.items():
+
+            loc_invar = self.ha._locations[q].invar
+            lzz_loc = DecompositionEncoder._get_dyn_sys_enc(loc.vector_field,
+                                                            self.next_f,
+                                                            self.lzz_f,
+                                                            self.poly,
+                                                            self.preds,
+                                                            loc_invar,
+                                                            self.options,
+                                                            self.stats_stream)
+
+            trans_list_cont.append(And([self.loc_vars_map[q],
+                                        self.next_f(self.loc_vars_map[q]),
+                                        lzz_loc]))
+
+        # Add the self transition in the abstract space
+        #
+        # The semialgebraic decomposition encodes a transition system without a self
+        # transition ("s1 -> [x' = f(x) & (s1 | s1)] s1" always holds)
+        #
+        # This is not a problem when we prove invariance of a dynamical system, but
+        # we need the self transition in the encoding of the hybrid automaton.
+        #
+        # This is because we need to check what happens in the whole abstract state
+        # s1 due to the continuous transition.
+        #
+        # fc_p = for p in preds. p(x) & p(x')
+        # This is abstracted later
+        #
+        fc_p = And([Iff(p, self.next_f(p)) for p in _get_preds_ia_list(self.poly)])
+        trans_list_cont.append(fc_p)
+
+        # keep te discrete transition relation concrete
+        invar_trans = And(new_invar, self.next_f(new_invar))
+        # fc_loc = And([Iff(v, self.next_f(v)) for (k,v) in self.loc_vars_map.items()])
+        fc_loc = And([EqualsOrIff(v, self.next_f(v)) for v in self.disc_vars])
+
+        ts_disc = And(invar_trans, Or(trans_list_disc))
+        ts = TS(self.env, self.vars, self.next_f, new_init,
+                And([invar_trans,
+                     fc_loc,
+                     Or(trans_list_cont)]))
+
+        preds_for_ia = _get_preds_ia_list(self.poly)
+        # Make the discrete state concrete
+        for var in self.disc_vars:
+            preds_for_ia.append(var)
+
+        enc = ImplicitAbstractionEncoder(ts,
+                                         safe,
+                                         preds_for_ia,
+                                         self.env,
+                                         self.options.rewrite_init,
+                                         self.options.rewrite_property,
+                                         self.options.add_init_prop_predicates,
+                                         True,
+                                         ts_disc)
+        ts = enc.get_ts_abstract()
+        new_prop = enc.get_prop_abstract()
+        preds_for_ia = enc.get_predicates()
+        return (ts, new_prop, preds_for_ia)
+
+
+# EOC DecompositionEncoderHA
+

@@ -1,0 +1,29 @@
+{
+  "name" : "disc",
+  "contVars": [],
+  "varsDecl": ["(declare-fun x () Real)"],
+  "init" : {
+    "1" : "(= x 10)"
+  },
+  "locations" : {
+    "1" : {
+      "invar" : "(= x 10)",
+      "vectorField": []
+    },
+    "2" : {
+      "invar" : "(= x 11)",
+      "vectorField": []
+    }
+  },
+  "edges" : {
+    "1" : [{"dst" : "2", "trans" : "true"}],
+    "2" : [{"dst" : "1", "trans" : "true"}]
+  },
+  "property" : "true",
+  "property_by_loc" : {
+    "1" : "(= x 10)",
+    "2" : "(= x 11)"
+  }
+}
+
+

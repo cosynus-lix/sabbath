@@ -1,0 +1,10 @@
+[{
+  "antecedent": "true",
+  "consequent": "true",
+  "constraints": "true",
+  "contVars": ["(declare-fun _x1 () Real)", "(declare-fun _x2 () Real)"],
+  "name": "Simple linear system",
+  "predicates": [],
+  "varsDecl": ["(declare-fun _x1 () Real)", "(declare-fun _x2 () Real)"],
+  "vectorField": ["(= (* (- 2) _x1) 0)", "(= (- _x1 _x2) 0)"]
+}]

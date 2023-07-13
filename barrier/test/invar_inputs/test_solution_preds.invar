@@ -1,0 +1,10 @@
+[{
+  "name" : "Test solutions",
+  "contVars": ["(declare-fun v () Real)","(declare-fun t () Real)","(declare-fun v0 () Real)","(declare-fun t0 () Real)"],
+  "varsDecl": ["(declare-fun v () Real)","(declare-fun t () Real)","(declare-fun v0 () Real)","(declare-fun t0 () Real)"],
+  "vectorField" : ["(= 2 0)", "(= 1 0)", "(= 0 0)", "(= 0 0)"],
+  "antecedent" : "(and (= t 0) (= v 0) (= t0 t) (= v0 v))",
+  "constraints": "(<= t 5)",
+  "consequent": "(<= v 10)",
+  "predicates" : ["(= t 0)", "(= v 0)", "(= t0 0)", "(= v0 0)", "(= (- t0 t) 0)", "(= (- v0 t) 0)", "(= (- t 5) 0)", "(= (- v 10) 0)", "(= (- v (+ v0 (* 2 (- t t0) ))) 0)"]
+}]

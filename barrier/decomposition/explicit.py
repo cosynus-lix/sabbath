@@ -204,15 +204,6 @@ def _get_invar_lazy_set(derivator, invar,
             init_solver.add_assertion(Not(And(init_abs_state)))
             to_visit.append(init_abs_state)
 
-            # s = get_solver()
-            # s.add_assertion(init)
-            # print(init.serialize())
-            # for l in init_abs_state:
-            #     print((And(l)).serialize())
-            #     s.add_assertion(And(l))
-            # assert(s.solve())
-
-
         while 0 < len(to_visit):
             abs_state = to_visit.pop()
 
@@ -231,7 +222,15 @@ def _get_invar_lazy_set(derivator, invar,
 
             # Visit all the neighbors of abs_state
             for neigh in get_neighbors(polynomials, abs_state):
-                if neigh in abs_visited:
+                if neigh in abs_visited or neigh in all_init_sates:
+                    # Avoid to visit again a state already visited
+                    # or a state in the initial state
+                    # An initial state may not have been visited still,
+                    # but it will eventually.
+                    #
+                    # Here we avoid to check if a transition with the initial
+                    # state exists, since we are only interested in reachability
+                    # properties (i.e., find a state invariant).
                     continue
 
                 # Check if neigh has some intersection with invariant
@@ -244,12 +243,16 @@ def _get_invar_lazy_set(derivator, invar,
 
                 lzz_solver = get_solver()
 
+                lzz_invar_condition = And(
+                    Or(And(abs_state), And(neigh))
+                )
+
                 is_invar = lzz(lzz_opt=lzz_opt,
                                solver=lzz_solver,
                                candidate=And(abs_state),
                                derivator=derivator,
                                init=And(abs_state),
-                               invar=Or(And(abs_state), And(neigh)))
+                               invar=lzz_invar_condition)
 
                 if (not is_invar):
                     logger.debug("New trans from %s to %s" %
@@ -293,7 +296,6 @@ def _get_invar_lazy(derivator, invar, polynomials,
     from init and staying inside safe.
 
     """
-
     (res, reach_states) = _get_invar_lazy_set(derivator, invar,
                                               polynomials,
                                               init, safe,

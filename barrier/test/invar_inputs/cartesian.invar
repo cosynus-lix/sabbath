@@ -1,0 +1,10 @@
+[{
+  "name" : "Not a cartesian abstraction",
+  "contVars": ["(declare-fun x () Real)","(declare-fun y () Real)"],
+  "varsDecl": ["(declare-fun x () Real)","(declare-fun y () Real)"],
+  "antecedent" : "(and (< x 0) (< y 0))",
+  "consequent": "(not (and (< x 0) (= y 1)))",
+  "constraints": "true",
+  "vectorField" : ["(= (- x 1) 0)","(= (- y 1) 0)"],
+  "predicates" : ["(= x 0)", "(= y 0)"]
+}]

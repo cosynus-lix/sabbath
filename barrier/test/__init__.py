@@ -70,10 +70,52 @@ class skipIfMathematicaIsNotAvailable(object):
 
     def __call__(self, test_fun):
         msg = "Mathematica not available"
-        skip = not self.has_kernel
+        skip = self.has_kernel is None or not self.has_kernel
         @unittest.skipIf(skip, msg)
         @wraps(test_fun)
         def wrapper(*args, **kwargs):
             return test_fun(*args, **kwargs)
         return wrapper
+
+
+class skipIfSOSIsNotAvailable(object):
+    """Skip a test if sum of squares is not available."""
+
+    def __init__(self):
+        try:
+            from SumOfSquares import SOSProblem, poly_opt_prob
+            self.has_sos = True
+        except ImportError:
+            self.has_sos = False
+
+    def __call__(self, test_fun):
+        msg = "SoS solver not available"
+        skip = not self.has_sos
+        @unittest.skipIf(skip, msg)
+        @wraps(test_fun)
+        def wrapper(*args, **kwargs):
+            return test_fun(*args, **kwargs)
+        return wrapper
+
+
+class skipIfPicosIsNotAvailable(object):
+    """Skip a test if picos is not available."""
+
+    def __init__(self):
+        try:
+            import picos
+            self.has_picos = True
+        except ImportError:
+            self.has_picos = False
+
+    def __call__(self, test_fun):
+        msg = "SoS solver not available"
+        skip = not self.has_picos
+        @unittest.skipIf(skip, msg)
+        @wraps(test_fun)
+        def wrapper(*args, **kwargs):
+            return test_fun(*args, **kwargs)
+        return wrapper
+
+
 

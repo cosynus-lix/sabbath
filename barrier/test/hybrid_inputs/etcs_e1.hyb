@@ -1,0 +1,53 @@
+{
+  "name" : "ETCS: Essentials",
+  "contVars": ["(declare-fun v () Real)","(declare-fun z () Real)","(declare-fun t () Real)"],
+  "varsDecl": ["(declare-fun v () Real)","(declare-fun z () Real)","(declare-fun t () Real)",
+               "(declare-fun a () Real)",
+               "(declare-fun ep () Real)",
+               "(declare-fun b () Real)",
+               "(declare-fun maxA () Real)",
+               "(declare-fun m () Real)",
+               "(declare-fun v0 () Real)",
+               "(declare-fun t0 () Real)",
+               "(declare-fun z0 () Real)"
+               ],
+  "init" : {
+    "init" : "(and (>= v 0) (>= (- m z) (/ (* v v) (* 2 b))) (> b 0) (>= maxA 0) (>= ep 0) )",
+    "loop" : "false"
+  },
+  "locations" : {
+    "init" : {
+      "invar" : "(and (= ep 1) (= b 1) (= maxA 1))",
+      "vectorField": ["(= 0 0)", "(= 0 0)", "(= 0 0)"]
+    },
+    "loop" : {
+      "invar" : "(and (>= v 0) (<= t ep)  (and (= ep 1) (= b 1) (= maxA 1)) )",
+      "vectorField": ["(= a 0)", "(= v 0)", "(= 1 0)"]
+    }
+  },
+  "edges" : {
+    "init" : [{"dst" : "loop", "trans" : "(and (or (and (<= (- m z) (+ (/ (* v v) (* 2 b)) (* (+ (/ maxA b) 1) (+ (* (/ maxA 2) (* ep ep)) (* ep v) ) ) )) (= a_next (- 0 b))) (and (>= (- m z) (+ (/ (* v v) (* 2 b)) (* (+ (/ maxA b) 1) (+ (* (/ maxA 2) (* ep ep)) (* ep v) ) ) )) (= a_next maxA)) ) (= v_next v) (= z_next z) (= t_next 0) (= ep_next ep) (= b_next b) (= maxA_next maxA) (= m_next m) (= v0_next v_next) (= z0_next z_next) (= t0_next t_next))"}],
+    "loop" : [{"dst" : "loop", "trans" : "(and (or (and (<= (- m z) (+ (/ (* v v) (* 2 b)) (* (+ (/ maxA b) 1) (+ (* (/ maxA 2) (* ep ep)) (* ep v) ) ) )) (= a_next (- 0 b))) (and (>= (- m z) (+ (/ (* v v) (* 2 b)) (* (+ (/ maxA b) 1) (+ (* (/ maxA 2) (* ep ep)) (* ep v) ) ) )) (= a_next maxA)) ) (= v_next v) (= z_next z) (= t_next 0) (= ep_next ep) (= b_next b) (= maxA_next maxA) (= m_next m) (= v0_next v_next) (= z0_next z_next) (= t0_next t_next))"}]
+  },
+  "predicates" : [
+    "(= (- m z) 0)",
+    "(= (- z m) 0)",
+    "(= t 0)",
+    "(= (- t ep) 0)",
+    "(= v 0)",
+    "(= b 0)",
+    "(= maxA 0)",
+    "(= ep 0)",
+    "(= (- (- m z) (/ (* v v) (* 2 b))) 0)",
+    "(= (- (- m z) (+ (/ (* v v) (* 2 b)) (* (/ maxA b) (+ (* (/ maxA 2) (* ep ep)) (* ep v) ) ) )) 0)",
+    "(= (+ (/ (* v v) (* 2 b)) (* (/ maxA b) (+ (* (/ maxA 2) (* ep ep)) (* ep v) ) ) ) 0)",
+    "(= (- ep 1) 0)",
+    "(= (- b 1) 0)",
+    "(= (- maxA 1) 0)"
+  ],
+  "property" : "(<= z m)",
+  "property_by_loc" : {
+  }
+
+}
+

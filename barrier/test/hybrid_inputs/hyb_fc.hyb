@@ -1,0 +1,26 @@
+{
+  "name" : "hyb_fc",
+  "contVars": ["(declare-fun x () Real)"],
+  "varsDecl": ["(declare-fun x () Real)"],
+  "init" : {
+    "1" : "(= 0 x)",
+    "2" : "false"
+  },
+  "locations" : {
+    "1" : {
+      "invar" : "(= 0 x)",
+      "vectorField": ["(= x 0)"]
+    },
+    "2" : {
+      "invar" : "(= 1 x)",
+      "vectorField": ["(= x 0)"]
+    }
+  },
+  "edges" : {
+    "1" : [{"dst" : "2", "trans" : "(= x_next x)"}],
+    "2" : [{"dst" : "1", "trans" : "(= x_next x)"}]
+  },
+  "predicates" : [],
+  "property" : "(= x 0)"
+}
+

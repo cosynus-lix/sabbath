@@ -65,7 +65,7 @@ def readVar(parser, var_decl, all_vars):
         elif cmd.name == smtcmd.DEFINE_FUN:
             (var, formals, typename, body) = cmd.args
 
-def parse_dyn_sys(env, problem_json, is_lzz = False):
+def parse_dyn_sys(env, problem_json, is_lzz = False, only_ode = False):
     parser = SmtLibParser(env)
 
     # Read all the variables
@@ -81,22 +81,29 @@ def parse_dyn_sys(env, problem_json, is_lzz = False):
         readVar(parser, var_decl, cont_vars)
 
     if (not is_lzz):
-        # Antecedent
-        antecedent = fromStringFormula(parser, vars_decl_str, problem_json["antecedent"])
-        # Consequent
-        consequent = fromStringFormula(parser, vars_decl_str, problem_json["consequent"])
+        if not (only_ode):
+            # Antecedent
+            antecedent = fromStringFormula(parser, vars_decl_str, problem_json["antecedent"])
+            # Consequent
+            consequent = fromStringFormula(parser, vars_decl_str, problem_json["consequent"])
 
-        predicates = []
-        for pred_json in problem_json["predicates"]:
-            pred_eq_0 = fromStringFormula(parser, vars_decl_str, pred_json)
-            pred = pred_eq_0.args()[0]
-            predicates.append(pred)
+            predicates = []
+            for pred_json in problem_json["predicates"]:
+                pred_eq_0 = fromStringFormula(parser, vars_decl_str, pred_json)
+                pred = pred_eq_0.args()[0]
+                predicates.append(pred)
     else:
-        # Invariant candidate
-        candidate = fromStringFormula(parser, vars_decl_str, problem_json["candidate"])
+        if not (only_ode):
+            # Invariant candidate
+            candidate = fromStringFormula(parser, vars_decl_str, problem_json["candidate"])
+        else:
+            candidate = None
 
     # Invariant of the dynamical system
-    invar = fromStringFormula(parser, vars_decl_str, problem_json["constraints"])
+    if (not only_ode):
+        invar = fromStringFormula(parser, vars_decl_str, problem_json["constraints"])
+    else:
+        invar = None
 
     # Discrete variables (e.g., parameters) that are not in the
     # continuous variables become (discrete) inputs.
@@ -138,27 +145,26 @@ def importInvar(json_stream, env):
     return results
 
 
+def _get_smt_vars(var, env):
+    var_cmd = SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[var])
+    outstream = StringIO()
+    var_cmd.serialize(outstream=outstream)
+    return outstream.getvalue()
+
+def _get_smt_formula(formula, printer):
+    outstream = StringIO()
+    printer = SmtDagPrinter(outstream)
+    printer.printer(formula)
+    return outstream.getvalue()
+
+def _get_smt_formula_pred(formula, printer):
+    return _get_smt_formula(Equals(formula, Real(0)), printer)
+
 
 def serializeInvar(outstream, invar_problems, env):
     """
     Writes invar_problem problem on outstream
     """
-    def _get_smt_vars(var, env):
-        var_cmd = SmtLibCommand(name=smtcmd.DECLARE_FUN, args=[var])
-        outstream = StringIO()
-        var_cmd.serialize(outstream=outstream)
-        return outstream.getvalue()
-
-    def _get_smt_formula(formula, printer):
-        outstream = StringIO()
-        printer = SmtDagPrinter(outstream)
-        printer.printer(formula)
-        return outstream.getvalue()
-
-    def _get_smt_formula_pred(formula, printer):
-        return _get_smt_formula(Equals(formula, Real(0)), printer)
-
-
     invar_problems_json = []
     for invar_problem in invar_problems:
         name, antecedent, consequent, dyn_sys, invar, predicates = invar_problem

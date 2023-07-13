@@ -17,7 +17,12 @@ from pysmt.shortcuts import (
     get_env, Solver
 )
 
-from barrier.lzz.serialization import importInvar
+from barrier.decomposition.predicates import (
+    AbsPredsTypes, get_polynomials_ha,
+    get_polynomials_invar_problem
+)
+from barrier.decomposition.utils import get_unique_poly_list
+from barrier.serialization.invar_serialization import importInvarVer
 from barrier.lzz.lzz import LzzOpt
 from barrier.decomposition.explicit import (
     Result,
@@ -74,6 +79,13 @@ def main():
                         dest="simplified_ia_encoding", action='store_true',
                         help="Use simplified IA encoding (with input variables)")
 
+    parser.add_argument("--abstraction",
+                        choices=["factors","lie","invar","prop","preds_from_model"],
+                        action='append', nargs='+',
+                        help="Polynomials to use in the abstraction",
+                        default=[])
+
+
 
     args = parser.parse_args()
 
@@ -91,16 +103,17 @@ def main():
     print("Parsing problem...")
     env = get_env()
     with open(args.problem, "r") as json_stream:
-        problem_list = importInvar(json_stream, env)
+        problem_list = importInvarVer(json_stream, env)
     assert(len(problem_list) == 1)
-    (problem_name, init, safe, dyn_sys, invariants, predicates) = problem_list[0]
+    invar_problem = problem_list[0]
+    (problem_name, init, safe, dyn_sys, invariants, predicates) = invar_problem
     print("parsed problem...")
+    print(dyn_sys)
+    print("Invariant ", invariants.serialize())
+    print("Init ", init.serialize())
+    print("Safe ", safe.serialize())
 
-    # print(dyn_sys)
-    # print(invariants.serialize())
-    # print(init.serialize())
-    # print(safe.serialize())
-
+    # Read predicates
     if (args.lzz_use_remainders):
         lzz_opt = LzzOpt(True, True)
         print("Using remainders...")
@@ -112,6 +125,39 @@ def main():
     else:
         simplified_ia_encoding = False
     print("Using simplified ia: " + str(simplified_ia_encoding))
+
+    abs_type = AbsPredsTypes.NONE.value
+    preds_from_model = False
+    if args.abstraction:
+        for l in args.abstraction:
+            for t in l:
+                if t == "factors":
+                    abs_type = abs_type | AbsPredsTypes.FACTORS.value
+                elif t == "prop":
+                    abs_type = abs_type | AbsPredsTypes.PROP.value
+                elif t == "lie":
+                    abs_type = abs_type | AbsPredsTypes.LIE.value
+                elif t == "invar":
+                    abs_type = abs_type | AbsPredsTypes.INVAR.value
+                elif t == "preds_from_model":
+                    preds_from_model = True
+                else:
+                    raise Exception("Unknown abstraction type %s " % t)
+    else:
+        preds_from_model = True
+
+    auto_poly = get_polynomials_invar_problem(invar_problem, abs_type, env)
+    if (not preds_from_model):
+        predicates = auto_poly
+    else:
+        predicates = set(predicates)
+        predicates.update(auto_poly)
+    predicates = get_unique_poly_list(predicates)
+
+    print("Using polynomials:")
+    for p in predicates:
+        print(p.serialize())
+    print("----")
 
 
     if (args.task in ["dwcl","reach","dwcl_ic3"]):
@@ -185,7 +231,6 @@ def main():
         else:
             assert args.direct_encoding == "false"
             direct_encoding = False
-
         print("Re-encoding init and prop? %d" % encode_init_and_prop)
 
         opt = DecompositionOptions(encode_init_and_prop,

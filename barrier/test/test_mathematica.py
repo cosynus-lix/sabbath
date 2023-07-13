@@ -34,30 +34,32 @@ from barrier.mathematica.mathematica import (
 
 class TestConverter(TestCase):
 
+  @attr('mathematica')
+  @skipIfMathematicaIsNotAvailable()
   def test_allowed(self):
       env = Environment()
       convert = MathematicaConverter(env)
 
       x,y,z = [Symbol(s,REAL) for s in ["x","y","z"]]
       test_cases = [
-          (x,"(x)"),
+          (x,"Global`x"),
           #
-          (Plus(x,y), "Plus[(x), (y)]"),
-          (Minus(x,y), "Plus[(x), Minus[(y)]]"),
-          (Times(x,y), "Times[(x), (y)]"),
-          (Div(x,y), "Divide[(x), (y)]"),
+          (Plus(x,y), "Plus[Global`x, Global`y]"),
+          (Minus(x,y), "Plus[Global`x, Minus[Global`y]]"),
+          (Times(x,y), "Times[Global`x, Global`y]"),
+          (Div(x,y), "Divide[Global`x, Global`y]"),
           #
-          (Equals(x,y), "Equal[(x), (y)]"),
-          (LT(x,y), "Less[(x), (y)]"),
-          (LE(x,y), "LessEqual[(x), (y)]"),
+          (Equals(x,y), "Equal[Global`x, Global`y]"),
+          (LT(x,y), "Less[Global`x, Global`y]"),
+          (LE(x,y), "LessEqual[Global`x, Global`y]"),
           #
-          (And(LT(x,y),LT(x,z)), "And[Less[(x), (y)], Less[(x), (z)]]"),
-          (Or(LT(x,y),LT(x,z)), "Or[Less[(x), (y)], Less[(x), (z)]]"),
-          (Not(LT(x,y)), "Not[Less[(x), (y)]]"),
-          (Iff(LT(x,y),LT(x,z)), "Equivalent[Less[(x), (y)], Less[(x), (z)]]"),
-          (Implies(LT(x,y),LT(x,z)), "Implies[Less[(x), (y)], Less[(x), (z)]]"),
+          (And(LT(x,y),LT(x,z)), "And[Less[Global`x, Global`y], Less[Global`x, Global`z]]"),
+          (Or(LT(x,y),LT(x,z)), "Or[Less[Global`x, Global`y], Less[Global`x, Global`z]]"),
+          (Not(LT(x,y)), "Not[Less[Global`x, Global`y]]"),
+          (Iff(LT(x,y),LT(x,z)), "Equivalent[Less[Global`x, Global`y], Less[Global`x, Global`z]]"),
+          (Implies(LT(x,y),LT(x,z)), "Implies[Less[Global`x, Global`y], Less[Global`x, Global`z]]"),
           (Ite(LT(x,y),LT(x,z),LT(x,y)),
-         "And[Implies[Less[(x), (y)], Less[(x), (z)]], Implies[Not[Less[(x), (y)]], Less[(x), (y)]]]"),
+         "And[Implies[Less[Global`x, Global`y], Less[Global`x, Global`z]], Implies[Not[Less[Global`x, Global`y]], Less[Global`x, Global`y]]]"),
       ]
 
 
@@ -100,3 +102,53 @@ class TestMathematica(TestCase):
         finally:
             MathematicaSession.terminate_session()
 
+
+class TestFindMin(TestCase):
+    @attr('mathematica')
+    @skipIfMathematicaIsNotAvailable()
+    def test_solve(self):
+        def test_approx(solver, val, expected):
+            if (expected is None) != (val is None):
+                return False
+            elif (expected is None and val is None):
+                return True
+            else:
+                delta = Real(Fraction(1,1000))
+                in_range = And(
+                    [
+                        LE(val, expected + delta),
+                        GE(val, Minus(expected, delta)),
+                    ]
+                )
+                return solver.is_sat(in_range)
+
+        env = get_env()
+        try:
+            solver = get_mathematica(env)
+
+            x,y = [Symbol(s,REAL) for s in ["x","y"]]
+
+            test_cases = [
+                (x,LE(x*x + y*y - 1, Real(0)),Real(-1)),
+                (x, GE(x,Real(0)), Real(0)),
+                (x, LE(x,Real(0)), None), # No minimum
+            ]
+
+            for (f, const, expected) in test_cases:
+                (min_value, min_model) = solver.find_min(f, const)
+                self.assertTrue(test_approx(solver, min_value, expected))
+
+            test_cases = [
+                (x,LE(x*x + y*y - 1, Real(0)), Real(1)),
+                (x, GE(x,Real(0)), None), # No maximum
+                (x, LE(x,Real(0)), Real(0)),
+            ]
+
+            for (f, const, expected) in test_cases:
+                (max_value, max_model) = solver.find_max(f, const)
+                self.assertTrue(test_approx(solver, max_value, expected))
+
+        except SolverAPINotFound:
+            print("Mathematica not found - skipping test...")
+        finally:
+            MathematicaSession.terminate_session()
