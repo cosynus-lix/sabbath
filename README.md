@@ -19,6 +19,10 @@ $ pip install nose
 $ pip install sympy
 $ pip install pysmt
 $ pip install ply
+$ pip install numpy
+$ pip install scipy
+$ pip install picos
+$ pip install control
 $ ~/.local/bin/pysmt-install --check
 $ ~/.local/bin/pysmt-install --z3
 ```
