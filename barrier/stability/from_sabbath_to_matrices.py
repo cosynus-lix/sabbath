@@ -6,8 +6,6 @@ from pysmt.shortcuts import *
 def get_switching_predicate_from_linear_constraint(linear_constraint):
     if linear_constraint.is_lt() or linear_constraint.is_le():
         return Plus(linear_constraint.arg(0), Times(linear_constraint.arg(1), Real(-1)))
-    elif linear_constraint.is_gt() or linear_constraint.is_ge():
-        return Plus(Times(linear_constraint.arg(0), Real(-1)), linear_constraint.arg(1))
     else:
         raise Exception("Node type not recognized. We should support <, <=, > and >=.")
 
