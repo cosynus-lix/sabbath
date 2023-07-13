@@ -13,14 +13,7 @@ from pysmt.shortcuts import get_env
 
 from barrier.stability.piecewise_affine_case import *
 
-try:
-    import reformulate
-    import svl_single_mode
-except:
-    # Dirty trick to get around the current structure
-    # and still have tests.
-    from . import reformulate
-    from . import svl_single_mode
+from barrier.lyapunov import svl_single_mode
 
 import logging
 from fractions import Fraction
@@ -466,31 +459,6 @@ def set_dyn_system_numeric_info(num_info, Acs, bs, Cc, refs, ctl, mod, THETA = 1
     n = mod.dimension()
     num_info.bs = [np.vstack([np.zeros([n,len(refs)]), ctl.KI[mode]]) for mode in range(ctl.modes)]
 
-def build_dyn_systems(mod, ctl, refs, new_solver_f, num_info=None, THETA = 1, PRECISION=16):
-    (Acs, bs, bprimes, Cc) = reformulate.reformulate(mod, ctl, refs)
-
-    if num_info:
-        set_dyn_system_numeric_info(num_info, Acs, bs, Cc, refs, ctl, mod)
-
-    dyn_systems = [system.DynSystem.get_dyn_sys_affine_description(Acs[0], bs[0]),
-                   system.DynSystem.get_dyn_sys_affine_description(Acs[1], bs[1])]
-    
-    Theta_smt = Real(myround(THETA, PRECISION))
-    y0 = get_y0(dyn_systems[0], Cc)
-    refvalues_smt = to_smt_vect(refs, PRECISION)
-
-    stability_hs_logger.info("Reference values: %s" % str(refvalues_smt))
-
-    r0 = refvalues_smt[0]
-
-    # r0 - y0 - Theta
-    switching_predicate = r0 - y0 - Theta_smt
-
-    config = Config(new_solver_f)
-
-    return (config, dyn_systems, switching_predicate, Theta_smt, refvalues_smt)
-
-
 def minimize_k(config, formula, f, k):
     """
     Find a minimum k such that: Exists k. forall X. formula(X) -> f(X) < k
@@ -641,7 +609,7 @@ def verify_stability_dyn_system(config, dyn_systems, switching_predicate, x, gas
 
 
 
-def sample_stability_aux(config, dyn_systems, switching_predicate, gas_optss, simul_file):
+def sample_stability(config, dyn_systems, switching_predicate, gas_optss, simul_file):
     """
     Check that a state of the switched system is stable
     """
@@ -781,15 +749,6 @@ def sample_stability_aux(config, dyn_systems, switching_predicate, gas_optss, si
             stability_hs_logger.debug(p.str_point())
 
     return verified
-
-def sample_stability(mod, ctl, refs, new_solver_f, gas_optss, simul_file):
-    # x independent phase:
-    # find a Lyapynov function
-    config, dyn_systems, switching_predicate, _, _ = build_dyn_systems(
-        mod, ctl, refs, new_solver_f
-    )
-
-    return sample_stability_aux(config, dyn_systems, switching_predicate, gas_optss, simul_file)
 
 def get_k_candidates(num_info_file):
     from scipy.io import loadmat
