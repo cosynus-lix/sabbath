@@ -190,6 +190,8 @@ def handle_args():
     parser.add_argument('--skip-validation', dest='validate_lyapunov', action='store_false')
     parser.add_argument('--skip-synthesis', dest='synthesize', action='store_false')
 
+    parser.add_argument("--k-precision-magnitude", dest='k_precision_magnitude', type=int, help="To which precision k will be determined. Magnitude n means precision of 1/10^n.", default=4)
+
     args = parser.parse_args()
 
     if args.problem == None and args.size == None:
@@ -363,13 +365,13 @@ def main(args):
         stable, lyap = get_stable_and_lyapunov(dyn_systems, config.solver_function, gas_optss, num_info=num_info, only=only)
 
         if synthesize and only is None:
-
             assumptions, lyap = find_stability_assumption(config,
                                                           dyn_systems,
                                                           switching_predicate_mode0_less0,
                                                           stable, lyap,
                                                           num_info,
-                                                          input_num_info_file)
+                                                          input_num_info_file,
+                                                          delta = Fraction(1/(10**args.k_precision_magnitude)))
             stability_hs_logger.info("Assumption computation completed...")
 
             stability_hs_logger.info("Found an assumption.") #, assumptions.serialize())

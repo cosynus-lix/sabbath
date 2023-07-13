@@ -107,7 +107,7 @@ from barrier.mathematica.mathematica import (
 
 THETA = 1
 PRECISION = 16
-logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.INFO)
 stability_hs_logger = logging.getLogger(__name__)
 
 class Result(Enum):
@@ -616,7 +616,7 @@ def build_dyn_systems(mod, ctl, refs, new_solver_f, num_info=None):
     return (config, dyn_systems, switching_predicate, Theta_smt, refvalues_smt)
 
 
-def minimize_k(config, formula, f, k):
+def minimize_k(config, formula, f, k, delta = Real(Fraction(1,1000))):
     """
     Find a minimum k such that: Exists k. forall X. formula(X) -> f(X) < k
 
@@ -627,7 +627,6 @@ def minimize_k(config, formula, f, k):
 
     solver = config.solver_function()
     k_val = Real(0)
-    delta = Real(Fraction(1,1000))
     f_bound = And(formula, GE(k, k_val))
     while (solver.is_sat(And(f_bound, GE(f,k)))):
         k_val = solver.get_value(f + delta)
@@ -639,7 +638,7 @@ def minimize_k(config, formula, f, k):
     stability_hs_logger.debug("Found k close enough %.2f" % float(Fraction(k_val.serialize())))
     return True, k_val
 
-def verify_stability_aux(config, dyn_systems, stable, lyap, switching_predicate, x):
+def verify_stability_aux(config, dyn_systems, stable, lyap, switching_predicate, x, delta = Fraction(1,1000)):
     """
     Check if a state of the switched system is stable (i.e., it stabilizes
     to a stable point).
@@ -719,7 +718,7 @@ def verify_stability_aux(config, dyn_systems, stable, lyap, switching_predicate,
         may_enter_m1 = And(f0_le_k0, switching_surface, GE(sw_der_m0, Real(0)))
 
         # Find the minimum level set that contains the switching surface
-        res, min_val = minimize_k(config, may_enter_m1, f1, k1)
+        res, min_val = minimize_k(config, may_enter_m1, f1, k1, Real(delta))
 
         if res:
             # Prove that the level set is in M1
@@ -927,7 +926,8 @@ def find_stability_assumption(config,
                               switching_predicate,
                               stable, lyap,
                               num_info,
-                              num_info_file):
+                              num_info_file,
+                              delta = Fraction(1,1000)):
     """
     Synthesise an assumption A(x) sufficient to ensure the switched
     system stabilizes in M0..
@@ -960,8 +960,6 @@ def find_stability_assumption(config,
     """
 
     assert(len(dyn_systems) == 2)
-
-    delta = Fraction(1,1000)
 
     switching_surface = Equals(switching_predicate, Real(0))
     m0_invar = LE(switching_predicate, Real(0))
