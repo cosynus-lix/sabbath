@@ -130,7 +130,9 @@ def handle_args():
     parser = argparse.ArgumentParser()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("problem",help="Verification problem file")
+    parser.add_argument("--problem",help="Verification problem file", default=None)
+
+    parser.add_argument("--size",help="Pick standard verification problem file from valu3s", default=None)
 
     parser.add_argument("--abstraction",
                         choices=["factors","lie","invar","prop","preds_from_model"],
@@ -189,6 +191,12 @@ def handle_args():
     parser.add_argument('--skip-synthesis', dest='synthesize', action='store_false')
 
     args = parser.parse_args()
+
+    if args.problem == None and args.size == None:
+        raise Exception("Must provide a problem. Enter the argument --size for standard ones.")
+
+    if args.size != None:
+        args.problem = f"PI_controller_converter/Reformulate/hybrid_reformulation/reformulation_size_{args.size}.hyb"
 
     if args.input_num_info and not os.path.exists(args.input_num_info):
         raise Exception(f"File {args.input_num_info} does not exist.")
@@ -274,7 +282,7 @@ def main(args):
     else:
         validate_during_synth = True
     
-    Candidate_lyap = get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify = validate_during_synth)
+    Candidate_lyap = get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify = args.validation_method)
     if validate_during_synth == True:
         Certified_Lyap = Candidate_lyap
         output_file_path = args.output
@@ -377,7 +385,7 @@ def main(args):
         if args.solver == "mathematica":
             MathematicaSession.terminate_session()
 
-    stability_hs_logger.info("Serializing the results in %s..." % output_file_path)
+    stability_hs_logger.critical("Serializing the results in %s..." % output_file_path)
     num_info.serialize_mat(output_file_path)
     
     return assumptions
