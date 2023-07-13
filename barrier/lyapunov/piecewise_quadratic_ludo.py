@@ -309,27 +309,21 @@ def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify =
         P1_help = P1_sym[0:-1, 0:-1]
         A1bar_help = A1bar[0:-1, 0:-1]
         if certify == 'sylvester':
-          checks = [is_positive_sylvester(P1_help),
-                    is_positive_sylvester(P2_sym - mu2_sym * QQ2),
-                    is_positive_sylvester(-(sp.transpose(A1bar_help) @ P1_help + P1_help @ A1bar_help)),
-                    is_positive_sylvester(-(sp.transpose(A2bar) @ P2_sym + P2_sym @ A2bar + eta2_sym * QQ2))]
+          checks = [(is_positive_sylvester(P1_help),"Lyap m0 is everywhere positive","Lyap m0 is negative at some point"),
+                    (is_positive_sylvester(P2_sym - mu2_sym * QQ2),"Lyap m1 is everywhere positive","Lyap m1 is negative at some point"),
+                    (is_positive_sylvester(-(sp.transpose(A1bar_help) @ P1_help + P1_help @ A1bar_help)),"Lyap m0 always decrease","Lyap m0 increases at some point"),
+                    (is_positive_sylvester(-(sp.transpose(A2bar) @ P2_sym + P2_sym @ A2bar + eta2_sym * QQ2)),"Lyap m1 always decrease","Lyap m1 increases at some point")]
         elif certify == 'sympy':
-          checks = [(P1_help).is_positive_definite,
-                    (P2_sym - mu2_sym * QQ2).is_positive_definite,
-                    (-(sp.transpose(A1bar_help) @ P1_help + P1_help @ A1bar_help)).is_positive_definite,
-                    (-(sp.transpose(A2bar) @ P2_sym + P2_sym @ A2bar + eta2_sym * QQ2)).is_positive_definite]
-        if not all(checks):
+          checks = [((P1_help).is_positive_definite,"Lyap m0 is everywhere positive","Lyap m0 is negative at some point"),
+                    ((P2_sym - mu2_sym * QQ2).is_positive_definite,"Lyap m1 is everywhere positive","Lyap m1 is negative at some point"),
+                    ((-(sp.transpose(A1bar_help) @ P1_help + P1_help @ A1bar_help)).is_positive_definite,"Lyap m0 always decrease","Lyap m0 increases at some point"),
+                    ((-(sp.transpose(A2bar) @ P2_sym + P2_sym @ A2bar + eta2_sym * QQ2)).is_positive_definite,"Lyap m1 always decrease","Lyap m1 increases at some point")]
+        for c,msg_good,msg_bad in checks:
+          if not c:
+            logging.critical("Fail "+ msg_bad)
             logging.critical("The Piecewise-Quadratic Lyapunov Function was numerically synthesized but is not valid.")
             return None
-        # The following checks are just double-checks. They check if something is wrong with the translation. They are removed but can be used to debug.
-        # if not all([is_semipositive_sylvester(P1_sym_old_coord),
-        #            is_semipositive_sylvester(P2_sym_old_coord - mu2_sym * QQ2A),
-        #            is_semipositive_sylvester(-(sp.transpose(A1bar_old) @ P1_sym_old_coord + P1_sym_old_coord @ A1bar_old)),
-        #            is_semipositive_sylvester(-(sp.transpose(A2bar_old) @ P2_sym_old_coord + P2_sym_old_coord @ A2bar_old + eta2_sym * QQ2A))]):
-        #     logging.critical("The Piecewise-Quadratic Lyapunov Function was numerically synthesized but is not valid.")
-        #     return None
-        # else:
-            # logging.critical("Found a valid Piecewise-Quadratic Lyapunov Function for the system. The system IS STABLE.")
+          logging.critical("CHECK " + msg_good)
         logging.critical("Found a valid Piecewise-Quadratic Lyapunov Function for the system. The system IS STABLE.")
     
     # The following can be used to save the results in an external file.
