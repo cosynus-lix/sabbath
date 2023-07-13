@@ -56,10 +56,10 @@ def global_asymptotic_stability_numpy(Ac, gas_opts):
             # compute alpha
             alphac = round(2 * min( abs(np.real(x)) for x in np.linalg.eig(Ac)[0] ) - 0.01, 2)
         logging.critical(f'Found alpha = {alphac}')
-        
+
         solver_name = gas_opts.sdp_solver
         logging.critical(f'Solving with {solver_name}')
-        
+
         candidate_best = None
         delta_robustness = 0.0000000001
         while delta_robustness < 1: # CHECK: is there an upper bound?

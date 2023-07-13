@@ -7,23 +7,21 @@ import functools
 import logging
 import os
 import time
+import collections
 from enum import Enum
-
-from pysmt.shortcuts import get_env
-
-from barrier.stability.piecewise_affine_case import *
-
-from barrier.lyapunov import svl_single_mode
-
-import logging
-from fractions import Fraction
 
 import numpy as np
 import sympy as sp
+
+from fractions import Fraction
+
+from pysmt.shortcuts import get_env
 from pysmt.shortcuts import *
 from pysmt.typing import REAL
 
 import barrier.system as system
+from barrier.lyapunov.svl_single_mode import global_asymptotic_stability_numpy
+
 from barrier.formula_utils import FormulaHelper, get_max_poly_degree
 from barrier.lyapunov.la_smt import (myround, to_smt_vect,
                                      to_sym_matrix)
@@ -31,7 +29,7 @@ from barrier.lyapunov.lyapunov import synth_lyapunov_linear
 from barrier.lyapunov.piecewise_quadratic import (PiecewiseQuadraticLF,
                                                   _get_lyapunov_smt,
                                                   validate_single_mode_smt)
-import collections
+
 
 logging.basicConfig(level=logging.CRITICAL)
 stability_hs_logger = logging.getLogger(__name__)
@@ -172,7 +170,7 @@ def get_gas_lyapunov(dyn_sys, solver_function, gas_opts, num_info=None, mode=Non
     A0 = np.array(A_sympy).astype(np.float64)
     try:
         stability_hs_logger.info("Searching a lyapunov function candidate...")
-        Pnp = svl_single_mode.global_asymptotic_stability_numpy(
+        Pnp = global_asymptotic_stability_numpy(
             A0,
             gas_opts
             )
