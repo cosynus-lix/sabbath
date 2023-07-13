@@ -168,7 +168,7 @@ def get_gas_lyapunov(dyn_sys, solver_function, gas_opts, num_info=None, mode=Non
     # Note: minus_b has to be 0, we expect dyn_sys to be homogeneous
     A_sympy, minus_b = dyn_sys.get_derivator().get_sympy_matrix_equations(dyn_sys._odes.values(),
                                                                           dyn_sys.states())
-    
+
     A0 = np.array(A_sympy).astype(np.float64)
     try:
         stability_hs_logger.info("Searching a lyapunov function candidate...")
@@ -235,7 +235,7 @@ def get_gas_lyapunov(dyn_sys, solver_function, gas_opts, num_info=None, mode=Non
     else:
         assert gas_opts.validation_method == 'sylvester'
         res = validate_single_mode_sylvester(P_sym, A_sympy)
-    
+
     s1 = time.time()
     logging.critical(f"Time for validating lyapunov: {round(s1 - s, 2)}")
     if res:
@@ -370,7 +370,7 @@ def find_level_set(config, lyap, switching_surface, beta,
         stability_hs_logger.warning("Conditions are valid for all k...")
         if num_info:
             num_info.ks[mode] = True
- 
+
         return TRUE()
     elif (has_init_bound or not is_valid):
         # Found a k such that cond does not hold.
@@ -804,7 +804,7 @@ def find_stability_assumption(config,
     solver = config.solver_function()
     s0_in_m0 = solver.is_sat(m0_invar.substitute(stable[0]))
     s1_in_m0 = solver.is_sat(m0_invar.substitute(stable[1]))
-    
+
     ks = [None, None]
     if num_info_file:
         ks = get_k_candidates(num_info_file)
@@ -815,7 +815,7 @@ def find_stability_assumption(config,
         stability_hs_logger.info("CASE 2.1 - all stable in m0")
 
         beta = find_inward_region(dyn_systems[0], switching_predicate)
-        
+
         # Find k0 such that (lyap[0] <= k0 & switching_surface) -> beta
         s = time.time()
         l0_le_k0 = find_level_set(config, lyap[0], switching_surface, beta,
@@ -843,11 +843,11 @@ def find_stability_assumption(config,
         assumption = Or(And(l0_le_k0, m0_invar), And(l1_le_k1, m1_invar)).simplify()
 
         crosses0 = solver.is_sat(And(l0_le_k0, m1_invar))
-        if crosses0: 
+        if crosses0:
             logging.critical('Level set of M0 intersects M1')
         else:
             logging.critical('Level set of M0 DOES NOT intersect M1')
-        
+
         crosses1 = solver.is_sat(And(l1_le_k1, m1_invar))
         if crosses1:
             logging.critical('Level set of M1 intersects M1')
@@ -887,11 +887,11 @@ def find_stability_assumption(config,
         assumption = Or(And(l0_le_k0, m0_invar), And(l1_le_k1, m1_invar)).simplify()
 
         crosses0 = solver.is_sat(And(l0_le_k0, m1_invar))
-        if crosses0: 
+        if crosses0:
             logging.critical('Level set of M0 intersects M1')
         else:
             logging.critical('Level set of M0 DOES NOT intersect M1')
-        
+
         crosses1 = solver.is_sat(And(l1_le_k1, m0_invar))
         if crosses1:
             logging.critical('Level set of M1 intersects M0')

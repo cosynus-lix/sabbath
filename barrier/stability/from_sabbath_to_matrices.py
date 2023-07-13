@@ -9,7 +9,6 @@ def get_switching_predicate_from_linear_constraint(linear_constraint):
     else:
         raise Exception("Node type not recognized. We should support <, <=, > and >=.")
 
-    
 def get_vector_from_linear_constraint(linear_constraint):
     # We get symbolic vector from the location invariant when it is linear
 
@@ -21,7 +20,7 @@ def get_vector_from_linear_constraint(linear_constraint):
     num_vars = len(linear_constraint.get_free_variables())
 
     substitution_dictionary = {}
-    for var in  linear_part.get_free_variables(): 
+    for var in  linear_part.get_free_variables():
         substitution_dictionary[var]=Real(0)
     lin_part_all_zero = linear_part.substitute(substitution_dictionary).simplify()
     try:
@@ -34,8 +33,8 @@ def get_vector_from_linear_constraint(linear_constraint):
 
     for index_coordinate in range (num_vars):
         substitution_dictionary = {}
-        ind_check_same_coord = 0 
-        for var in linear_part.get_free_variables(): 
+        ind_check_same_coord = 0
+        for var in linear_part.get_free_variables():
             if ind_check_same_coord == index_coordinate:
                 substitution_dictionary[var]=Real(1)
             else:
@@ -55,10 +54,10 @@ def get_matrices_from_linear_odes(dyn_sys):
     A = sp.zeros(num_vars, num_vars)
     b = sp.zeros(num_vars, 1)
     index_ode = 0
-    
+
     for coordinate_ode in dyn_sys.get_odes().values():
         substitution_dictionary = {}
-        for var in  coordinate_ode.get_free_variables(): 
+        for var in  coordinate_ode.get_free_variables():
             substitution_dictionary[var]=Real(0)
         coeff_ode_all_zero = coordinate_ode.substitute(substitution_dictionary).simplify()
         try:
@@ -67,8 +66,8 @@ def get_matrices_from_linear_odes(dyn_sys):
             raise Exception("Coefficients of the linear system are not rationals. Consider approximating them.")
         for index_coordinate in range (num_vars):
             substitution_dictionary = {}
-            ind_check_same_coord = 0 
-            for var in coordinate_ode.get_free_variables(): 
+            ind_check_same_coord = 0
+            for var in coordinate_ode.get_free_variables():
                 if ind_check_same_coord == index_coordinate:
                     substitution_dictionary[var]=Real(1)
                 else:
