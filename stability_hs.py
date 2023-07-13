@@ -110,7 +110,7 @@ from barrier.lyapunov.piecewise_quadratic_ludo import *
 
 THETA = 1
 PRECISION = 16
-logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.INFO)
 stability_hs_logger = logging.getLogger(__name__)
 
 
