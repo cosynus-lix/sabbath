@@ -1,55 +1,16 @@
-CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.7977027893066406time_synthesis seconds
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:42723>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:38319>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1245224
-WARNING:wolframclient.evaluation.kernel.kernelcontroller:Socket exception: Socket operation aborted.
-WARNING:wolframclient.evaluation.kernel.kernelcontroller:Failed to start.
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Start termination on kernel <WolframKernelController[wolfram-kernel-1 ✅], "/usr/local/Wolfram/WolframEngine/13.2/Executables/WolframKernel", pid:1245224, kernel sockets: (in:tcp://127.0.0.1:38319, out:tcp://127.0.0.1:42723)>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Killing kernel process: 1245224
+WARNING:root:Output file /home/lbattista/piecewise_lyap/semialgebraic_invariants/expeval/piecewise_lyap_results/model_10_validation_method_smt_solver_mathematica_normalization_False_sdp_solver_cvxopt.mat already exists.
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.4916532039642334time_synthesis seconds
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:40785>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:39833>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1258746
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel 1258746 is ready. Startup took 2.22 seconds.
+CRITICAL:root:CHECK Lyap m0 is everywhere positive
+CRITICAL:root:CHECK Lyap m1 is everywhere positive
+CRITICAL:root:CHECK Lyap m0 always decrease
+CRITICAL:root:CHECK Lyap m1 always decrease
+CRITICAL:root:CHECK The two functions are equal on the switching surface
+CRITICAL:root:The Piecewise-Quadratic Lyapunov Function was certified via SMT methods. The system IS STABLE.
+CRITICAL:root:The piecewise candidate function was verified in time_validation237.02637672424316time_validation seconds
+CRITICAL:root:Saving the Certified Lyapunov in /home/lbattista/piecewise_lyap/semialgebraic_invariants/expeval/piecewise_lyap_results/model_10_validation_method_smt_solver_mathematica_normalization_False_sdp_solver_cvxopt.mat...
 INFO:wolframclient.evaluation.kernel.kernelcontroller:Start termination on kernel <WolframKernelController[wolfram-kernel-1 ❌], "/usr/local/Wolfram/WolframEngine/13.2/Executables/WolframKernel">
-Traceback (most recent call last):
-  File "/usr/local/lib/python3.8/dist-packages/wolframclient/evaluation/kernel/kernelcontroller.py", line 435, in _kernel_start
-    response = self.kernel_socket_in.recv_abortable(
-  File "/usr/local/lib/python3.8/dist-packages/wolframclient/evaluation/kernel/zmqsocket.py", line 50, in recv_abortable
-    raise SocketAborted("Socket operation aborted.")
-wolframclient.evaluation.kernel.zmqsocket.SocketAborted: Socket operation aborted.
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/barrier/mathematica/mathematica.py", line 75, in get_session
-    MathematicaSession._session.ensure_started()
-  File "/usr/local/lib/python3.8/dist-packages/wolframclient/evaluation/kernel/localsession.py", line 206, in ensure_started
-    self.start(block=True, timeout=None)
-  File "/usr/local/lib/python3.8/dist-packages/wolframclient/evaluation/kernel/localsession.py", line 157, in start
-    raise e
-  File "/usr/local/lib/python3.8/dist-packages/wolframclient/evaluation/kernel/localsession.py", line 152, in start
-    future.result(timeout=timeout)
-  File "/usr/lib/python3.8/concurrent/futures/_base.py", line 444, in result
-    return self.__get_result()
-  File "/usr/lib/python3.8/concurrent/futures/_base.py", line 389, in __get_result
-    raise self._exception
-  File "/usr/local/lib/python3.8/dist-packages/wolframclient/evaluation/kernel/kernelcontroller.py", line 557, in run
-    self._safe_kernel_start()
-  File "/usr/local/lib/python3.8/dist-packages/wolframclient/evaluation/kernel/kernelcontroller.py", line 366, in _safe_kernel_start
-    raise e
-  File "/usr/local/lib/python3.8/dist-packages/wolframclient/evaluation/kernel/kernelcontroller.py", line 360, in _safe_kernel_start
-    self._kernel_start()
-  File "/usr/local/lib/python3.8/dist-packages/wolframclient/evaluation/kernel/kernelcontroller.py", line 455, in _kernel_start
-    raise WolframKernelException(
-wolframclient.exception.WolframKernelException: Failed to communicate with kernel: /usr/local/Wolfram/WolframEngine/13.2/Executables/WolframKernel.
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/piecewise_lyap_expeval.py", line 307, in <module>
-    main(args)
-  File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/piecewise_lyap_expeval.py", line 287, in main
-    certified = certify_piecewise_lyap(dyn_systems, switching_predicate_mode0_less0, Candidate_lyap, solver = new_solver_f())
-  File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/barrier/mathematica/mathematica.py", line 669, in get_mathematica
-    solver = MathematicaSolver(env, QF_NRA,
-  File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/barrier/mathematica/mathematica.py", line 141, in __init__
-    self.session = MathematicaSession.get_session()
-  File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/barrier/mathematica/mathematica.py", line 77, in get_session
-    raise SolverAPINotFound
-pysmt.exceptions.SolverAPINotFound
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Killing kernel process: 1258746

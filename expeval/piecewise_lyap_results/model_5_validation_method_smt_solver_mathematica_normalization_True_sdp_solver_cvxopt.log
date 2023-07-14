@@ -1,16 +1,16 @@
 WARNING:root:Output file /home/lbattista/piecewise_lyap/semialgebraic_invariants/expeval/piecewise_lyap_results/model_5_validation_method_smt_solver_mathematica_normalization_True_sdp_solver_cvxopt.mat already exists.
-CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.23989081382751465time_synthesis seconds
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:45903>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:35577>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1244191
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel 1244191 is ready. Startup took 2.01 seconds.
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.241621732711792time_synthesis seconds
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:42753>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:44655>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1260056
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel 1260056 is ready. Startup took 7.80 seconds.
 CRITICAL:root:CHECK Lyap m0 is everywhere positive
 CRITICAL:root:CHECK Lyap m1 is everywhere positive
 CRITICAL:root:CHECK Lyap m0 always decrease
 CRITICAL:root:CHECK Lyap m1 always decrease
 CRITICAL:root:CHECK The two functions are equal on the switching surface
 CRITICAL:root:The Piecewise-Quadratic Lyapunov Function was certified via SMT methods. The system IS STABLE.
-CRITICAL:root:The piecewise candidate function was verified in time_validation11.12226128578186time_validation seconds
+CRITICAL:root:The piecewise candidate function was verified in time_validation16.781881093978882time_validation seconds
 CRITICAL:root:Saving the Certified Lyapunov in /home/lbattista/piecewise_lyap/semialgebraic_invariants/expeval/piecewise_lyap_results/model_5_validation_method_smt_solver_mathematica_normalization_True_sdp_solver_cvxopt.mat...
 INFO:wolframclient.evaluation.kernel.kernelcontroller:Start termination on kernel <WolframKernelController[wolfram-kernel-1 ❌], "/usr/local/Wolfram/WolframEngine/13.2/Executables/WolframKernel">
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Killing kernel process: 1244191
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Killing kernel process: 1260056

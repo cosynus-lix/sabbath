@@ -1,5 +1,5 @@
-CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.10138487815856934time_synthesis seconds
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.08906793594360352time_synthesis seconds
 CRITICAL:root:CHECK Lyap m0 is everywhere positive
 CRITICAL:root:CHECK Lyap m1 is everywhere positive
 CRITICAL:root:Fail Lyap m0 increases at some point
-CRITICAL:root:The Piecewise-Quadratic Lyapunov Function was numerically synthesized but is not valid. error_validation
+CRITICAL:root:The Piecewise-Quadratic Lyapunov Function was numerically synthesized but is not valid in time_validation0.20086264610290527time_validation. error_validation

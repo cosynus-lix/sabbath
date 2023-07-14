@@ -1,7 +1,5 @@
-CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis1.9891331195831299time_synthesis seconds
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:41939>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:42029>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1314786
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel 1314786 is ready. Startup took 2.36 seconds.
-CRITICAL:root:CHECK Lyap m0 is everywhere positive
-CRITICAL:root:CHECK Lyap m1 is everywhere positive
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis3.0772249698638916time_synthesis seconds
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:44739>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:43237>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1262177
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel 1262177 is ready. Startup took 2.00 seconds.

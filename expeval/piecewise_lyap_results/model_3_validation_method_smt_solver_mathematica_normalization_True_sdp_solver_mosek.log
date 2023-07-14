@@ -1,9 +1,9 @@
-CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.1384739875793457time_synthesis seconds
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:40387>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:41797>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1234977
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel 1234977 is ready. Startup took 2.32 seconds.
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.055915117263793945time_synthesis seconds
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:37221>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:42815>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1272111
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel 1272111 is ready. Startup took 2.46 seconds.
 CRITICAL:root:CHECK Lyap m0 is everywhere positive
 CRITICAL:root:CHECK Lyap m1 is everywhere positive
 CRITICAL:root:Fail Lyap m0 increases at some point
-CRITICAL:root:The synthesized Piecewise-Quadratic Lyapunov Function was NOT certified via SMT methods. It is invalid. error_validation
+CRITICAL:root:The synthesized Piecewise-Quadratic Lyapunov Function was NOT certified via SMT methods in time_validation5.296489238739014time_validation. It is invalid. error_validation

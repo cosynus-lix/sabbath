@@ -1,9 +1,9 @@
 WARNING:root:Output file /home/lbattista/piecewise_lyap/semialgebraic_invariants/expeval/piecewise_lyap_results/model_5_validation_method_sympy_solver_z3_normalization_False_sdp_solver_cvxopt.mat already exists.
-CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.15834450721740723time_synthesis seconds
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.14835381507873535time_synthesis seconds
 CRITICAL:root:CHECK Lyap m0 is everywhere positive
 CRITICAL:root:CHECK Lyap m1 is everywhere positive
 CRITICAL:root:CHECK Lyap m0 always decrease
 CRITICAL:root:CHECK Lyap m1 always decrease
 CRITICAL:root:Found a valid Piecewise-Quadratic Lyapunov Function for the system. The system IS STABLE.
-CRITICAL:root:The piecewise candidate function was verified in time_validation0.3768157958984375time_validation seconds
+CRITICAL:root:The piecewise candidate function was verified in time_validation0.30947041511535645time_validation seconds
 CRITICAL:root:Saving the Certified Lyapunov in /home/lbattista/piecewise_lyap/semialgebraic_invariants/expeval/piecewise_lyap_results/model_5_validation_method_sympy_solver_z3_normalization_False_sdp_solver_cvxopt.mat...
