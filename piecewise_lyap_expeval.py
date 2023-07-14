@@ -286,7 +286,7 @@ def main(args):
         certified = certify_piecewise_lyap(dyn_systems, switching_predicate_mode0_less0, Candidate_lyap, solver = new_solver_f())
         if certified == True:
             logging.critical("The Piecewise-Quadratic Lyapunov Function was certified via SMT methods. The system IS STABLE.")
-            logging.critical(f"The piecewise candidate function was verified in time_validation{start_time - time.time()}time_validation seconds")
+            logging.critical(f"The piecewise candidate function was verified in time_validation{time.time() - start_time}time_validation seconds")
             Certified_Lyap = Candidate_lyap
             output_file_path = args.output
             logging.critical("Saving the Certified Lyapunov in %s..." % output_file_path)

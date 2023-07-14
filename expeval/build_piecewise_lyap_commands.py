@@ -17,7 +17,7 @@ if __name__ == "__main__":
     singpath = '/home/lbattista/piecewise_lyap/semialgebraic_invariants/sing'
     run_sing = Path.home() / 'run_singularity.sh'
     verifypath = share_dir.resolve() / 'piecewise_lyap_expeval.py'
-    main_cmd = f"{run_sing} exec --writable {singpath} python3 {verifypath}"
+    main_cmd = f"{run_sing} exec --writable {singpath} timeout {TO}s python3 {verifypath}"
 
     fout = open("run.sh", 'w')
 

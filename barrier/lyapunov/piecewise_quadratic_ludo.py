@@ -281,7 +281,7 @@ def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify =
     start_time = time.time()
     try:
       sol = sdp.solve(solver=sdp_solver)
-      logging.critical(f"The piecewise candidate function was synthesized in time_synthesis{start_time - time.time()}time_synthesis seconds")
+      logging.critical(f"The piecewise candidate function was synthesized in time_synthesis{time.time() - start_time}time_synthesis seconds")
     except:
       logging.critical(f"The piecewise candidate function was NOT synthesized by the SDP solver. error_synthesis")
       return None
@@ -332,7 +332,7 @@ def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify =
             return None
           logging.critical("CHECK " + msg_good)
         logging.critical("Found a valid Piecewise-Quadratic Lyapunov Function for the system. The system IS STABLE.")
-        logging.critical(f"The piecewise candidate function was verified in time_validation{start_time - time.time()}time_validation seconds")
+        logging.critical(f"The piecewise candidate function was verified in time_validation{time.time() - start_time}time_validation seconds")
     # The following can be used to save the results in an external file.
     # import pickle
     # with open('lf0_old_coord.pickle','wb') as f:
