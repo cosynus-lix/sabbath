@@ -1,14 +1,1 @@
 CRITICAL:root:The piecewise candidate function was NOT synthesized by the SDP solver. error_synthesis
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:38757>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:45789>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1242280
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel 1242280 is ready. Startup took 3.94 seconds.
-Traceback (most recent call last):
-  File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/piecewise_lyap_expeval.py", line 305, in <module>
-    main(args)
-  File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/piecewise_lyap_expeval.py", line 286, in main
-    certified = certify_piecewise_lyap(dyn_systems, switching_predicate_mode0_less0, Candidate_lyap, solver = new_solver_f())
-  File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/barrier/lyapunov/piecewise_quadratic_ludo.py", line 365, in certify_piecewise_lyap
-    LF0 = Candidate_lyap._build_smt_function(smt_vars, 0)
-AttributeError: 'NoneType' object has no attribute '_build_smt_function'
-slurmstepd-node71: error: *** JOB 3751218 ON node71 CANCELLED AT 2023-07-14T10:16:10 ***

@@ -1,0 +1,8 @@
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.13168549537658691time_synthesis seconds
+CRITICAL:root:CHECK Lyap m0 is everywhere positive
+CRITICAL:root:CHECK Lyap m1 is everywhere positive
+CRITICAL:root:CHECK Lyap m0 always decrease
+CRITICAL:root:CHECK Lyap m1 always decrease
+CRITICAL:root:Found a valid Piecewise-Quadratic Lyapunov Function for the system. The system IS STABLE.
+CRITICAL:root:The piecewise candidate function was verified in time_validation64.05899500846863time_validation seconds
+CRITICAL:root:Saving the Certified Lyapunov in /home/lbattista/piecewise_lyap/semialgebraic_invariants/expeval/piecewise_lyap_results/model_10_validation_method_sympy_solver_z3_normalization_True_sdp_solver_mosek.mat...

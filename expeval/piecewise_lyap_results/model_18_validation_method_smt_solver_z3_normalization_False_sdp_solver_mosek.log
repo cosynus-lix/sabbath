@@ -1,0 +1,3 @@
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.5020527839660645time_synthesis seconds
+CRITICAL:root:Fail Lyap m0 is negative at some point
+CRITICAL:root:The synthesized Piecewise-Quadratic Lyapunov Function was NOT certified via SMT methods. It is invalid. error_validation

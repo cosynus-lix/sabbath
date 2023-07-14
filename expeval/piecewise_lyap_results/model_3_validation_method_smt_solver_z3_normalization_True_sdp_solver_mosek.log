@@ -1,4 +1,4 @@
-CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis-0.20630455017089844time_synthesis seconds
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.13685846328735352time_synthesis seconds
 CRITICAL:root:CHECK Lyap m0 is everywhere positive
 CRITICAL:root:CHECK Lyap m1 is everywhere positive
 CRITICAL:root:Fail Lyap m0 increases at some point

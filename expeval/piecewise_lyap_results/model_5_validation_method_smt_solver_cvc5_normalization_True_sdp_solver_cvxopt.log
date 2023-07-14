@@ -1,4 +1,4 @@
-CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.14590787887573242time_synthesis seconds
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.1452007293701172time_synthesis seconds
 Traceback (most recent call last):
   File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/barrier/utils.py", line 110, in get_cvc5_smtlib
     solver = env.factory.Solver(name=name, logic=logics[0],

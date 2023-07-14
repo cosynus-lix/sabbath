@@ -1,10 +1,9 @@
-CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis-0.21199917793273926time_synthesis seconds
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:39899>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:34141>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1239447
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel 1239447 is ready. Startup took 2.71 seconds.
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.15679574012756348time_synthesis seconds
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:44663>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:41905>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1241951
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel 1241951 is ready. Startup took 8.22 seconds.
 CRITICAL:root:CHECK Lyap m0 is everywhere positive
 CRITICAL:root:CHECK Lyap m1 is everywhere positive
 CRITICAL:root:Fail Lyap m0 increases at some point
 CRITICAL:root:The synthesized Piecewise-Quadratic Lyapunov Function was NOT certified via SMT methods. It is invalid. error_validation
-slurmstepd-node73: error: *** JOB 3751226 ON node73 CANCELLED AT 2023-07-14T10:16:17 ***
