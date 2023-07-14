@@ -36,7 +36,7 @@ if __name__ == "__main__":
         fout.write(f"--output {outputname} --normalize_lyap_in_sdp_problem {normalization} --sdp-solver {sdp_solver} ")
         fout.write("\n")
     # eof
-    for n in [3,5,10,15,18]: # [3,5,10,15,18]
+    for n in [3,5]: # [3,5,10,15,18]
         for validation_method in ['sylvester', 'sympy', 'smt']: # ['sylvester', 'sympy', 'smt']
             for normalization in ['True', 'False']: # ['True', 'False']
                 for sdp_solver in ['mosek', 'smcp', 'cvxopt']: # ['cvxopt', 'mosek', 'smcp']
