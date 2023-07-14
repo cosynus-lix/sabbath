@@ -296,7 +296,7 @@ def main(args):
                     MathematicaSession.terminate_session()
                 return Certified_Lyap
             else:
-                logging.critical("The synthesized Piecewise-Quadratic Lyapunov Function was NOT certified via SMT methods. It is invalid. error_validation")
+                logging.critical(f"The synthesized Piecewise-Quadratic Lyapunov Function was NOT certified via SMT methods in time_validation{time.time() - start_time}time_validation. It is invalid. error_validation")
         else:
             return 0
     return 0

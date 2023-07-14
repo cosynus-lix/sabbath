@@ -328,7 +328,7 @@ def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify =
         for c,msg_good,msg_bad in checks:
           if not c:
             logging.critical("Fail "+ msg_bad)
-            logging.critical("The Piecewise-Quadratic Lyapunov Function was numerically synthesized but is not valid. error_validation")
+            logging.critical(f"The Piecewise-Quadratic Lyapunov Function was numerically synthesized but is not valid in time_validation{time.time() - start_time}time_validation. error_validation")
             return None
           logging.critical("CHECK " + msg_good)
         logging.critical("Found a valid Piecewise-Quadratic Lyapunov Function for the system. The system IS STABLE.")
