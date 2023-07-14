@@ -7,6 +7,7 @@ import logging
 import os
 import signal
 import sys
+import time
 
 from barrier.lzz.lzz import LzzOpt
 from barrier.serialization.hybrid_serialization import importHSVer
@@ -281,9 +282,11 @@ def main(args):
         return Certified_Lyap
     
     else:
+        start_time = time.time()
         certified = certify_piecewise_lyap(dyn_systems, switching_predicate_mode0_less0, Candidate_lyap, solver = new_solver_f())
         if certified == True:
             logging.critical("The Piecewise-Quadratic Lyapunov Function was certified via SMT methods. The system IS STABLE.")
+            logging.critical(f"The piecewise candidate function was verified in time_validation{start_time - time.time()}time_validation seconds")
             Certified_Lyap = Candidate_lyap
             output_file_path = args.output
             logging.critical("Saving the Certified Lyapunov in %s..." % output_file_path)
@@ -292,7 +295,7 @@ def main(args):
                 MathematicaSession.terminate_session()
             return Certified_Lyap
         else:
-            logging.critical("The synthesized Piecewise-Quadratic Lyapunov Function was NOT certified via SMT methods. It is invalid.")
+            logging.critical("The synthesized Piecewise-Quadratic Lyapunov Function was NOT certified via SMT methods. It is invalid. error_validation")
     
     return 0
 

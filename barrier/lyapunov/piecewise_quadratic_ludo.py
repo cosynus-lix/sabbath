@@ -1,7 +1,7 @@
 import logging
 logging.basicConfig(level=logging.CRITICAL)
 stability_hs_logger = logging.getLogger(__name__)
-
+import time
 
 import numpy as np
 from scipy import io, linalg
@@ -278,7 +278,13 @@ def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify =
 
     # ACHTUNG: notice that if we do not give condition P[0,0] > 1, the solution where everything is zero is a valid solution for the SDP problem
     # but is not validated by the SymPy checks. 
-    sol = sdp.solve(solver=sdp_solver)
+    start_time = time.time()
+    try:
+      sol = sdp.solve(solver=sdp_solver)
+      logging.critical(f"The piecewise candidate function was synthesized in time_synthesis{start_time - time.time()}time_synthesis seconds")
+    except:
+      logging.critical(f"The piecewise candidate function was NOT synthesized by the SDP solver. error_synthesis")
+      return None
 
     new_P1b = P1b.np
 
@@ -303,6 +309,7 @@ def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify =
     P2_sym_old_coord = translation.transpose() @ P2_sym @ (translation)
 
     if certify != 'smt':
+        start_time = time.time()
         if not all( [ P1_sym[-1,:] == sp.zeros(1,n),  P1_sym[:,-1] == sp.zeros(n,1), A1bar[-1,:] == sp.zeros(1,n),  A1bar[:,-1] == sp.zeros(n,1) ] ):
             logging.critical("There are errors in the matrices obtained.")
             return None
@@ -321,11 +328,11 @@ def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify =
         for c,msg_good,msg_bad in checks:
           if not c:
             logging.critical("Fail "+ msg_bad)
-            logging.critical("The Piecewise-Quadratic Lyapunov Function was numerically synthesized but is not valid.")
+            logging.critical("The Piecewise-Quadratic Lyapunov Function was numerically synthesized but is not valid. error_validation")
             return None
           logging.critical("CHECK " + msg_good)
         logging.critical("Found a valid Piecewise-Quadratic Lyapunov Function for the system. The system IS STABLE.")
-    
+        logging.critical(f"The piecewise candidate function was verified in time_validation{start_time - time.time()}time_validation seconds")
     # The following can be used to save the results in an external file.
     # import pickle
     # with open('lf0_old_coord.pickle','wb') as f:
