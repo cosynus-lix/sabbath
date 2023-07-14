@@ -37,11 +37,11 @@ if __name__ == "__main__":
         fout.write("\n")
     # eof
     for n in Ns: # [3,5,10,15,18]
-        for validation_method in ['sylvester', 'sympy', 'smt']: # ['sylvester', 'sympy', 'smt']
+        for validation_method in ['smt']: # ['sylvester', 'sympy', 'smt']
             for normalization in ['True', 'False']: # ['True', 'False']
                 for sdp_solver in ['mosek', 'smcp', 'cvxopt']: # ['cvxopt', 'mosek', 'smcp']
                     if validation_method == "smt":
-                        for solver in ['mathematica', 'z3', 'mathsat', 'cvc5']: # ['mathematica', 'z3', 'mathsat', 'cvc5']
+                        for solver in ['mathsat', 'cvc4']: # ['mathematica', 'z3', 'mathsat', 'cvc5']
                             write(n, validation_method, solver, normalization, sdp_solver)
                     else:
                         write(n, validation_method, 'z3', normalization, sdp_solver)
