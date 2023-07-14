@@ -1,3 +1,19 @@
 CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis7.7148754596710205time_synthesis seconds
 CRITICAL:root:CHECK Lyap m0 is everywhere positive
 CRITICAL:root:CHECK Lyap m1 is everywhere positive
+Traceback (most recent call last):
+  File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/piecewise_lyap_expeval.py", line 307, in <module>
+    main(args)
+  File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/piecewise_lyap_expeval.py", line 287, in main
+    certified = certify_piecewise_lyap(dyn_systems, switching_predicate_mode0_less0, Candidate_lyap, solver = new_solver_f())
+  File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/barrier/lyapunov/piecewise_quadratic_ludo.py", line 402, in certify_piecewise_lyap
+    if not _check_implication_full(solver, smt_vars, c):
+  File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/barrier/lyapunov/piecewise_quadratic_ludo.py", line 39, in _check_implication_full
+    if (solver.solve()):
+  File "/home/lbattista/.local/lib/python3.8/site-packages/pysmt/solvers/solver.py", line 359, in solve
+    res = self._solve(assumptions=assumptions)
+  File "/home/lbattista/.local/lib/python3.8/site-packages/pysmt/decorators.py", line 64, in clear_pending_pop_wrap
+    return f(self, *args, **kwargs)
+  File "/home/lbattista/.local/lib/python3.8/site-packages/pysmt/solvers/z3.py", line 218, in _solve
+    raise SolverReturnedUnknownResultError
+pysmt.exceptions.SolverReturnedUnknownResultError
