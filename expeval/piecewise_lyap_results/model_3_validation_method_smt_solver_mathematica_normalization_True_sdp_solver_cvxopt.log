@@ -1,0 +1,9 @@
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis-0.12444305419921875time_synthesis seconds
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:35209>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:42373>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1241823
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel 1241823 is ready. Startup took 2.53 seconds.
+CRITICAL:root:CHECK Lyap m0 is everywhere positive
+CRITICAL:root:CHECK Lyap m1 is everywhere positive
+CRITICAL:root:Fail Lyap m0 increases at some point
+CRITICAL:root:The synthesized Piecewise-Quadratic Lyapunov Function was NOT certified via SMT methods. It is invalid. error_validation

@@ -1,0 +1,15 @@
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis-0.14562177658081055time_synthesis seconds
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:42365>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:40947>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1232539
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel 1232539 is ready. Startup took 2.13 seconds.
+CRITICAL:root:CHECK Lyap m0 is everywhere positive
+CRITICAL:root:CHECK Lyap m1 is everywhere positive
+CRITICAL:root:CHECK Lyap m0 always decrease
+CRITICAL:root:CHECK Lyap m1 always decrease
+CRITICAL:root:CHECK The two functions are equal on the switching surface
+CRITICAL:root:The Piecewise-Quadratic Lyapunov Function was certified via SMT methods. The system IS STABLE.
+CRITICAL:root:The piecewise candidate function was verified in time_validation-11.329554080963135time_validation seconds
+CRITICAL:root:Saving the Certified Lyapunov in /home/lbattista/piecewise_lyap/semialgebraic_invariants/expeval/piecewise_lyap_results/model_5_validation_method_smt_solver_mathematica_normalization_True_sdp_solver_cvxopt.mat...
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Start termination on kernel <WolframKernelController[wolfram-kernel-1 ❌], "/usr/local/Wolfram/WolframEngine/13.2/Executables/WolframKernel">
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Killing kernel process: 1232539
