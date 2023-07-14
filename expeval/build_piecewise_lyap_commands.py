@@ -29,7 +29,7 @@ if __name__ == "__main__":
         outputname = (resdir / f"{name}.mat").resolve()
 
 
-        mem = '60000' if solver == 'mathematica' else '16000'
+        mem = '16000' if solver == 'mathematica' else '16000'
 
         fout.write(f"{scmd} --mem={mem} --job-name=valu3s --output={out} --error={log} ")
         fout.write(f"{main_cmd} /home/lbattista/piecewise_lyap/semialgebraic_invariants/Reformulated_systems/reformulation_size_{n}.hyb --solver {solver} --validation-method {validation_method} ")
