@@ -283,20 +283,22 @@ def main(args):
     
     else:
         start_time = time.time()
-        certified = certify_piecewise_lyap(dyn_systems, switching_predicate_mode0_less0, Candidate_lyap, solver = new_solver_f())
-        if certified == True:
-            logging.critical("The Piecewise-Quadratic Lyapunov Function was certified via SMT methods. The system IS STABLE.")
-            logging.critical(f"The piecewise candidate function was verified in time_validation{time.time() - start_time}time_validation seconds")
-            Certified_Lyap = Candidate_lyap
-            output_file_path = args.output
-            logging.critical("Saving the Certified Lyapunov in %s..." % output_file_path)
-            Certified_Lyap.serialize_mat(output_file_path)
-            if args.solver == "mathematica":
-                MathematicaSession.terminate_session()
-            return Certified_Lyap
+        if Candidate_lyap != None:
+            certified = certify_piecewise_lyap(dyn_systems, switching_predicate_mode0_less0, Candidate_lyap, solver = new_solver_f())
+            if certified == True:
+                logging.critical("The Piecewise-Quadratic Lyapunov Function was certified via SMT methods. The system IS STABLE.")
+                logging.critical(f"The piecewise candidate function was verified in time_validation{time.time() - start_time}time_validation seconds")
+                Certified_Lyap = Candidate_lyap
+                output_file_path = args.output
+                logging.critical("Saving the Certified Lyapunov in %s..." % output_file_path)
+                Certified_Lyap.serialize_mat(output_file_path)
+                if args.solver == "mathematica":
+                    MathematicaSession.terminate_session()
+                return Certified_Lyap
+            else:
+                logging.critical("The synthesized Piecewise-Quadratic Lyapunov Function was NOT certified via SMT methods. It is invalid. error_validation")
         else:
-            logging.critical("The synthesized Piecewise-Quadratic Lyapunov Function was NOT certified via SMT methods. It is invalid. error_validation")
-    
+            return 0
     return 0
 
     
