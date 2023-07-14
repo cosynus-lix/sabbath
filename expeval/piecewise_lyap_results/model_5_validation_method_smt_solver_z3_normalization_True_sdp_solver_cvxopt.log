@@ -1,9 +1,3 @@
-CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis-0.14641857147216797time_synthesis seconds
+WARNING:root:Output file /home/lbattista/piecewise_lyap/semialgebraic_invariants/expeval/piecewise_lyap_results/model_5_validation_method_smt_solver_z3_normalization_True_sdp_solver_cvxopt.mat already exists.
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.14454102516174316time_synthesis seconds
 CRITICAL:root:CHECK Lyap m0 is everywhere positive
-CRITICAL:root:CHECK Lyap m1 is everywhere positive
-CRITICAL:root:CHECK Lyap m0 always decrease
-CRITICAL:root:CHECK Lyap m1 always decrease
-CRITICAL:root:CHECK The two functions are equal on the switching surface
-CRITICAL:root:The Piecewise-Quadratic Lyapunov Function was certified via SMT methods. The system IS STABLE.
-CRITICAL:root:The piecewise candidate function was verified in time_validation-980.390382528305time_validation seconds
-CRITICAL:root:Saving the Certified Lyapunov in /home/lbattista/piecewise_lyap/semialgebraic_invariants/expeval/piecewise_lyap_results/model_5_validation_method_smt_solver_z3_normalization_True_sdp_solver_cvxopt.mat...

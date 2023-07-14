@@ -1,4 +1,4 @@
-CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis-0.22568273544311523time_synthesis seconds
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.15774250030517578time_synthesis seconds
 Traceback (most recent call last):
   File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/barrier/utils.py", line 110, in get_cvc5_smtlib
     solver = env.factory.Solver(name=name, logic=logics[0],
@@ -13,9 +13,9 @@ pysmt.exceptions.NoSolverAvailableError: Solver 'cvc5-smtlib' is not available
 During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
-  File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/piecewise_lyap_expeval.py", line 305, in <module>
+  File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/piecewise_lyap_expeval.py", line 307, in <module>
     main(args)
-  File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/piecewise_lyap_expeval.py", line 286, in main
+  File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/piecewise_lyap_expeval.py", line 287, in main
     certified = certify_piecewise_lyap(dyn_systems, switching_predicate_mode0_less0, Candidate_lyap, solver = new_solver_f())
   File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/barrier/utils.py", line 113, in get_cvc5_smtlib
     raise SolverAPINotFound
