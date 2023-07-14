@@ -101,6 +101,17 @@ def main():
             KIs.append(HybridSystemMatlab[f"KI_{ind_mode}"])
             KPs.append(HybridSystemMatlab[f"KP_{ind_mode}"])
             Invars_geq0.append(HybridSystemMatlab[f"Invar_{ind_mode}_geq0"])
+        if size_system == 18:
+            np.set_printoptions(precision=3, linewidth=1000, suppress=True)
+        else:
+            np.set_printoptions(precision=3, linewidth=1000, suppress=True)
+
+        logging.info(f"\n\n\nThe system has \n{num_modes} modes, \n{num_variables} variables, \n{num_controllers} controllers, \n{num_outputs} outputs.\nReference values are {np.transpose(reference_values)}.\n")
+        
+        logging.info(f"Mode 0: g * [x;1] >= 0, where g = {Invars_geq0[0]}")
+        logging.info(f"The dynamics is x_dot = A x + B u, where\n A = \n{As[0]}\n and \nB = \n{Bs[0]}.\n")
+        logging.info(f"Mode 1: g * [x;1] >= 0, where g = {Invars_geq0[1]}")
+        logging.info(f"The dynamics is x_dot = A x + B u, where\n A = \n{As[1]}\n and \nB = \n{Bs[1]}.")
 
         num_homo_variables = num_variables + num_controllers
 

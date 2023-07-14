@@ -192,6 +192,8 @@ def handle_args():
 
     parser.add_argument("--k-precision-magnitude", dest='k_precision_magnitude', type=int, help="To which precision k will be determined. Magnitude n means precision of 1/10^n.", default=4)
 
+    parser.add_argument("--find-k", dest='find_k', type=bool, help="Choose to synthesize k or not. Default False.", default=False)
+
     args = parser.parse_args()
 
     if args.problem == None and args.size == None:
@@ -363,8 +365,8 @@ def main(args):
     only=args.only
     try:
         stable, lyap = get_stable_and_lyapunov(dyn_systems, config.solver_function, gas_optss, num_info=num_info, only=only)
-
-        if synthesize and only is None:
+        
+        if synthesize and only is None and args.find_k == True:
             assumptions, lyap = find_stability_assumption(config,
                                                           dyn_systems,
                                                           switching_predicate_mode0_less0,
