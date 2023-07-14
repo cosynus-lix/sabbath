@@ -7,3 +7,4 @@ CRITICAL:root:CHECK Lyap m0 is everywhere positive
 CRITICAL:root:CHECK Lyap m1 is everywhere positive
 CRITICAL:root:Fail Lyap m0 increases at some point
 CRITICAL:root:The synthesized Piecewise-Quadratic Lyapunov Function was NOT certified via SMT methods. It is invalid. error_validation
+slurmstepd-node72: error: *** JOB 3751222 ON node72 CANCELLED AT 2023-07-14T10:16:14 ***

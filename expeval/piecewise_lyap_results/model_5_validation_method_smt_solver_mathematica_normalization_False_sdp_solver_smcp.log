@@ -11,3 +11,4 @@ Traceback (most recent call last):
   File "/home/lbattista/piecewise_lyap/semialgebraic_invariants/barrier/lyapunov/piecewise_quadratic_ludo.py", line 365, in certify_piecewise_lyap
     LF0 = Candidate_lyap._build_smt_function(smt_vars, 0)
 AttributeError: 'NoneType' object has no attribute '_build_smt_function'
+slurmstepd-node59: error: *** JOB 3751266 ON node59 CANCELLED AT 2023-07-14T10:16:36 ***
