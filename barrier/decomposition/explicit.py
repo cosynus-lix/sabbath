@@ -32,7 +32,7 @@ from barrier.decomposition.encoding import (
     DecompositionEncoder
 )
 
-from barrier.msatic3 import MSatic3, prove_ts
+from barrier.vmt.vmt_engines import MSatic3, VmtResult, prove_ts
 
 from pysmt.logics import QF_NRA
 from pysmt.shortcuts import (
@@ -464,10 +464,10 @@ def dwc_general(dwcl, derivator,
 
                 msatic3_res = prove_ts(ts, p)
 
-                if (msatic3_res == MSatic3.Result.SAFE):
+                if (msatic3_res == VmtResult.SAFE):
                     res = Result.SAFE
                     reach_states = TRUE()
-                elif (msatic3_res == MSatic3.Result.UNSAFE):
+                elif (msatic3_res == VmtResult.UNSAFE):
                     res = Result.UNKNOWN
                     reach_states = FALSE()
 

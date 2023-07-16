@@ -22,7 +22,7 @@ from pysmt.exceptions import SolverAPINotFound
 
 from barrier.test import TestCase, skipIfMSaticIsNotAvailable
 from barrier.ts import TS, ImplicitAbstractionEncoder
-from barrier.msatic3 import MSatic3
+from barrier.vmt.vmt_engines import MSatic3
 
 class TestSystem(TestCase):
 

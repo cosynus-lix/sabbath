@@ -6,45 +6,42 @@ import logging
 import sys
 from shutil import which
 
+def find_exec(exec_name, exec_path = None):
+    """Find the executable exec_name on the system (search in system path 
+    if exec_path is None)
+    """
+    if exec_path is None:
+        exec_path = which(exec_name)
+        if exec_path is None:
+            return None
+    if not os.path.isfile(exec_path):
+        return None
+
+    return exec_path
+
+class VmtResult:
+    SAFE = 0
+    UNSAFE = 1
+    UNKNOWN = 2
+
+
+
 class MSatic3NotAvailable(Exception):
     """The msatic3 executable was not found."""
     pass
+
 
 class MSatic3():
     """
     Wrapper around msatic3
     """
 
-    class Result:
-        SAFE = 0
-        UNSAFE = 1
-        UNKNOWN = 2
-
-    def find_msatic(msatic3_path = None):
-        if msatic3_path is None:
-            msatic3_path = which("msatic3")
-            if msatic3_path is None:
-                return None
-        if not os.path.isfile(msatic3_path):
-            return None
-
-        return msatic3_path
 
     def __init__(self, msatic3_path=None):
-        self.msatic3_path = MSatic3.find_msatic(msatic3_path)
-        if (self.msatic3_path is None):
+        self.msatic3_path = find_exec("msatic3", msatic3_path)
+        if (self.msatic3_path is None or
+            not os.path.isfile(self.msatic3_path)):
             raise MSatic3NotAvailable()
-
-        if msatic3_path is None:
-            self.msatic3_path = which("msatic3")
-            if self.msatic3_path is None:
-                raise MSatic3NotAvailable()
-        else:
-            self.msatic3_path = msatic3_path
-
-        if not os.path.isfile(self.msatic3_path):
-            raise MSatic3NotAvailable()
-
 
     def solve(self, smt2file_path):
         if (not os.path.isfile(smt2file_path)):
@@ -83,7 +80,7 @@ class MSatic3():
         RES=2
         END=3
 
-        res = MSatic3.Result.UNKNOWN
+        res = VmtResult.UNKNOWN
 
         parse_phase = PRE
         for line in output.splitlines(True):
@@ -98,11 +95,11 @@ class MSatic3():
                     parse_phase = RES
             elif parse_phase == RES:
                 if line == "Safe":
-                    res = MSatic3.Result.SAFE
+                    res = VmtResult.SAFE
                 elif line == "Unsafe":
-                    res = MSatic3.Result.UNSAFE
+                    res = VmtResult.UNSAFE
                 elif line == "Unknown":
-                    res = MSatic3.Result.UNKNOWN
+                    res = VmtResult.UNKNOWN
 
         return res
 # EOC Msatic3

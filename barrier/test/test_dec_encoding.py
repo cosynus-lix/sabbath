@@ -44,7 +44,7 @@ from barrier.lzz.lzz import LzzOpt
 from barrier.formula_utils import FormulaHelper
 
 from barrier.ts import TS
-from barrier.msatic3 import MSatic3
+from barrier.vmt.vmt_engines import MSatic3, VmtResult
 
 from barrier.decomposition.encoding import (
     DecompositionEncoder, DecompositionOptions,
@@ -133,7 +133,7 @@ class TestDecompositionEncoding(TestCase):
         (ts, p, predicates) = encoder.get_ts_ia()
 
         res = self._prove_ts(ts, p)
-        self.assertTrue(res == MSatic3.Result.SAFE)
+        self.assertTrue(res == VmtResult.SAFE)
 
     def test_invar_in_init(self):
         env = get_env()
@@ -195,7 +195,7 @@ class TestDecompositionEncoding(TestCase):
                                         cons,
                                         options)
         (ts, p, predicates) = encoder.get_ts_ia()
-        self.assertTrue(self._prove_ts(ts, p) == MSatic3.Result.UNSAFE)
+        self.assertTrue(self._prove_ts(ts, p) == VmtResult.UNSAFE)
 
 
         options = DecompositionOptions(False, False, False, False)
@@ -207,7 +207,7 @@ class TestDecompositionEncoding(TestCase):
                                         cons,
                                         options)
         (ts, p, predicates) = encoder.get_ts_ia()
-        self.assertTrue(self._prove_ts(ts, p) == MSatic3.Result.SAFE)
+        self.assertTrue(self._prove_ts(ts, p) == VmtResult.SAFE)
 
 
     @attr('msatic3')
@@ -217,17 +217,17 @@ class TestDecompositionEncoding(TestCase):
         env = get_env()
 
         models = [
-            ("disc1.hyb", MSatic3.Result.SAFE),
-            ("disc2.hyb", MSatic3.Result.UNSAFE),
-            ("disc3.hyb", MSatic3.Result.UNSAFE),
-            ("disc4.hyb", MSatic3.Result.SAFE),
-            ("disc5.hyb", MSatic3.Result.SAFE),
-            ("disc6.hyb", MSatic3.Result.SAFE),
-            ("disc7.hyb", MSatic3.Result.UNSAFE),
-            ("disc8.hyb", MSatic3.Result.SAFE),
-            ("cont1.hyb", MSatic3.Result.UNSAFE),
-            ("cont2.hyb", MSatic3.Result.SAFE),
-            ("hyb_fc.hyb", MSatic3.Result.SAFE)
+            ("disc1.hyb", VmtResult.SAFE),
+            ("disc2.hyb", VmtResult.UNSAFE),
+            ("disc3.hyb", VmtResult.UNSAFE),
+            ("disc4.hyb", VmtResult.SAFE),
+            ("disc5.hyb", VmtResult.SAFE),
+            ("disc6.hyb", VmtResult.SAFE),
+            ("disc7.hyb", VmtResult.UNSAFE),
+            ("disc8.hyb", VmtResult.SAFE),
+            ("cont1.hyb", VmtResult.UNSAFE),
+            ("cont2.hyb", VmtResult.SAFE),
+            ("hyb_fc.hyb", VmtResult.SAFE)
         ]
 
         for (m,expected) in models:
@@ -282,4 +282,4 @@ class TestDecompositionEncoding(TestCase):
             with open("/tmp/hscc2017.preds", "w") as outstream:
                 ts.dump_predicates(outstream, predicates)
 
-            # self.assertTrue(self._prove_ts(ts, p) == MSatic3.Result.SAFE)
+            # self.assertTrue(self._prove_ts(ts, p) == VmtResult.SAFE)
