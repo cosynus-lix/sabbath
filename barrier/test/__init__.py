@@ -14,7 +14,7 @@ except ImportError:
 from pysmt.environment import reset_env
 from pysmt.exceptions import SolverAPINotFound
 
-from barrier.vmt.vmt_engines import MSatic3
+from barrier.vmt.vmt_engines import MSatic3, MSatic3NotAvailable, Ic3IA, Ic3IANotAvailable
 from barrier.mathematica.mathematica import has_kernel
 
 class TestCase(unittest.TestCase):
@@ -57,6 +57,25 @@ class skipIfMSaticIsNotAvailable(object):
         try:
             MSatic3()
         except MSatic3NotAvailable:
+            skip = True
+        @unittest.skipIf(skip, msg)
+        @wraps(test_fun)
+        def wrapper(*args, **kwargs):
+            return test_fun(*args, **kwargs)
+        return wrapper
+
+class skipIfIc3IAIsNotAvailable(object):
+    """Skip a test if the given solver is not available."""
+
+    def __init__(self):
+        pass
+
+    def __call__(self, test_fun):
+        msg = "MSatic3 not available"
+        skip = False
+        try:
+            Ic3IA()
+        except Ic3IANotAvailable:
             skip = True
         @unittest.skipIf(skip, msg)
         @wraps(test_fun)

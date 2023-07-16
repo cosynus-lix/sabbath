@@ -31,11 +31,15 @@ class MSatic3NotAvailable(Exception):
     pass
 
 
+class Ic3IANotAvailable(Exception):
+    """The ic3IA executable was not found."""
+    pass
+
+
 class MSatic3():
     """
     Wrapper around msatic3
     """
-
 
     def __init__(self, msatic3_path=None):
         self.msatic3_path = find_exec("msatic3", msatic3_path)
@@ -104,6 +108,79 @@ class MSatic3():
         return res
 # EOC Msatic3
 
+class Ic3IA():
+    """
+    Wrapper around the open source version of Ic3IA
+    """
+
+    def __init__(self, path=None):
+        self.path = find_exec("ic3ia", path)
+        if (self.path is None or
+            not os.path.isfile(self.path)):
+            raise Ic3IANotAvailable()
+
+    def solve(self, smt2file_path):
+        if (not os.path.isfile(smt2file_path)):
+            raise FileNotFound(errno.ENOENT, os.strerror(errno.ENOENT),
+                               smtfile_path)
+
+        args= [self.path,"-v", "1", "-w", smt2file_path]
+
+        logging.info("Executing %s" % " ".join(args))
+
+        try:
+            completed_process = subprocess.run(args,
+                                               check = True,
+                                               stderr = subprocess.PIPE,
+                                               stdout = subprocess.PIPE,
+                                               universal_newlines = True)
+            assert(completed_process.returncode == 0)
+        except subprocess.CalledProcessError as cpe:
+            if (cpe.returncode != 1):
+                sys.stdout.write(cpe.stdout)
+                sys.stderr.write(cpe.stderr)
+                sys.stderr.write("%s ended with code %d" % (" ".join(args), cpe.returncode))
+                raise cpe
+            else:
+                completed_process = cpe
+
+        sys.stdout.write(completed_process.stdout)
+        sys.stderr.write(completed_process.stderr)
+        res = self.parse_out(completed_process.stdout)
+
+        return res
+
+    def parse_out(self, output):
+        PRE=0
+        STATS=1
+        RES=2
+        END=3
+
+        res = VmtResult.UNKNOWN
+
+        parse_phase = PRE
+        for line in output.splitlines(True):
+            line = line.strip()
+            if not line: continue
+
+            if parse_phase == PRE:
+                if line == "search stats":
+                    parse_phase = STATS
+            elif parse_phase == STATS:
+                if line.startswith("total_time"):
+                    parse_phase = RES
+            elif parse_phase == RES:
+                if line == "Safe":
+                    res = VmtResult.SAFE
+                elif line == "Unsafe":
+                    res = VmtResult.UNSAFE
+                elif line == "Unknown":
+                    res = VmtResult.UNKNOWN
+
+        return res
+# EOC Ic3IA
+
+
 def prove_ts(ts, prop):
     res = None
 
@@ -116,7 +193,15 @@ def prove_ts(ts, prop):
             ts.to_vmt(outstream, prop)
 
         print("Verifying %s..." % tmp_file)
-        ic3 = MSatic3()
+
+        try:
+            ic3 = MSatic3()
+        except MSatic3NotAvailable:
+            try:
+                ic3 = Ic3IA()
+            except Ic3IANotAvailable:
+                raise Ic3IANotAvailable()
+
         res = ic3.solve(tmp_file)
     finally:
         if os.path.isfile(tmp_file):
