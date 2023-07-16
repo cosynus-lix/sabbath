@@ -85,7 +85,7 @@ class TestSystem(TestCase):
             print(outstream.getvalue())
 
 
-    def aux_test_impl_abs(self, get_vmt_engine):
+    def _aux_test_impl_abs(self, get_vmt_engine):
         long_tests = set(["toy",
                           "mem_slave_tlm.1",
                           "pipeline",
@@ -153,11 +153,11 @@ class TestSystem(TestCase):
     @skipIfMSaticIsNotAvailable()
     def test_impl_abs_msatic3(self):
         init_f = lambda : MSatic3()
-        self.aux_test_impl_abs(init_f)
+        self._aux_test_impl_abs(init_f)
 
     @attr('ic3ia')
     @skipIfIc3IAIsNotAvailable()
     def test_impl_abs_ic3ia(self):
         init_f = lambda : Ic3IA()
-        self.aux_test_impl_abs(init_f)
+        self._aux_test_impl_abs(init_f)
 
