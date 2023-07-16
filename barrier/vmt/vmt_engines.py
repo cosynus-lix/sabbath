@@ -6,6 +6,8 @@ import logging
 import sys
 from shutil import which
 
+from barrier.ts import TS
+
 def find_exec(exec_name, exec_path = None):
     """Find the executable exec_name on the system (search in system path 
     if exec_path is None)
@@ -47,12 +49,16 @@ class MSatic3():
             not os.path.isfile(self.msatic3_path)):
             raise MSatic3NotAvailable()
 
-    def solve(self, smt2file_path):
+    def solve(self, smt2file_path, pred_file = None):
         if (not os.path.isfile(smt2file_path)):
             raise FileNotFound(errno.ENOENT, os.strerror(errno.ENOENT),
                                smtfile_path)
 
         args= [self.msatic3_path,"-m", "ia", "-W", smt2file_path]
+
+        if not pred_file is None:
+            args.append("-p")
+            args.append(pred_file)
 
         logging.info("Executing %s" % " ".join(args))
 
@@ -181,7 +187,7 @@ class Ic3IA():
 # EOC Ic3IA
 
 
-def prove_ts(ts, prop):
+def prove_ts(ts, prop, preds = None):
     res = None
 
     try:
@@ -192,6 +198,14 @@ def prove_ts(ts, prop):
         with open(tmp_file,"w") as outstream:
             ts.to_vmt(outstream, prop)
 
+        if not preds is None:
+            (_, tmp_preds_file) = tempfile.mkstemp(suffix=None,
+                                                   prefix=None,
+                                                   dir=None,
+                                                   text=True)
+            with open(tmp_preds_file,"w") as outstream:
+                TS.dump_predicates(outstream, preds)
+
         print("Verifying %s..." % tmp_file)
 
         try:
@@ -201,9 +215,15 @@ def prove_ts(ts, prop):
                 ic3 = Ic3IA()
             except Ic3IANotAvailable:
                 raise Ic3IANotAvailable()
+            if (not preds is None):
+                print("Warning: using ic3ia not settings the initial predicates")
 
-        res = ic3.solve(tmp_file)
+
+        res = ic3.solve(tmp_file, tmp_preds_file)
     finally:
         if os.path.isfile(tmp_file):
             os.remove(tmp_file)
+        if (not preds is None) and os.path.isfile(tmp_preds_file):
+            os.remove(tmp_preds_file)
+
     return res

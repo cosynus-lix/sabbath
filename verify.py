@@ -245,7 +245,7 @@ def main():
                 print("Printed predicates to %s..." % args.outpred)
         else:
             assert(args.task == "ic3ia")
-            vmtres = prove_ts(ts, p)
+            vmtres = prove_ts(ts, p, predicates)
 
             if (vmtres == VmtResult.SAFE):
                 res = Result.SAFE
