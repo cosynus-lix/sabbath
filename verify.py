@@ -35,6 +35,7 @@ from barrier.decomposition.encoding import (
 )
 from barrier.ts import TS
 from barrier.utils import get_mathsat_smtlib
+from barrier.vmt.vmt_engines import prove_ts, VmtResult
 from barrier.mathematica.mathematica import (
     get_mathematica, exit_callback_print_time, OutOfTimeSolverError, MathematicaSession
 )
@@ -45,9 +46,9 @@ def main():
     parser.add_argument("problem",help="Verification problem file")
 
     parser.add_argument("--task",
-                        choices=["dwcl","reach","dump_vmt","dwcl_ic3"],
+                        choices=["dwcl","dwcl_ic3","reach","dump_vmt","ic3ia"],
                         default="dwcl",
-                        help="Verify using dwcl or dump vmt file")
+                        help="Verify using dwcl, explicit reachability analysis, ic3ia, or dump the abstraction to vmt file")
 
     parser.add_argument("--solver",
                         choices=["z3","mathsat","mathematica"],
@@ -58,10 +59,6 @@ def main():
                         default=0,
                         type=int,
                         help="Time out for the mathematica kernel (Default: 0 (no timeout))")
-
-    parser.add_argument("--lzz_use_remainders",
-                        dest='lzz_use_remainders', action='store_true',
-                        help="Encode In set with remainders (Default: False)")
 
     parser.add_argument("--outvmt", help="Output vmt file")
     parser.add_argument("--outpred", help="Output predicates file")
@@ -82,9 +79,8 @@ def main():
     parser.add_argument("--abstraction",
                         choices=["factors","lie","invar","prop","preds_from_model"],
                         action='append', nargs='+',
-                        help="Polynomials to use in the abstraction",
+                        help="Polynomials to use in the abstraction (default: take from input)",
                         default=[])
-
 
 
     args = parser.parse_args()
@@ -113,12 +109,8 @@ def main():
     print("Init ", init.serialize())
     print("Safe ", safe.serialize())
 
-    # Read predicates
-    if (args.lzz_use_remainders):
-        lzz_opt = LzzOpt(True, True)
-        print("Using remainders...")
-    else:
-        lzz_opt = LzzOpt(False, False)
+    # Always use remainders
+    lzz_opt = LzzOpt(True, True)
 
     if (args.simplified_ia_encoding):
         simplified_ia_encoding = True
@@ -159,9 +151,7 @@ def main():
         print(p.serialize())
     print("----")
 
-
     if (args.task in ["dwcl","reach","dwcl_ic3"]):
-
         exit_callback_inst = partial(exit_callback_print_time, outstream=sys.stdout)
 
         solvers = {"z3" : partial(Solver, logic=QF_NRA, name="z3"),
@@ -193,28 +183,19 @@ def main():
             print("%s %s: %s" % (problem_name, str(res), str(invars)))
         except SolverAPINotFound as e:
             print("Did not find the solver.")
-        # except Exception as e:
-        #     print("Some other exception")
-        #     print(e)
         finally:
             if (args.solver == "mathematica"):
                 MathematicaSession.terminate_session()
-        # finally:
-        #     # Need to force the exit after an exception --- this will kill
-        #     # the mathematica thread
-        #     sys.stdout.flush()
-        #     sys.stderr.flush()
-        #     os._exit(1)
-        #     pass
 
     else:
-        assert(args.task == "dump_vmt")
-        if (not args.outvmt):
-            print("Missing output name for vmt file")
-            sys.exit(1)
-        if (not args.outpred):
-            print("Missing output name for predicates  file")
-            sys.exit(1)
+        assert(args.task == "dump_vmt" or args.task == "ic3ia")
+        if (args.task == "dump_vmt"):
+            if (not args.outvmt):
+                print("Missing output name for vmt file")
+                sys.exit(1)
+            if (not args.outpred):
+                print("Missing output name for predicates  file")
+                sys.exit(1)
 
 
         print("Encoding verification problem in the vmt file to %s..." % args.outvmt)
@@ -254,13 +235,25 @@ def main():
             print("Using the manual encoding to IA...")
             (ts, p, predicates) = encoder.get_ts_ia(simplified_ia_encoding)
 
-        with open(args.outvmt, "w") as outstream:
-            ts.to_vmt(outstream, p)
-            print("Printed vmt to %s..." % args.outvmt)
+        if (args.task == "dump_vmt"):
+            with open(args.outvmt, "w") as outstream:
+                ts.to_vmt(outstream, p)
+                print("Printed vmt to %s..." % args.outvmt)
 
-        with open(args.outpred, "w") as outstream:
-            TS.dump_predicates(outstream, predicates)
-            print("Printed predicates to %s..." % args.outpred)
+            with open(args.outpred, "w") as outstream:
+                TS.dump_predicates(outstream, predicates)
+                print("Printed predicates to %s..." % args.outpred)
+        else:
+            assert(args.task == "ic3ia")
+            vmtres = prove_ts(ts, p)
+
+            if (vmtres == VmtResult.SAFE):
+                res = Result.SAFE
+            else:
+                res = Result.UNKNOWN
+
+            print("%s %s" % (problem_name, str(res) ))
+
 
 if __name__ == '__main__':
     main()
