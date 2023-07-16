@@ -28,6 +28,20 @@ jobs:
         pip install flake8 nose pysmt sympy ply wolframclient six picos scipy control
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pysmt-install --confirm-agreement --z3 --bdd
+    - name: install ic3ia
+      run: |
+        cd
+        wget https://mathsat.fbk.eu/release/mathsat-5.6.10-linux-x86_64.tar.gz
+        tar xf mathsat-5.6.10-linux-x86_64.tar.gz
+        wget https://es-static.fbk.eu/people/griggio/ic3ia/ic3ia-23.05.tar.gz
+        tar xf ic3ia-23.05.tar.gz 
+        cd ic3ia-23.05
+        mkdir build
+        cd build
+        cmake -DMATHSAT_DIR=../../mathsat-5.6.10-linux-x86_64 -DCMAKE_BUILD_TYPE=Release ../
+        make
+        cd
+        export PATH=$PATH:~/ic3ia-23.05
 #    - name: Lint with flake8
 #      run: |
 #        # stop the build if there are Python syntax errors or undefined names

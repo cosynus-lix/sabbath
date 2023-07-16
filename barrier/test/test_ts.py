@@ -20,9 +20,9 @@ from pysmt.shortcuts import is_valid, is_sat, reset_env
 from pysmt.typing import REAL
 from pysmt.exceptions import SolverAPINotFound
 
-from barrier.test import TestCase, skipIfMSaticIsNotAvailable
+from barrier.test import TestCase, skipIfMSaticIsNotAvailable, skipIfIc3IAIsNotAvailable
 from barrier.ts import TS, ImplicitAbstractionEncoder
-from barrier.msatic3 import MSatic3
+from barrier.vmt.vmt_engines import MSatic3, Ic3IA
 
 class TestSystem(TestCase):
 
@@ -85,9 +85,7 @@ class TestSystem(TestCase):
             print(outstream.getvalue())
 
 
-    @attr('msatic3')
-    @skipIfMSaticIsNotAvailable()
-    def test_impl_abs(self):
+    def _aux_test_impl_abs(self, get_vmt_engine):
         long_tests = set(["toy",
                           "mem_slave_tlm.1",
                           "pipeline",
@@ -110,11 +108,6 @@ class TestSystem(TestCase):
                 print("Skipping long test %s" % smtfile)
                 continue
 
-            # DEBUG
-            # print(base)
-            # if (base != "bist_cell"):
-            #     continue
-
             with open(smtfile, "r") as f:
                 print("Reading %s" % smtfile)
                 (ts, safe) = TS.from_vmt(f, env)
@@ -122,17 +115,9 @@ class TestSystem(TestCase):
             with open(os.path.join(input_path, predfile), "r") as f:
                 predicates = ts.read_predicates(f)
 
-
-            try:
-                ic3 = MSatic3()
-
-                print("Verifying using IA...")
-                res_orig = ic3.solve(smtfile)
-            except SolverAPINotFound:
-                print("MSatic3 not found...")
-                logging.debug("MSatic3 not found...")
-                continue
-
+            ic3 = get_vmt_engine()
+            print("Verifying using IA...")
+            res_orig = ic3.solve(smtfile)
 
             print("\n---\nChecking encodings\n---\n")
 
@@ -155,17 +140,24 @@ class TestSystem(TestCase):
                     f.close()
 
                 print("Verifying %s..." % base)
-                try:
-                    ic3 = MSatic3()
 
-                    print("Verifying using fixed IA encoding...")
-                    res = ic3.solve(outfile)
+                ic3 = get_vmt_engine()
+                print("Verifying using fixed IA encoding...")
+                res = ic3.solve(outfile)
+                self.assertTrue(res == res_orig)
 
-                    self.assertTrue(res == res_orig)
-                except SolverAPINotFound:
-                    print("MSatic3 not found...")
-                    logging.debug("MSatic3 not found...")
                 os.remove(outfile)
             print("Verified result %s" % str(res_orig))
 
+    @attr('msatic3')
+    @skipIfMSaticIsNotAvailable()
+    def test_impl_abs_msatic3(self):
+        init_f = lambda : MSatic3()
+        self._aux_test_impl_abs(init_f)
+
+    @attr('ic3ia')
+    @skipIfIc3IAIsNotAvailable()
+    def test_impl_abs_ic3ia(self):
+        init_f = lambda : Ic3IA()
+        self._aux_test_impl_abs(init_f)
 

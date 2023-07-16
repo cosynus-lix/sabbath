@@ -84,12 +84,6 @@ def main():
 
     (ts, p, predicates) = encoder.get_ts_ia()
 
-    # DEBUG
-    with open("/tmp/init.txt", "w") as f:
-        f.write(ts.init.serialize())
-    with open("/tmp/trans.txt", "w") as f:
-        f.write(ts.trans.serialize())
-
     with open(args.outvmt, "w") as f:
         ts.to_vmt(f, p)
     with open(args.outpred, "w") as outstream:
