@@ -71,23 +71,17 @@ $$\dot{x} = -2 * y$$
 $$\dot{y} = x^2$$
 
 starting from the initial set:
-$x + 2 > 0 \land 0 <= x - y - \frac{1}{2}$
+$$x + 2 > 0 \land 0 <= x - y - \frac{1}{2}$$
 
 and the safety set:
-$$
-(x + 2)^2 + y^2 - 1 > 0
-$$
+$$(x + 2)^2 + y^2 - 1 > 0$$
 
 ![Verification problem](./docs/motexample_problem.png)
 
 SABBATH verify if the dynamical system is safe analyzing a semi-algebraic decomposition of the state space  (i.e., a discrete abstraction that partition). The decomposition uses the following polynomials:
-$$
-\begin{align*}
-x - y - \frac{1}{2}  = 0\\
-x + y + \frac{1}{2} = 0\\
-x + 2 = 0
-\end{align*}
-$$
+$$x - y - \frac{1}{2}  = 0$$
+$$x + y + \frac{1}{2} = 0$$
+$$x + 2 = 0$$
 to create a discrete abstraction where each state assigns a different sign to each polynomial:
 
 ![Semi-algebraic decomposition](./docs/motexample_abstraction.png)
