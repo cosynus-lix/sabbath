@@ -1,11 +1,11 @@
-CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.3433377742767334time_synthesis seconds
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:38777>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:39265>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1272589
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.3418455123901367time_synthesis seconds
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:45673>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:33943>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1463023
 WARNING:wolframclient.evaluation.kernel.kernelcontroller:Socket exception: Socket operation aborted.
 WARNING:wolframclient.evaluation.kernel.kernelcontroller:Failed to start.
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Start termination on kernel <WolframKernelController[wolfram-kernel-1 ✅], "/usr/local/Wolfram/WolframEngine/13.2/Executables/WolframKernel", pid:1272589, kernel sockets: (in:tcp://127.0.0.1:39265, out:tcp://127.0.0.1:38777)>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Killing kernel process: 1272589
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Start termination on kernel <WolframKernelController[wolfram-kernel-1 ✅], "/usr/local/Wolfram/WolframEngine/13.2/Executables/WolframKernel", pid:1463023, kernel sockets: (in:tcp://127.0.0.1:33943, out:tcp://127.0.0.1:45673)>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Killing kernel process: 1463023
 INFO:wolframclient.evaluation.kernel.kernelcontroller:Start termination on kernel <WolframKernelController[wolfram-kernel-1 ❌], "/usr/local/Wolfram/WolframEngine/13.2/Executables/WolframKernel">
 Traceback (most recent call last):
   File "/usr/local/lib/python3.8/dist-packages/wolframclient/evaluation/kernel/kernelcontroller.py", line 435, in _kernel_start

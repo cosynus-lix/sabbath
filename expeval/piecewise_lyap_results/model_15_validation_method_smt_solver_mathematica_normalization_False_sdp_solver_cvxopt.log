@@ -1,18 +1,18 @@
-CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis2.0007729530334473time_synthesis seconds
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:32991>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:42603>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1272651
-WARNING:wolframclient.evaluation.kernel.kernelcontroller:Socket exception: Socket operation aborted.
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis1.9885313510894775time_synthesis seconds
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:43163>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:40481>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1520654
+WARNING:wolframclient.evaluation.kernel.kernelcontroller:Socket exception: Failed to read any message from socket tcp://127.0.0.1:40481 after 20.0 seconds and 200 retries.
 WARNING:wolframclient.evaluation.kernel.kernelcontroller:Failed to start.
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Start termination on kernel <WolframKernelController[wolfram-kernel-1 ✅], "/usr/local/Wolfram/WolframEngine/13.2/Executables/WolframKernel", pid:1272651, kernel sockets: (in:tcp://127.0.0.1:42603, out:tcp://127.0.0.1:32991)>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Killing kernel process: 1272651
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Start termination on kernel <WolframKernelController[wolfram-kernel-1 ✅], "/usr/local/Wolfram/WolframEngine/13.2/Executables/WolframKernel", pid:1520654, kernel sockets: (in:tcp://127.0.0.1:40481, out:tcp://127.0.0.1:43163)>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Killing kernel process: 1520654
 INFO:wolframclient.evaluation.kernel.kernelcontroller:Start termination on kernel <WolframKernelController[wolfram-kernel-1 ❌], "/usr/local/Wolfram/WolframEngine/13.2/Executables/WolframKernel">
 Traceback (most recent call last):
   File "/usr/local/lib/python3.8/dist-packages/wolframclient/evaluation/kernel/kernelcontroller.py", line 435, in _kernel_start
     response = self.kernel_socket_in.recv_abortable(
-  File "/usr/local/lib/python3.8/dist-packages/wolframclient/evaluation/kernel/zmqsocket.py", line 50, in recv_abortable
-    raise SocketAborted("Socket operation aborted.")
-wolframclient.evaluation.kernel.zmqsocket.SocketAborted: Socket operation aborted.
+  File "/usr/local/lib/python3.8/dist-packages/wolframclient/evaluation/kernel/zmqsocket.py", line 53, in recv_abortable
+    raise SocketOperationTimeout(
+wolframclient.evaluation.kernel.zmqsocket.SocketOperationTimeout: Failed to read any message from socket tcp://127.0.0.1:40481 after 20.0 seconds and 200 retries.
 
 During handling of the above exception, another exception occurred:
 

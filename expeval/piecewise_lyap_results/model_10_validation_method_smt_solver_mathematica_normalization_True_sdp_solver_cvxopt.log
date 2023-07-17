@@ -1,12 +1,12 @@
 WARNING:root:Output file /home/lbattista/piecewise_lyap/semialgebraic_invariants/expeval/piecewise_lyap_results/model_10_validation_method_smt_solver_mathematica_normalization_True_sdp_solver_cvxopt.mat already exists.
-CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.5489144325256348time_synthesis seconds
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:38053>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:38153>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1272388
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis0.5450718402862549time_synthesis seconds
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:39687>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:43007>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1520603
 WARNING:wolframclient.evaluation.kernel.kernelcontroller:Socket exception: Socket operation aborted.
 WARNING:wolframclient.evaluation.kernel.kernelcontroller:Failed to start.
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Start termination on kernel <WolframKernelController[wolfram-kernel-1 ✅], "/usr/local/Wolfram/WolframEngine/13.2/Executables/WolframKernel", pid:1272388, kernel sockets: (in:tcp://127.0.0.1:38153, out:tcp://127.0.0.1:38053)>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Killing kernel process: 1272388
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Start termination on kernel <WolframKernelController[wolfram-kernel-1 ✅], "/usr/local/Wolfram/WolframEngine/13.2/Executables/WolframKernel", pid:1520603, kernel sockets: (in:tcp://127.0.0.1:43007, out:tcp://127.0.0.1:39687)>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Killing kernel process: 1520603
 INFO:wolframclient.evaluation.kernel.kernelcontroller:Start termination on kernel <WolframKernelController[wolfram-kernel-1 ❌], "/usr/local/Wolfram/WolframEngine/13.2/Executables/WolframKernel">
 Traceback (most recent call last):
   File "/usr/local/lib/python3.8/dist-packages/wolframclient/evaluation/kernel/kernelcontroller.py", line 435, in _kernel_start
