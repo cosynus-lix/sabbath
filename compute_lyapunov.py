@@ -6,9 +6,9 @@ from fractions import Fraction
 
 from pysmt.shortcuts import Symbol, REAL, get_env
 
-from barrier.system import DynSystem
-from barrier.lyapunov.lyapunov import synth_lyapunov, validate_lyapunov
-from barrier.lzz.serialization import importInvar
+from sabbath.system import DynSystem
+from sabbath.lyapunov.lyapunov import synth_lyapunov, validate_lyapunov
+from sabbath.lzz.serialization import importInvar
 
 
 def main():

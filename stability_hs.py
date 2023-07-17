@@ -9,29 +9,29 @@ from functools import partial
 
 from pysmt.shortcuts import get_env
 
-from barrier.decomposition.predicates import AbsPredsTypes
-from barrier.stability.from_sabbath_to_matrices import (
+from sabbath.decomposition.predicates import AbsPredsTypes
+from sabbath.stability.from_sabbath_to_matrices import (
     get_matrices_from_linear_odes,
     get_switching_predicate_from_linear_constraint,
     get_vector_from_linear_constraint)
 
-from barrier.stability.piecewise_affine_case import *
-from barrier.mathematica.mathematica import (MathematicaSession,
+from sabbath.stability.piecewise_affine_case import *
+from sabbath.mathematica.mathematica import (MathematicaSession,
                                              exit_callback_print_time,
                                              get_mathematica)
-from barrier.serialization.hybrid_serialization import importHSVer
+from sabbath.serialization.hybrid_serialization import importHSVer
 
-from barrier.utils import get_cvc5_smtlib, get_mathsat_smtlib
+from sabbath.utils import get_cvc5_smtlib, get_mathsat_smtlib
 
 from pysmt.logics import QF_NRA
 from pysmt.shortcuts import *
 
-import barrier.system as system
-from barrier.lyapunov.la_smt import myround
-from barrier.mathematica.mathematica import (MathematicaSession,
+import sabbath.system as system
+from sabbath.lyapunov.la_smt import myround
+from sabbath.mathematica.mathematica import (MathematicaSession,
                                              exit_callback_print_time,
                                              get_mathematica)
-from barrier.utils import get_cvc5_smtlib, get_mathsat_smtlib
+from sabbath.utils import get_cvc5_smtlib, get_mathsat_smtlib
 
 PRECISION = 16
 logging.basicConfig(level=logging.CRITICAL)

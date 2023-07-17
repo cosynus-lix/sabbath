@@ -2,11 +2,11 @@ import argparse
 import logging
 
 import barrier
-from barrier.lzz.serialization import importLzz, importInvar
+from sabbath.lzz.serialization import importLzz, importInvar
 from pysmt.shortcuts import get_env, Solver, Not
 from pysmt.logics import QF_NRA
 
-from barrier.compute_barrier import synth_barrier
+from sabbath.compute_barrier import synth_barrier
 
 
 
@@ -41,6 +41,6 @@ while ( (not solved) and degree < max_degree):
   degree += 1
 
 if (solved):
-  print("Found barrier: ",barrier.serialize())
+  print("Found barrier: ",sabbath.serialize())
 else:
   print("Barrier not found")

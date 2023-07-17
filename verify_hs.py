@@ -8,13 +8,18 @@ import os
 import signal
 import sys
 
-from barrier.lzz.lzz import LzzOpt
-from barrier.serialization.hybrid_serialization import importHSVer
-from barrier.decomposition.predicates import AbsPredsTypes, get_polynomials_ha
-from barrier.decomposition.encoding import (
+from sabbath.lzz.lzz import LzzOpt
+from sabbath.serialization.hybrid_serialization import importHSVer
+from sabbath.decomposition.predicates import AbsPredsTypes, get_polynomials_ha
+from sabbath.decomposition.encoding import (
     DecompositionOptions, DecompositionEncoderHA
 )
-from barrier.decomposition.utils import get_unique_poly_list
+
+from sabbath.decomposition.explicit import Result
+
+from sabbath.decomposition.utils import get_unique_poly_list
+
+from sabbath.vmt.vmt_engines import prove_ts, VmtResult
 
 from pysmt.shortcuts import (
     get_env
@@ -25,6 +30,11 @@ from pysmt.shortcuts import (
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("problem",help="Verification problem file")
+
+    parser.add_argument("--task",
+                        choices=["dump_vmt","ic3ia"],
+                        default="ic3ia",
+                        help="Verify an invariant property on a hybrid system")
 
     parser.add_argument("--abstraction",
                         choices=["factors","lie","invar","prop","preds_from_model"],
@@ -84,10 +94,29 @@ def main():
 
     (ts, p, predicates) = encoder.get_ts_ia()
 
-    with open(args.outvmt, "w") as f:
-        ts.to_vmt(f, p)
-    with open(args.outpred, "w") as outstream:
-        ts.dump_predicates(outstream, predicates)
+    if (args.task == "dump_vmt"):
+        if (not args.outvmt):
+            print("Missing output name for vmt file")
+            sys.exit(1)
+        if (not args.outpred):
+            print("Missing output name for predicates  file")
+            sys.exit(1)
+
+        with open(args.outvmt, "w") as f:
+            ts.to_vmt(f, p)
+        with open(args.outpred, "w") as outstream:
+            ts.dump_predicates(outstream, predicates)
+    else:
+        assert(args.task == "ic3ia")
+        vmtres = prove_ts(ts, p, predicates)
+
+        if (vmtres == VmtResult.SAFE):
+            res = Result.SAFE
+        else:
+            res = Result.UNKNOWN
+
+        print("%s %s" % (problem.name, str(res) ))
+
 
 if __name__ == '__main__':
     main()

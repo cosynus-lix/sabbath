@@ -15,24 +15,24 @@ from pysmt.shortcuts import (
     get_env, Solver
 )
 
-from barrier.lzz.serialization import importInvar, serializeInvar
-from barrier.lzz.lzz import LzzOpt
-from barrier.decomposition.explicit import (
+from sabbath.lzz.serialization import importInvar, serializeInvar
+from sabbath.lzz.lzz import LzzOpt
+from sabbath.decomposition.explicit import (
     Result,
     dwcl,
     get_invar_lazy
 )
-from barrier.decomposition.encoding import (
+from sabbath.decomposition.encoding import (
     DecompositionOptions,
     DecompositionEncoder
 )
-from barrier.ts import TS
-from barrier.utils import get_mathsat_smtlib
-from barrier.mathematica.mathematica import (
+from sabbath.ts import TS
+from sabbath.utils import get_mathsat_smtlib
+from sabbath.mathematica.mathematica import (
     get_mathematica, exit_callback_print_time, OutOfTimeSolverError, MathematicaSession
 )
 
-from barrier.decomposition.utils import sort_poly_by_degree
+from sabbath.decomposition.utils import sort_poly_by_degree
 
 def get_degrees(derivator, predicates):
     dset = set()

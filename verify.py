@@ -17,26 +17,26 @@ from pysmt.shortcuts import (
     get_env, Solver
 )
 
-from barrier.decomposition.predicates import (
+from sabbath.decomposition.predicates import (
     AbsPredsTypes, get_polynomials_ha,
     get_polynomials_invar_problem
 )
-from barrier.decomposition.utils import get_unique_poly_list
-from barrier.serialization.invar_serialization import importInvarVer
-from barrier.lzz.lzz import LzzOpt
-from barrier.decomposition.explicit import (
+from sabbath.decomposition.utils import get_unique_poly_list
+from sabbath.serialization.invar_serialization import importInvarVer
+from sabbath.lzz.lzz import LzzOpt
+from sabbath.decomposition.explicit import (
     Result,
     dwcl,
     get_invar_lazy
 )
-from barrier.decomposition.encoding import (
+from sabbath.decomposition.encoding import (
     DecompositionOptions,
     DecompositionEncoder
 )
-from barrier.ts import TS
-from barrier.utils import get_mathsat_smtlib
-from barrier.vmt.vmt_engines import prove_ts, VmtResult
-from barrier.mathematica.mathematica import (
+from sabbath.ts import TS
+from sabbath.utils import get_mathsat_smtlib
+from sabbath.vmt.vmt_engines import prove_ts, VmtResult
+from sabbath.mathematica.mathematica import (
     get_mathematica, exit_callback_print_time, OutOfTimeSolverError, MathematicaSession
 )
 
@@ -85,7 +85,7 @@ def main():
 
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
 
 
     def signal_handler(sig, frame):

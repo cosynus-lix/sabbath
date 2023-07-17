@@ -2,11 +2,11 @@ import argparse
 import logging
 
 import barrier
-from barrier.lzz.serialization import importLzz, importInvar
+from sabbath.lzz.serialization import importLzz, importInvar
 from pysmt.shortcuts import get_env, Solver
 from pysmt.logics import QF_NRA
-from barrier.lzz.lzz import lzz, LzzOpt
-from barrier.mathematica.mathematica import get_mathematica, MathematicaSession
+from sabbath.lzz.lzz import lzz, LzzOpt
+from sabbath.mathematica.mathematica import get_mathematica, MathematicaSession
 
 
 
