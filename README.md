@@ -39,7 +39,7 @@ To install the base dependencies on Ubuntu you can try the following commands:
 ```bash
 $ sudo apt-get install python python-pip
 $ sudo apt install -y build-essential swig libgmp-dev cmake
-$ pip install nose pysmt sympy ply six scipy
+$ pip install nose pysmt sympy ply six scipy numpy picos control
 $ pysmt-install --confirm-agreement --z3 --bdd
 ```
 
@@ -150,7 +150,7 @@ The [hybrid_reformulation](utils/reformulate_PI_controller/hybrid_reformulation/
 
 
 ```
---use-stranspose, --use-exponential, --use-control, --use-simple, --use-linear
+--use-transpose, --use-exponential, --use-control, --use-simple, --use-linear
 ```
 
 
