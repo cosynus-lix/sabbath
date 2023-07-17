@@ -6,22 +6,20 @@ SABBATH is a formal verification and synthesis tool for dynamical and hybrid sys
 
 The tool implements the algorithms presented in:
 
-[1] Sergio Mover, Alessandro Cimatti, Alberto Griggo, Ahmed Irfan, Stefano Tonetta. Implicit Semi-Algebraic Abstraction for Polynomial Dynamical Systems. CAV 2021
+[1] Sergio Mover, Alessandro Cimatti, Alberto Griggo, Ahmed Irfan, Stefano Tonetta. [Implicit Semi-Algebraic Abstraction for Polynomial Dynamical Systems](https://link.springer.com/chapter/10.1007/978-3-030-81685-8_25). CAV 2021
 
 [2] Stylianos Basagiannis, Ludovico Battista, Anna Becchi, Alessandro Cimatti, Georgios Giantamidis, Sergio Mover, Alberto Tacchella, Stefano Tonetta and Vassilios Tsachouridis. SMT-Based Stability Verification of an Industrial Switched PI Control Systems. 1st International Workshop on Verification & Validation of Dependable Cyber-Physical Systems 2023
 
 
-SABBATH, provides the following main functionalities:
+SABBATH, provides the following functionalities:
 
-a. Verify invariant properties for polynomial dynamical systems (i.e., dynamical systems with a polynomial Ordinary Differential Equations): [verify.py](#invariant-verification-of-dynamical-systems)
+- Verify invariant properties for polynomial dynamical systems (i.e., dynamical systems with a polynomial Ordinary Differential Equations): [verify.py](#invariant-verification-of-dynamical-systems)
 
-The tool implements the algorithm of [1] (using verification modulo theory techniques as backend, i.e., ic3IA) and the algorithms (dwcl, reach) from:
+The tool implements the algorithm of [1] (using verification modulo theory techniques as backend, i.e., ic3ia) and the algorithms (dwcl, reach) from:
 
 Andrew Sogokon, Khalil Ghorbal, Paul B. Jackson, André Platzer. A Method for Invariant Generation for Polynomial Continuous Systems. VMCAI 2016
 
-b. Verify invariant properties for hybrid systems with polynomial dynamics [experimental]: [verify_hs.py](#invariant-verification-of-hybrid-systems)
-
-c. Check stabilty for 2-modes, switched affine linear systems: [stability_hs.py](#stability-verification-for-hybrid-systems)
+- Check stabilty for 2-modes, switched affine linear systems: [stability_hs.py](#stability-verification-for-hybrid-systems)
 
 **Contacts**: [Sergio Mover](https://www.sergiomover.eu), LIX and Ecole Polytechnique at name.surname <at> lix.polytechnique.fr)
 
@@ -46,7 +44,7 @@ $ pysmt-install --confirm-agreement --z3 --bdd
 
 The tool uses different external backends depending on the verification algorithm.
 
-To use the VMT verification algorithm you need to install the `ic3ia` tool from the [ic3ia website](https://es-static.fbk.eu/people/griggio/ic3ia/index.html).
+To use the Verification Modulo Theories [VMT](https://es.fbk.eu/index.php/projects/verification-modulo-theories/) algorithm you need to install the `ic3ia` tool from the [ic3ia website](https://es-static.fbk.eu/people/griggio/ic3ia/index.html).
 
 The tool can use Mathematica (instead of z3 as SMT solver) as a backend of the `dwcl` and `reach` algorithm. You can install the [Wolfram Engine](https://www.wolfram.com/engine/), which implements the Mathematica backend and at the moment is free for academic purposes, or directly  Mathematica, and then install the `wolframclient` python package:
 ```
@@ -64,7 +62,7 @@ pip install picos control
 
 ## Invariant verification of dynamical systems
 
-The script *verify.hs* runs the verification algorithms for polynomial dynamical systems.
+The script *verify.py* runs the verification algorithms for polynomial dynamical systems.
 
 Consider the dynamical system:
 $$\dot{x} = -2 * y$$
@@ -100,10 +98,7 @@ Liu Zhan Zhao Emsoft11 Example 25 new example Result.SAFE
 
 You can change the algorithm in the `task` parameter (using `dwcl` and `reach`). Look at the help `verify.py --h` to get a list of the available options.
 
-
-## Invariant Verification of Hybrid Systems
-
-The tool can verify a hybrid system is safe
-
 ## Stability Verification of Hybrid Systems
+
+The tool can verify stability properties for a specific class of hybrid systems (a switched system with 2 modes with linear dynamic).
 
