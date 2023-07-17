@@ -19,7 +19,7 @@ The tool implements the algorithm of [1] (using verification modulo theory techn
 
 Andrew Sogokon, Khalil Ghorbal, Paul B. Jackson, André Platzer. A Method for Invariant Generation for Polynomial Continuous Systems. VMCAI 2016
 
-- Check stabilty for 2-modes, switched affine linear systems: [stability_hs.py](#stability-verification-for-hybrid-systems)
+- Check stabilty for 2-modes, switched affine linear systems: [stability_hs.py](#stability-verification-of-hybrid-systems)
 
 **Contacts**: [Sergio Mover](https://www.sergiomover.eu), LIX and Ecole Polytechnique at name.surname <at> lix.polytechnique.fr)
 
@@ -100,5 +100,74 @@ You can change the algorithm in the `task` parameter (using `dwcl` and `reach`).
 
 ## Stability Verification of Hybrid Systems
 
-The tool can verify stability properties for a specific class of hybrid systems (a switched system with 2 modes with linear dynamic).
+The tool can verify stability properties for a specific class of hybrid systems (switched systems with 2 modes with linear dynamic) with the scripty [stability_hs.py](stability_hs.py). 
+
+
+### Run PI_controller_converter
+
+To run the conversion, run
+```
+cd semialgebraic_invariants/utils/reformulate_PI_controller
+python3 matlab_to_hybrid_as_json.py
+```
+
+This script will create the file in the directory 
+```
+semialgebraic_invariants/utils/reformulate_PI_controller/hybrid_reformulation 
+```
+that are the hybrid automata for the reformulated systems of size 3, 5, 10, 15, 18.
+
+### Synthesize and validate piecewise Lyapunov functions
+
+Go back to main directory
+```
+cd ../..
+```
+and run the main script
+```
+python3 stability_hs.py
+```
+with arguments
+#### problem
+Give to stability a problem. One can select the ones created by the reformulator writing utils/reformulate_PI_controller/hybrid_reformulation/reformulation_size_10.hyb (and substituting 10 with 3, 5, 10, 15, 18).
+
+#### method: chooseonefrom[--use-stranspose, --use-exponential, --use-control, --use-simple, --use-linear]
+
+Select which method to use to synthesize the Lyapunov functions for single modes.
+
+#### --validation-method chooseonefrom['smt', 'sympy', 'sylvester']
+
+Choose which type of validation to use.
+
+#### --solver chooseonefrom["z3","mathsat","cvc5","mathematica"]
+
+Choose the smt-solver to be used.
+
+### Examples of usage
+
+Run
+```
+python3 stability_hs.py utils/reformulate_PI_controller/hybrid_reformulation/reformulation_size_5.hyb --use-transpose --validation-method sylvester --solver mathematica
+```
+
+The output should be (in around 10 seconds)
+```
+Parsing problem...
+CRITICAL:root:Synthesizing lyapunov with transpose
+CRITICAL:root:Time for synthesizing lyapunov: 0.04
+CRITICAL:root:Time for validating c1: 0.01
+CRITICAL:root:Time for validating c2: 0.02
+CRITICAL:root:Time for validating lyapunov: 0.04
+CRITICAL:root:Synthesizing lyapunov with transpose
+CRITICAL:root:Time for synthesizing lyapunov: 0.01
+CRITICAL:root:Time for validating c1: 0.01
+CRITICAL:root:Time for validating c2: 0.02
+CRITICAL:root:Time for validating lyapunov: 0.04
+CRITICAL:root:Time for computing level set 0: 5.2
+CRITICAL:root:Time for computing level set 1: 2.48
+CRITICAL:root:Level set of M0 intersects M1
+CRITICAL:root:Level set of M1 DOES NOT intersect M1
+```
+The Lyapunov function is synthesized, then it is validated. After that, two regions of certified stability (one for each mode) are synthesized. The result is saved in numeric_info.mat.
+
 
