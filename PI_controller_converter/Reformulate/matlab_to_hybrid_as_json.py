@@ -109,9 +109,9 @@ def main():
         logging.info(f"\n\n\nThe system has \n{num_modes} modes, \n{num_variables} variables, \n{num_controllers} controllers, \n{num_outputs} outputs.\nReference values are {np.transpose(reference_values)}.\n")
         
         logging.info(f"Mode 0: g * [x;1] >= 0, where g = {Invars_geq0[0]}")
-        logging.info(f"The dynamics is x_dot = A x + B u, where\n A = \n{As[0]}\n and \nB = \n{Bs[0]}.\nThe control is given by \n K_P = \n{KPs[0]}\n and \nK_I = \n{Bs[0]}.\n.")
+        logging.info(f"The dynamics is x_dot = A x + B u, where\n A = \n{As[0]}\n and \nB = \n{Bs[0]}.\nThe control is given by \n K_P = \n{KPs[0]}\n and \nK_I = \n{KIs[0]}.\n.")
         logging.info(f"Mode 1: g * [x;1] >= 0, where g = {Invars_geq0[1]}")
-        logging.info(f"The dynamics is x_dot = A x + B u, where\n A = \n{As[1]}\n and \nB = \n{Bs[1]}.\nThe control is given by \n K_P = \n{KPs[1]}\n and \nK_I = \n{Bs[1]}.\n.")
+        logging.info(f"The dynamics is x_dot = A x + B u, where\n A = \n{As[1]}\n and \nB = \n{Bs[1]}.\nThe control is given by \n K_P = \n{KPs[1]}\n and \nK_I = \n{KIs[1]}.\n.")
 
         num_homo_variables = num_variables + num_controllers
 
