@@ -33,10 +33,6 @@ from pysmt.shortcuts import (
   Real, Symbol, Pow
 )
 
-
-# DEBUG
-DEBUG_CONVERSION = True
-
 class OutOfTimeSolverError(PysmtException):
   def __init__(self, budget):
     PysmtException.__init__(self,
