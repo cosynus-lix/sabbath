@@ -1,5 +1,5 @@
-CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis7.691768169403076time_synthesis seconds
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:38653>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:37441>
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1273079
-INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel 1273079 is ready. Startup took 2.36 seconds.
+CRITICAL:root:The piecewise candidate function was synthesized in time_synthesis7.981712818145752time_synthesis seconds
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel writes commands to socket: <Socket: uri=tcp://127.0.0.1:45219>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel receives evaluated expressions from socket: <Socket: uri=tcp://127.0.0.1:45859>
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel process started with PID: 1463786
+INFO:wolframclient.evaluation.kernel.kernelcontroller:Kernel 1463786 is ready. Startup took 2.43 seconds.
