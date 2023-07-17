@@ -66,7 +66,9 @@ pip install picos control
 
 The script *verify.hs* runs the verification algorithms for polynomial dynamical systems.
 
-Consider the dynamical system:$$ \dot{x} = -2 * y \dot{y} = x^2 $$
+Consider the dynamical system: 
+
+$ \dot{x} = -2 * y \dot{y} = x^2 $
 
 starting from the initial set:
 $x + 2 > 0 \land 0 <= x - y - \frac{1}{2}$
