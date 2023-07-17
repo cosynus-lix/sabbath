@@ -14,8 +14,8 @@ import os
 
 from pysmt.shortcuts import get_env
 
-from barrier.serialization.invar_serialization import importInvarVer, serializeInvar
-from barrier.decomposition.predicates import AbsPredsTypes, get_predicates
+from sabbath.serialization.invar_serialization import importInvarVer, serializeInvar
+from sabbath.decomposition.predicates import AbsPredsTypes, get_predicates
 
 
 def main():

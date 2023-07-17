@@ -87,11 +87,11 @@ to create a discrete abstraction where each state assigns a different sign to ea
 
 ![Semi-algebraic decomposition](./docs/motexample_abstraction.png)
 
-This system and the polynomials are written in the file [Liu_Zhan_Zhao_Emsoft11_Example_25_motivating.invar](barrier/test/invar_inputs/Liu_Zhan_Zhao_Emsoft11_Example_25_motivating.invar), which follows the [input format](docs/input_format.md).
+This system and the polynomials are written in the file [Liu_Zhan_Zhao_Emsoft11_Example_25_motivating.invar](sabbath/test/invar_inputs/Liu_Zhan_Zhao_Emsoft11_Example_25_motivating.invar), which follows the [input format](docs/input_format.md).
 
 You can verify the system using the `ic3ia` SMT-based algorithm:
 ```
-python verify.py --task ic3ia ./barrier/test/invar_inputs/Liu_Zhan_Zhao_Emsoft11_Example_25_motivating.invar 
+python verify.py --task ic3ia ./sabbath/test/invar_inputs/Liu_Zhan_Zhao_Emsoft11_Example_25_motivating.invar 
 ```
 
 The tool outputs several statitics, and eventually the result:

@@ -8,18 +8,18 @@ import os
 import signal
 import sys
 
-from barrier.lzz.lzz import LzzOpt
-from barrier.serialization.hybrid_serialization import importHSVer
-from barrier.decomposition.predicates import AbsPredsTypes, get_polynomials_ha
-from barrier.decomposition.encoding import (
+from sabbath.lzz.lzz import LzzOpt
+from sabbath.serialization.hybrid_serialization import importHSVer
+from sabbath.decomposition.predicates import AbsPredsTypes, get_polynomials_ha
+from sabbath.decomposition.encoding import (
     DecompositionOptions, DecompositionEncoderHA
 )
 
-from barrier.decomposition.explicit import Result
+from sabbath.decomposition.explicit import Result
 
-from barrier.decomposition.utils import get_unique_poly_list
+from sabbath.decomposition.utils import get_unique_poly_list
 
-from barrier.vmt.vmt_engines import prove_ts, VmtResult
+from sabbath.vmt.vmt_engines import prove_ts, VmtResult
 
 from pysmt.shortcuts import (
     get_env

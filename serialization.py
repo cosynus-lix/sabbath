@@ -6,7 +6,7 @@ import json
 
 from pysmt.smtlib.parser import SmtLibParser
 
-from barrier.lzz.serialization import (
+from sabbath.lzz.serialization import (
     _get_smt_vars,
     _get_smt_formula,
     _get_smt_formula_pred,
