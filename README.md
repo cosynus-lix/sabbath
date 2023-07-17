@@ -100,57 +100,14 @@ You can change the algorithm in the `task` parameter (using `dwcl` and `reach`).
 
 ## Stability Verification of Hybrid Systems
 
-The tool can verify stability properties for a specific class of hybrid systems (switched systems with 2 modes with linear dynamic) with the scripty [stability_hs.py](stability_hs.py). 
+The tool can verify if a specific class of hybrid systems (switched systems with 2 modes with linear dynamic) is stable with the scripty [stability_hs.py](stability_hs.py). 
 
-
-### Run PI_controller_converter
-
-To run the conversion, run
-```
-cd semialgebraic_invariants/utils/reformulate_PI_controller
-python3 matlab_to_hybrid_as_json.py
-```
-
-This script will create the file in the directory 
-```
-semialgebraic_invariants/utils/reformulate_PI_controller/hybrid_reformulation 
-```
-that are the hybrid automata for the reformulated systems of size 3, 5, 10, 15, 18.
-
-### Synthesize and validate piecewise Lyapunov functions
-
-Go back to main directory
-```
-cd ../..
-```
-and run the main script
-```
-python3 stability_hs.py
-```
-with arguments
-#### problem
-Give to stability a problem. One can select the ones created by the reformulator writing utils/reformulate_PI_controller/hybrid_reformulation/reformulation_size_10.hyb (and substituting 10 with 3, 5, 10, 15, 18).
-
-#### method: chooseonefrom[--use-stranspose, --use-exponential, --use-control, --use-simple, --use-linear]
-
-Select which method to use to synthesize the Lyapunov functions for single modes.
-
-#### --validation-method chooseonefrom['smt', 'sympy', 'sylvester']
-
-Choose which type of validation to use.
-
-#### --solver chooseonefrom["z3","mathsat","cvc5","mathematica"]
-
-Choose the smt-solver to be used.
-
-### Examples of usage
-
-Run
+We can verify that the hybrid system in `utils/reformulate_PI_controller/hybrid_reformulation/reformulation_size_5.hyb` is stable with the following command:
 ```
 python3 stability_hs.py utils/reformulate_PI_controller/hybrid_reformulation/reformulation_size_5.hyb --use-transpose --validation-method sylvester --solver mathematica
 ```
 
-The output should be (in around 10 seconds)
+The tool output should be smilar to the following (and execute in about 10 seconds):
 ```
 Parsing problem...
 CRITICAL:root:Synthesizing lyapunov with transpose
@@ -168,6 +125,58 @@ CRITICAL:root:Time for computing level set 1: 2.48
 CRITICAL:root:Level set of M0 intersects M1
 CRITICAL:root:Level set of M1 DOES NOT intersect M1
 ```
-The Lyapunov function is synthesized, then it is validated. After that, two regions of certified stability (one for each mode) are synthesized. The result is saved in numeric_info.mat.
+
+The tool:
+
+- synthesizes two Lyapunov functions (one per mode) that are then validated with symbolic methods (i.e., the Lyapunov functions are sound). The function certifies that each hybrid system mode is globally asymptotically stable, in isolation (note that the hybrid system could be still non stable due to the switching).
+
+- computes the stability regions for each mode of the hybrid system. The analysis guarantees that the system is stable if the execution starts inside the synthesized regions.
+
+
+The tool saves the regions in the `numeric_info.mat` file.
+
+
+
+The arguments of the script are:
+
+- the input hybrid system
+
+The [hybrid_reformulation](utils/reformulate_PI_controller/hybrid_reformulation/reformulation_size_10.hyb) folder already contains several models describing a PI controller for dynamical systems (which have various dimensions, 3, 5, 10, 15, 18).
+
+- the method to use to synthesize the Lyapunov functions for single modes, one option among:
+
+
+```
+--use-stranspose, --use-exponential, --use-control, --use-simple, --use-linear
+```
+
+
+- the method to use to validate the soundness of the Lyapunov functions:
+
+```
+--validation-method ['smt', 'sympy', 'sylvester']
+```
+
+- the SMT solver used in the analysis:
+
+```
+--solver ["z3","mathsat","cvc5","mathematica"]
+```
+
+
+### Hybrid systems from PI controller
+The synthesis input can be generated from the description of a PI controller and a plant provided as Matlab matrices.
+
+The conveter is in the [utils/reformulate_PI_controller](utils/reformulate_PI_controller). To run the conversion:
+```
+cd utils/reformulate_PI_controller
+python matlab_to_hybrid_as_json.py
+```
+
+This script will create the output file (as hybrid automata) in the directory 
+```
+utils/reformulate_PI_controller/hybrid_reformulation
+```
+for the reformulated systems of size 3, 5, 10, 15, 18.
 
 
