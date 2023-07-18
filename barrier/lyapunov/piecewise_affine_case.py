@@ -107,7 +107,7 @@ from barrier.mathematica.mathematica import (
 
 THETA = 1
 PRECISION = 16
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.CRITICAL)
 stability_hs_logger = logging.getLogger(__name__)
 
 class Result(Enum):
