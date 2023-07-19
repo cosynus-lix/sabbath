@@ -1,4 +1,4 @@
-![Regression tests](https://github.com/smover/semialgebraic_invariants/workflows/Regression%20tests/badge.svg)
+![Regression tests](https://github.com/cosynus-lix/sabbath/actions/workflows/python-app.yml/badge.svg)
 
 # Semi-algebraic ABstrAcTor for Hybrid systems (SABbATH)
 
