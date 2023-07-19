@@ -1,2 +1,2 @@
-barrier/test/vmt_models/* linguist-generated
-barrier/test/invar_inputs/* linguist-generated
+barrier/test/vmt_models/* linguist-vendored
+barrier/test/invar_inputs/* linguist-vendored
