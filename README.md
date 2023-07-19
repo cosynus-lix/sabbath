@@ -39,7 +39,7 @@ To install the base dependencies on Ubuntu you can try the following commands:
 ```bash
 $ sudo apt-get install python python-pip
 $ sudo apt install -y build-essential swig libgmp-dev cmake
-$ pip install nose pysmt sympy ply six scipy numpy picos control
+$ pip install nose pysmt sympy ply six scipy numpy
 $ pysmt-install --confirm-agreement --z3 --bdd
 ```
 
