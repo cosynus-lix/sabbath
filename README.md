@@ -183,3 +183,6 @@ utils/reformulate_PI_controller/hybrid_reformulation
 for the reformulated systems of size 3, 5, 10, 15, 18.
 
 
+## Acknowledgment
+
+This work has been partly developed in the VALU3S project (https://valu3s.eu/) and in the AID FARO project.
