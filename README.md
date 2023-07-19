@@ -1,4 +1,4 @@
-![Regression tests](https://github.com/cosynus-lix/sabbath/actions/workflows/python-app.yml/badge.svg)
+[![Regression tests](https://github.com/cosynus-lix/sabbath/actions/workflows/python-app.yml/badge.svg)](https://github.com/cosynus-lix/sabbath/actions)
 
 # Semi-algebraic ABstrAcTor for Hybrid systems (SABbATH)
 
