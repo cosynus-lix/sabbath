@@ -334,22 +334,29 @@ def get_piecewise_lyapunov_ludo(dyn_systems, vector_sw_pr_mode0_less0, certify =
         logging.critical("Found a valid Piecewise-Quadratic Lyapunov Function for the system. The system IS STABLE.")
         logging.critical(f"The piecewise candidate function was verified in {time.time() - start_time} seconds")
     # The following can be used to save the results in an external file.
-    # import pickle
-    # with open('lf0_old_coord.pickle','wb') as f:
-    #     pickle.dump(P1_sym_old_coord,f)
-    # with open('lf1_old_coord.pickle','wb') as f:
-    #     pickle.dump(P2_sym_old_coord,f)
+    import pickle
+    with open('lf0_old_coord.pickle','wb') as f:
+        pickle.dump(P1_sym_old_coord,f)
+    with open('lf1_old_coord.pickle','wb') as f:
+        pickle.dump(P2_sym_old_coord,f)
 
-    # with open('lf0_new_coord.pickle','wb') as f:
-    #     pickle.dump(P1_sym,f)
-    # with open('lf1_new_coord.pickle','wb') as f:
-    #     pickle.dump(P2_sym,f)
+    with open('lambdas.pickle','wb') as f:
+        pickle.dump(lambdas.np,f)
+    with open('mu2.pickle','wb') as f:
+        pickle.dump(mu2.np,f)
+    with open('eta2.pickle','wb') as f:
+        pickle.dump(eta2.np,f)
 
-    # with open('vector_sw_pr_mode0_less0_old_coord.pickle','wb') as f:
-    #     pickle.dump(vector_sw_pr_mode0_less0,f)
-    # with open('vector_sw_pr_mode0_less0_new_coord.pickle','wb') as f:
-    #     pickle.dump(-cd,f)
-    # breakpoint()
+    with open('lf0_new_coord.pickle','wb') as f:
+        pickle.dump(P1_sym,f)
+    with open('lf1_new_coord.pickle','wb') as f:
+        pickle.dump(P2_sym,f)
+
+    with open('vector_sw_pr_mode0_less0_old_coord.pickle','wb') as f:
+        pickle.dump(vector_sw_pr_mode0_less0,f)
+    with open('vector_sw_pr_mode0_less0_new_coord.pickle','wb') as f:
+        pickle.dump(-cd,f)
+    breakpoint()
 
     Candidate_Lyap = Piecewise_Quadratic_Function()
     Candidate_Lyap.matrices[0] = P1_sym_old_coord
